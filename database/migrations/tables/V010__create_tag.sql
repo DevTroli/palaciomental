@@ -1,5 +1,0 @@
-CREATE TABLE TAG (
-  id_tag   INTEGER      NOT NULL,
-  nm_tag   VARCHAR2(50) UNIQUE NOT NULL,
-  CONSTRAINT pk_tag PRIMARY KEY (id_tag)
-);
