@@ -11,16 +11,14 @@
 
 ## 👥 Equipe
 
-| Papel | Membro |
-|---|---|
-| Tech Lead & DB Lead | Pablo Troli |
-| Backend | Felipe Figueiredo |
-| Backend | Eduardo Elias |
-| Frontend Lead | Iago Sampaio |
-| UI/UX Designer | Yohan Ruiz |
+| Membros |
+|---|
+| Pablo Troli |
+| Felipe Figueiredo |
+| Eduardo Elias |
+| Iago Sampaio |
+| Yohan Ruiz |
 | DevOps & Docs | Matheus Fernandes |
-
-**Coordenador:** Prof. Marcio Galvão
 
 ---
 
@@ -40,11 +38,10 @@
 | Camada | Tecnologia |
 |---|---|
 | Banco de Dados | MariaDB 11.8 (MySQL-compatible) |
-| Backend | PHP 8.4 + Laravel 13 |
-| Auth | Laravel Breeze (Blade stack) |
-| Frontend | Blade + Tailwind CSS + Alpine.js + Livewire v3 |
+| Backend | A definir |
+| Frontend | A definir |
 | Design | Figma |
-| DevOps | Docker + GitHub Actions |
+| DevOps | Docker + GitHub Actions|
 
 ---
 
@@ -68,119 +65,6 @@
 - Modelo Lógico: `database/docs/modelo_logico_palaciomentasl.png`
 - Dicionário de Dados: `database/docs/dicionario_dados.md`
 - DDL MySQL: `database/mysql/palacio_mental_mysql.sql`
-
----
-
-## 📁 Estrutura do Repositório
-
-```
-palacioMental/
-├── README.md
-├── CLAUDE.md
-├── Docs/
-│   ├── 00_ESTRUTURA_DA_EQUIPE.md
-│   ├── GUIA_GITHUB_GESTAO.md
-│   ├── MILESTONE_0_PLANEJAMENTO.md
-│   ├── MILESTONE_1_FUNDACAO.md
-│   └── STACK_TECNOLOGICA.md
-├── database/
-│   ├── mysql/
-│   │   └── palacio_mental_mysql.sql
-│   ├── docs/
-│   │   ├── dicionario_dados.md
-│   │   ├── modelo_conceitual_palaciomental.png
-│   │   └── modelo_logico_palaciomentasl.png
-│   └── seeds/
-│       └── seed_data.sql
-├── backend/               ← Laravel 13
-│   ├── app/
-│   │   ├── Http/Controllers/
-│   │   ├── Http/Requests/
-│   │   ├── Models/
-│   │   └── Livewire/
-│   ├── database/
-│   │   ├── migrations/
-│   │   └── seeders/
-│   ├── resources/
-│   │   ├── views/
-│   │   └── css/
-│   ├── routes/
-│   └── README.md
-└── frontend/              ← (fase futura)
-```
-
----
-
-## 🚀 Como Rodar Localmente
-
-### Pré-requisitos
-
-- PHP 8.2+
-- Composer 2.x
-- Node.js 18+ e npm
-- MariaDB 10.11+ (ou MySQL 8+)
-- Git
-
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/DevTroli/palacioMental.git
-cd palacioMental
-```
-
-### 2. Configure o banco de dados
-
-Crie um banco e um usuário no MariaDB/MySQL:
-
-```sql
-CREATE DATABASE palacio_mental CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'palacio'@'localhost' IDENTIFIED BY 'palacio123';
-GRANT ALL PRIVILEGES ON palacio_mental.* TO 'palacio'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-> **Arch Linux:** use `sudo mariadb` para acessar o console como root (autenticação unix_socket).
-
-### 3. Configure o backend
-
-```bash
-cd backend
-cp .env.example .env
-composer install
-npm install
-php artisan key:generate
-```
-
-Edite o `.env` com as credenciais do banco:
-
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=palacio_mental
-DB_USERNAME=palacio
-DB_PASSWORD=palacio123
-```
-
-### 4. Rode as migrations e seeders
-
-```bash
-php artisan migrate:fresh --seed
-```
-
-### 5. Inicie o servidor
-
-```bash
-php artisan serve
-```
-
-Acesse: **http://localhost:8000**
-
-### 6. (Opcional) Compile assets em tempo real
-
-```bash
-npm run dev
-```
 
 ---
 
