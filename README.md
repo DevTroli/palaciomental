@@ -13,12 +13,12 @@
 
 | Membros |
 |---|
-| Pablo Troli |
-| Felipe Figueiredo |
-| Eduardo Elias |
-| Iago Sampaio |
-| Yohan Ruiz |
-| DevOps & Docs | Matheus Fernandes |
+| Pablo Troli  | Product Owner|
+| Felipe Figueiredo | Dev Team|
+| Iago Sampaio  | Dev Team|
+| Matheus Fernandes | Dev Team |
+| Yohan Ruiz | Scrum Master |
+
 
 ---
 
