@@ -1,80 +1,106 @@
 # 🧠 Palácio Mental
 
-### Rede Acadêmica de Compartilhamento de Projetos
+> Plataforma de Colaboração e Memória Institucional para Projetos Sociais — um espaço gratuito e colaborativo onde iniciativas sociais ganham memória viva, transparência e continuidade.
 
-> **Imagine o GitHub, mas pensado para o projeto acadêmico em sua totalidade — não só o código, mas a ideia, o processo, a documentação e a evolução. O Palácio Mental é onde o trabalho do semestre deixa de morrer num ZIP e passa a existir.**
-
-**Trabalho Semestral — Engenharia de Software**
-**Fatec Praia Grande · Desenvolvimento de Software Multiplataforma · 1º Semestre de 2026**
+**Projeto de Extensão Acadêmica**
+Fatec Praia Grande · Desenvolvimento de Software Multiplataforma · 2º Semestre de 2026
 
 ---
 
-## 👥 Equipe
+## Equipe
 
-| Membros |
-|---|
-| Pablo Troli  | Product Owner|
-| Felipe Figueiredo | Dev Team|
-| Iago Sampaio  | Dev Team|
-| Matheus Fernandes | Dev Team |
+| Membro | Papel |
+|---|---|
+| Pablo Troli | Product Owner |
 | Yohan Ruiz | Scrum Master |
-
-
----
-
-## 💡 Proposta de Valor
-
-| Para quem | Dor atual | O que o Palácio Mental oferece |
-|---|---|---|
-| Estudante de tecnologia | Projetos ficam esquecidos após a entrega | Portfólio vivo, construído ao longo do curso |
-| Estudante iniciante | Não sabe o que os colegas mais avançados estão fazendo | Feed de projetos por categoria e nível |
-| Professor / orientador | Não tem visibilidade do progresso dos alunos fora da sala | Projetos públicos com histórico de atualizações |
-| Recrutador / empresa | Dificuldade de encontrar talentos acadêmicos emergentes | Perfis com projetos reais, comentados pela comunidade |
+| Felipe Figueiredo | Dev Team |
+| Iago Sampaio | Dev Team |
+| Matheus Fernandes | Dev Team |
 
 ---
 
-## 🛠️ Stack Tecnológica
+## Arquitetura
 
 | Camada | Tecnologia |
 |---|---|
-| Banco de Dados | MariaDB 11.8 (MySQL-compatible) |
-| Backend | A definir |
-| Frontend | A definir |
-| Design | Figma |
-| DevOps | Docker + GitHub Actions|
+| **Banco de Dados** | PostgreSQL / MySQL |
+| **Backend** | Python (Django) / Java (Spring Boot) |
+| **Frontend** | HTML5, CSS3, JavaScript — foco em acessibilidade e responsividade |
+| **Design & UX** | Figma (Modo Foco e baixa carga sensorial) |
+| **DevOps** | Docker + GitHub Actions (CI/CD) |
+
+### Backend
+Stack ainda em avaliação entre Django e Spring Boot, expondo API para o consumo do frontend e controle de permissões por papel de usuário.
+
+### Frontend
+Interface responsiva construída com foco em acessibilidade cognitiva, incluindo o Modo Foco como recurso nativo de redução de estímulos visuais.
+
+### DevOps
+Aplicação conteinerizada com Docker. CI/CD via GitHub Actions.
 
 ---
 
-## 🗃️ Modelagem de Banco de Dados
+## Modelagem de Dados
 
-### Entidades
-
-- **USUARIO** — perfis de criadores da plataforma
-- **PROJETO** — ideias e trabalhos publicados (entidade central)
-- **CATEGORIA** — classificação principal dos projetos
-- **TAG** — palavras-chave livres para descoberta
-- **COMENTARIO** — feedback da comunidade (entidade fraca)
-- **MIDIA** — arquivos e links associados aos projetos (entidade fraca)
-- **CURTIDA** — interação N:M entre USUARIO e PROJETO
-- **SALVO** — curadoria pessoal N:M entre USUARIO e PROJETO
-- **PROJETO_TAG** — tabela associativa N:M entre PROJETO e TAG
-
-### Diagramas e Documentação
+**Entidades:** `USUARIO` (papéis: administrador, coordenador, colaborador, participante, voluntário, visitante) · `ORGANIZACAO` · `INICIATIVA` (central) · `HISTORICO`/`ATUALIZACAO` · `CATEGORIA` & `TAG` · `COMENTARIO` (classificado) · `PERMISSAO`/`VISIBILIDADE`
 
 - Modelo Conceitual: `database/docs/modelo_conceitual_palaciomental.png`
-- Modelo Lógico: `database/docs/modelo_logico_palaciomentasl.png`
+- Modelo Lógico: `database/docs/modelo_logico_palaciomental.png`
 - Dicionário de Dados: `database/docs/dicionario_dados.md`
-- DDL MySQL: `database/mysql/palacio_mental_mysql.sql`
+- Scripts DDL: `database/scripts/`
 
 ---
 
-## 🔧 Como Contribuir
+## Regras e Princípios de Governança
 
-1. Leia o `Docs/GUIA_GITHUB_GESTAO.md` antes de qualquer coisa
+- **Finalidade social:** sem monetização sobre dados ou cobrança de funcionalidades essenciais
+- **Proteção e consentimento:** publicação de conteúdos e mídias de participantes exige autorização expressa da organização
+- **Modo Foco acessível:** funcionalidade nativa e gratuita, disponível a todos os usuários
+- **Portabilidade:** exportação de dados e relatórios da iniciativa em formatos legíveis
+
+---
+
+## Como Contribuir
+
+1. Leia `Docs/GUIA_GITHUB_GESTAO.md` antes de qualquer coisa
 2. Pegue uma issue do board (GitHub Projects)
-3. Crie uma branch: `feature/nome-da-feature` a partir de `develop`
-4. Abra Pull Request para `develop` com pelo menos 1 aprovação
-5. Nunca commite direto em `main` ou `develop`
+3. Crie uma branch a partir de `develop`: `feature/nome-da-feature` ou `fix/nome-do-bug`
+4. Abra Pull Request para `develop` solicitando revisão do time
+5. Commits diretos em `main` ou `develop` são bloqueados
+
+---
+
+## Instalação Local
+
+Pré-requisitos: [Git](https://git-scm.com/), [Python 3.x](https://www.python.org/) e um banco de dados PostgreSQL/MySQL rodando localmente.
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/DevTroli/palaciomental.git
+cd palaciomental
+
+# 2. Crie e ative um ambiente virtual
+python -m venv venv
+source venv/bin/activate      # Linux/Mac
+venv\Scripts\activate         # Windows
+
+# 3. Instale as dependências
+pip install -r requirements.txt
+
+# 4. Copie o arquivo de variáveis de ambiente
+cp .env.example .env
+# edite o .env com suas credenciais de banco de dados
+
+# 5. Rode as migrações
+python manage.py migrate
+
+# 6. Suba o servidor de desenvolvimento
+python manage.py runserver
+```
+
+A aplicação estará disponível em `http://localhost:8000`.
+
+> O frontend (HTML/CSS/JS) é servido pelo próprio Django via templates/arquivos estáticos nesta fase do projeto. Consulte `Docs/GUIA_GITHUB_GESTAO.md` para detalhes específicos do ambiente configurado.
 
 ---
 
