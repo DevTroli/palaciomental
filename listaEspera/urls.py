@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
-urlpatterns = [
+app_name = "listaEspera"
 
+urlpatterns = [
+    path("", v.index, name="index"),
 ]
