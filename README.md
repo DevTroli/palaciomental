@@ -70,9 +70,9 @@ Aplicação conteinerizada com Docker. CI/CD via GitHub Actions.
 
 ---
 
-## Instalação Local
+### Instalação Local
 
-Pré-requisitos: [Git](https://git-scm.com/), [Python 3.x](https://www.python.org/) e um banco de dados PostgreSQL/MySQL rodando localmente.
+Pré-requisitos: [Git](https://git-scm.com/), [Python 3.x](https://www.python.org/) e [Docker](https://www.docker.com/) (usado para rodar o banco de dados de forma isolada e idêntica para todo o time, sem precisar instalar PostgreSQL na máquina).
 
 ```bash
 # 1. Clone o repositório
@@ -91,16 +91,30 @@ pip install -r requirements.txt
 cp .env.example .env
 # edite o .env com suas credenciais de banco de dados
 
-# 5. Rode as migrações
+# 5. Suba o banco de dados via Docker
+docker compose up -d
+# isso inicia o PostgreSQL em background, usando as variáveis do seu .env
+
+# 6. Rode as migrações
 python manage.py migrate
 
-# 6. Suba o servidor de desenvolvimento
+# 7. Suba o servidor de desenvolvimento
 python manage.py runserver
 ```
 
 A aplicação estará disponível em `http://localhost:8000`.
 
 > O frontend (HTML/CSS/JS) é servido pelo próprio Django via templates/arquivos estáticos nesta fase do projeto. Consulte `Docs/GUIA_GITHUB_GESTAO.md` para detalhes específicos do ambiente configurado.
+
+**Comandos Docker úteis:**
+
+| Comando | O que faz |
+|---|---|
+| `docker compose up -d` | Sobe o banco em background |
+| `docker compose down` | Para e remove o container (dados persistem no volume) |
+| `docker compose down -v` | Para e **apaga** os dados do banco também |
+| `docker compose logs -f database` | Acompanha os logs do banco em tempo real |
+| `docker compose ps` | Mostra o status dos containers |
 
 ---
 
