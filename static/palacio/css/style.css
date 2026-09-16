@@ -1,0 +1,948 @@
+/* =====================================================
+           PALETA — PALÁCIO MENTAL
+        ===================================================== */
+
+        :root {
+            --purple: #542C72;
+            --purple-dark: #321943;
+            --purple-soft: #765491;
+
+            --green: #6C9B73;
+            --green-dark: #45694C;
+            --green-light: #E4EEE5;
+
+            --cream: #F7F4EE;
+            --white: #FFFFFF;
+
+            --text: #29242D;
+            --text-soft: #756D78;
+
+            --border: #E3DDE6;
+
+            --radius: 18px;
+            --radius-small: 10px;
+
+            --container: 1180px;
+        }
+
+
+        /* =====================================================
+           RESET
+        ===================================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--cream);
+            color: var(--text);
+            font-family: "Forum", serif;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+
+        /* =====================================================
+           LAYOUT
+        ===================================================== */
+
+        .container {
+            width: min(var(--container), calc(100% - 48px));
+            margin: 0 auto;
+        }
+
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
+
+        header {
+            height: 82px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(84, 44, 114, 0.08);
+            background: rgba(247, 244, 238, 0.92);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+
+        /* =====================================================
+           LOGO
+        ===================================================== */
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-symbol {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--purple);
+            display: grid;
+            place-items: center;
+            color: white;
+            position: relative;
+        }
+
+        /*
+           Símbolo simples de cérebro + arquitetura.
+           Pode ser substituído posteriormente pelo SVG
+           oficial da marca.
+        */
+
+        .logo-symbol::before {
+            content: "";
+            width: 19px;
+            height: 15px;
+            border: 2px solid white;
+            border-radius: 10px 10px 7px 7px;
+            position: absolute;
+        }
+
+        .logo-symbol::after {
+            content: "";
+            width: 2px;
+            height: 18px;
+            background: white;
+            position: absolute;
+        }
+
+        .logo-name {
+            font-family: "Cinzel", serif;
+            font-size: 19px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--purple-dark);
+        }
+
+
+        /* =====================================================
+           STATUS
+        ===================================================== */
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 8px 14px;
+
+            background: var(--green-light);
+            color: var(--green-dark);
+
+            border-radius: 100px;
+
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+
+        /* =====================================================
+           HERO
+        ===================================================== */
+
+        .hero {
+            min-height: 690px;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            align-items: center;
+            gap: 80px;
+
+            padding: 90px 0 110px;
+
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+
+            width: 550px;
+            height: 550px;
+
+            right: -230px;
+            top: -180px;
+
+            border: 1px solid rgba(84, 44, 114, 0.10);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+
+            margin-bottom: 22px;
+
+            color: var(--green-dark);
+
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow-line {
+            width: 28px;
+            height: 1px;
+            background: var(--green);
+        }
+
+        h1 {
+            max-width: 650px;
+
+            font-family: "Cinzel", serif;
+            font-size: clamp(42px, 5vw, 70px);
+            line-height: 1.08;
+            font-weight: 600;
+
+            color: var(--purple-dark);
+
+            margin-bottom: 25px;
+        }
+
+        h1 span {
+            color: var(--green-dark);
+        }
+
+        .hero-description {
+            max-width: 560px;
+
+            color: var(--text-soft);
+            font-size: 20px;
+
+            margin-bottom: 35px;
+        }
+
+
+        /* =====================================================
+           WAITLIST FORM
+        ===================================================== */
+
+        .waitlist-form {
+            display: flex;
+            max-width: 560px;
+
+            padding: 6px;
+
+            background: var(--white);
+
+            border: 1px solid var(--border);
+            border-radius: 14px;
+
+            box-shadow: 0 10px 35px rgba(50, 25, 67, 0.07);
+        }
+
+        .waitlist-form input {
+            flex: 1;
+
+            min-width: 0;
+
+            border: none;
+            outline: none;
+
+            padding: 14px 16px;
+
+            background: transparent;
+
+            color: var(--text);
+        }
+
+        .waitlist-form input::placeholder {
+            color: #A49CA7;
+        }
+
+        .primary-button {
+            border: none;
+            border-radius: 10px;
+
+            padding: 13px 22px;
+
+            background: var(--purple);
+
+            color: white;
+
+            cursor: pointer;
+
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+
+            transition: 0.2s ease;
+        }
+
+        .primary-button:hover {
+            background: var(--purple-dark);
+            transform: translateY(-1px);
+        }
+
+        .form-note {
+            margin-top: 12px;
+
+            color: #918992;
+
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+        }
+
+
+        /* =====================================================
+           HERO VISUAL
+        ===================================================== */
+
+        .hero-visual {
+            min-height: 470px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+        }
+
+        .palace {
+            width: 390px;
+            height: 390px;
+
+            background: var(--white);
+
+            border: 1px solid var(--border);
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+
+            box-shadow:
+                0 30px 70px rgba(50, 25, 67, 0.10);
+        }
+
+        .palace-inner {
+            width: 280px;
+            height: 280px;
+
+            border: 1px solid rgba(84, 44, 114, 0.20);
+
+            border-radius: 50%;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+        }
+
+        .palace-icon {
+            width: 80px;
+            height: 80px;
+
+            border-radius: 50%;
+
+            background: var(--purple);
+
+            display: grid;
+            place-items: center;
+
+            color: white;
+
+            font-family: "Cinzel", serif;
+            font-size: 28px;
+
+            margin-bottom: 18px;
+        }
+
+        .palace-title {
+            font-family: "Cinzel", serif;
+            font-size: 18px;
+            color: var(--purple-dark);
+        }
+
+        .palace-subtitle {
+            color: var(--text-soft);
+            font-size: 15px;
+        }
+
+
+        /* =====================================================
+           FLOATING CARDS
+        ===================================================== */
+
+        .floating-card {
+            position: absolute;
+
+            padding: 14px 17px;
+
+            background: white;
+
+            border: 1px solid var(--border);
+
+            border-radius: 12px;
+
+            box-shadow: 0 12px 30px rgba(50, 25, 67, 0.10);
+
+            font-family: Arial, sans-serif;
+
+            font-size: 11px;
+
+            animation: float 5s ease-in-out infinite;
+        }
+
+        .card-title {
+            color: var(--purple-dark);
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .card-info {
+            color: #918992;
+        }
+
+        .card-1 {
+            top: 30px;
+            left: 5px;
+        }
+
+        .card-2 {
+            top: 100px;
+            right: -10px;
+            animation-delay: 1s;
+        }
+
+        .card-3 {
+            bottom: 65px;
+            left: 0;
+            animation-delay: 2s;
+        }
+
+        .card-4 {
+            bottom: 15px;
+            right: 30px;
+            animation-delay: 3s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-7px);
+            }
+        }
+
+
+        /* =====================================================
+           SECTION
+        ===================================================== */
+
+        section {
+            padding: 100px 0;
+        }
+
+        .section-header {
+            max-width: 650px;
+            margin-bottom: 50px;
+        }
+
+        .section-label {
+            color: var(--green-dark);
+
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+
+            margin-bottom: 13px;
+        }
+
+        h2 {
+            font-family: "Cinzel", serif;
+            font-size: clamp(32px, 4vw, 48px);
+            line-height: 1.15;
+
+            color: var(--purple-dark);
+        }
+
+        .section-description {
+            color: var(--text-soft);
+            margin-top: 15px;
+            font-size: 18px;
+        }
+
+
+        /* =====================================================
+           FEATURES
+        ===================================================== */
+
+        .features {
+            background: white;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .feature {
+            padding: 30px;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            background: var(--cream);
+
+            transition: 0.25s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(50, 25, 67, 0.07);
+        }
+
+        .feature-number {
+            width: 36px;
+            height: 36px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 50%;
+
+            background: var(--green-light);
+            color: var(--green-dark);
+
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+
+            margin-bottom: 25px;
+        }
+
+        .feature h3 {
+            font-family: "Cinzel", serif;
+            color: var(--purple-dark);
+            font-size: 20px;
+
+            margin-bottom: 10px;
+        }
+
+        .feature p {
+            color: var(--text-soft);
+            font-size: 15px;
+        }
+
+
+        /* =====================================================
+           DEVELOPMENT
+        ===================================================== */
+
+        .development {
+            background: var(--purple-dark);
+            color: white;
+        }
+
+        .development h2 {
+            color: white;
+        }
+
+        .development .section-description {
+            color: #C8BCCF;
+        }
+
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+
+            position: relative;
+
+            margin-top: 70px;
+        }
+
+        .timeline::before {
+            content: "";
+
+            position: absolute;
+
+            top: 15px;
+            left: 0;
+            right: 0;
+
+            height: 1px;
+
+            background: rgba(255,255,255,0.20);
+        }
+
+        .stage {
+            position: relative;
+            padding-right: 25px;
+        }
+
+        .stage-dot {
+            width: 30px;
+            height: 30px;
+
+            border-radius: 50%;
+
+            background: var(--purple-dark);
+
+            border: 1px solid rgba(255,255,255,0.35);
+
+            margin-bottom: 20px;
+
+            position: relative;
+            z-index: 2;
+        }
+
+        .stage.active .stage-dot {
+            background: var(--green);
+            border-color: var(--green);
+            box-shadow: 0 0 0 7px rgba(108,155,115,0.14);
+        }
+
+        .stage small {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+
+            color: #AFA1B7;
+        }
+
+        .stage h3 {
+            font-family: "Cinzel", serif;
+            font-size: 19px;
+
+            margin: 5px 0;
+
+            color: white;
+        }
+
+        .stage p {
+            color: #AFA1B7;
+            font-size: 14px;
+        }
+
+
+        /* =====================================================
+           WHY WAITLIST
+        ===================================================== */
+
+        .wait-section {
+            text-align: center;
+        }
+
+        .wait-section .section-header {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .wait-box {
+            max-width: 760px;
+            margin: 0 auto;
+
+            padding: 45px;
+
+            background: white;
+
+            border: 1px solid var(--border);
+
+            border-radius: var(--radius);
+
+            box-shadow: 0 20px 60px rgba(50, 25, 67, 0.07);
+        }
+
+        .wait-box p {
+            color: var(--text-soft);
+            margin-bottom: 25px;
+        }
+
+        .wait-box .waitlist-form {
+            margin: 0 auto;
+        }
+
+
+        /* =====================================================
+           CONFIRMATION
+        ===================================================== */
+
+        .confirmation {
+            display: none;
+
+            text-align: center;
+        }
+
+        .confirmation.active {
+            display: block;
+        }
+
+        .check {
+            width: 60px;
+            height: 60px;
+
+            display: grid;
+            place-items: center;
+
+            margin: 0 auto 20px;
+
+            border-radius: 50%;
+
+            background: var(--green-light);
+
+            color: var(--green-dark);
+
+            font-size: 28px;
+        }
+
+        .confirmation h3 {
+            font-family: "Cinzel", serif;
+            color: var(--purple-dark);
+
+            font-size: 26px;
+
+            margin-bottom: 8px;
+        }
+
+        .confirmation p {
+            color: var(--text-soft);
+            font-size: 15px;
+        }
+
+
+        /* =====================================================
+           FOOTER
+        ===================================================== */
+
+        footer {
+            padding: 45px 0;
+
+            border-top: 1px solid var(--border);
+
+            background: var(--white);
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 30px;
+        }
+
+        .footer-description {
+            color: var(--text-soft);
+            font-size: 14px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 25px;
+
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+
+            color: var(--text-soft);
+        }
+
+        .footer-links a:hover {
+            color: var(--purple);
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 950px) {
+
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 50px;
+
+                padding-top: 70px;
+            }
+
+            .hero-content {
+                text-align: center;
+            }
+
+            .hero-description,
+            .waitlist-form {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .hero-visual {
+                min-height: 420px;
+            }
+
+        }
+
+
+        @media (max-width: 650px) {
+
+            body {
+                font-size: 16px;
+            }
+
+            .container {
+                width: min(100% - 32px, var(--container));
+            }
+
+            header {
+                height: 70px;
+            }
+
+            .status {
+                display: none;
+            }
+
+            .hero {
+                padding: 60px 0 80px;
+                min-height: auto;
+            }
+
+            h1 {
+                font-size: 40px;
+            }
+
+            .hero-description {
+                font-size: 17px;
+            }
+
+            .waitlist-form {
+                flex-direction: column;
+
+                padding: 8px;
+            }
+
+            .waitlist-form input {
+                padding: 14px;
+            }
+
+            .primary-button {
+                width: 100%;
+            }
+
+            .hero-visual {
+                min-height: 350px;
+            }
+
+            .palace {
+                width: 290px;
+                height: 290px;
+            }
+
+            .palace-inner {
+                width: 210px;
+                height: 210px;
+            }
+
+            .floating-card {
+                transform: scale(0.85);
+            }
+
+            .card-1 {
+                left: -10px;
+            }
+
+            .card-2 {
+                right: -20px;
+            }
+
+            section {
+                padding: 75px 0;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline {
+                grid-template-columns: 1fr;
+                gap: 30px;
+                margin-top: 40px;
+            }
+
+            .timeline::before {
+                top: 0;
+                bottom: 0;
+                left: 14px;
+                width: 1px;
+                height: auto;
+            }
+
+            .stage {
+                padding-left: 55px;
+            }
+
+            .stage-dot {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+            .wait-box {
+                padding: 28px 20px;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+            }
+        }
