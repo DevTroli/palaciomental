@@ -1,1 +1,549 @@
-<h1> ta funcionando</h1>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PalÃ¡cio Mental â€” Lista de Espera</title>
+
+    <!-- Tipografia da identidade -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Forum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'palacio/css/style.css' %}">
+</head>
+
+<body>
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header>
+
+        <div class="container nav">
+
+            <a href="#" class="logo">
+
+                <div class="logo-symbol">
+                    â—‡
+                </div>
+
+                <div class="logo-name">
+                    PalÃ¡cio Mental
+                </div>
+
+            </a>
+
+            <div class="status">
+                <span class="status-dot"></span>
+                Em desenvolvimento
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         HERO
+    ====================================================== -->
+
+    <main>
+
+        <section class="hero container">
+
+            <div class="hero-content">
+
+                <div class="eyebrow">
+                    <span class="eyebrow-line"></span>
+                    Um espaÃ§o para suas ideias
+                </div>
+
+                <h1>
+                    Suas ideias merecem
+                    <span>um lugar para crescer.</span>
+                </h1>
+
+                <p class="hero-description">
+                    O PalÃ¡cio Mental Ã© uma plataforma para organizar,
+                    desenvolver e compartilhar projetos, ideias e criaÃ§Ãµes.
+                    Um espaÃ§o onde aquilo que vocÃª imagina pode evoluir.
+                </p>
+
+
+                <!-- FORM -->
+
+                <form class="waitlist-form" id="waitlistForm" method="post">
+                    {% csrf_token %}
+
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="Seu melhor e-mail"
+                        required
+                    >
+
+                    <button class="primary-button" type="submit">
+                        Entrar na lista
+                    </button>
+
+                </form>
+
+                <div class="form-note">
+                    Sem conta. Sem complicaÃ§Ã£o. Apenas interesse.
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 VISUAL
+            ================================================== -->
+
+            <div class="hero-visual">
+
+                <div class="palace">
+
+                    <div class="palace-inner">
+
+                        <div class="palace-icon">
+                            PM
+                        </div>
+
+                        <div class="palace-title">
+                            PalÃ¡cio Mental
+                        </div>
+
+                        <div class="palace-subtitle">
+                            ideias em construÃ§Ã£o
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="floating-card card-1">
+
+                    <div class="card-title">
+                        Projeto
+                    </div>
+
+                    <div class="card-info">
+                        Trabalho acadÃªmico
+                    </div>
+
+                </div>
+
+
+                <div class="floating-card card-2">
+
+                    <div class="card-title">
+                        Nova versÃ£o
+                    </div>
+
+                    <div class="card-info">
+                        Atualizado hoje
+                    </div>
+
+                </div>
+
+
+                <div class="floating-card card-3">
+
+                    <div class="card-title">
+                        Colaboradores
+                    </div>
+
+                    <div class="card-info">
+                        + 3 pessoas
+                    </div>
+
+                </div>
+
+
+                <div class="floating-card card-4">
+
+                    <div class="card-title">
+                        CurrÃ­culo mental
+                    </div>
+
+                    <div class="card-info">
+                        12 projetos
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             FEATURES
+        ====================================================== -->
+
+        <section class="features">
+
+            <div class="container">
+
+                <div class="section-header">
+
+                    <div class="section-label">
+                        O que Ã© o PalÃ¡cio Mental
+                    </div>
+
+                    <h2>
+                        Um lugar para transformar
+                        pensamentos em projetos.
+                    </h2>
+
+                    <p class="section-description">
+                        Uma plataforma pensada para pessoas que criam,
+                        estudam, pesquisam, experimentam e querem acompanhar
+                        a evoluÃ§Ã£o das prÃ³prias ideias.
+                    </p>
+
+                </div>
+
+
+                <div class="feature-grid">
+
+                    <article class="feature">
+
+                        <div class="feature-number">
+                            01
+                        </div>
+
+                        <h3>
+                            Organize seus projetos
+                        </h3>
+
+                        <p>
+                            ReÃºna trabalhos, ideias, textos e criaÃ§Ãµes
+                            em um Ãºnico espaÃ§o simples de entender.
+                        </p>
+
+                    </article>
+
+
+                    <article class="feature">
+
+                        <div class="feature-number">
+                            02
+                        </div>
+
+                        <h3>
+                            Acompanhe sua evoluÃ§Ã£o
+                        </h3>
+
+                        <p>
+                            Registre versÃµes e acompanhe como uma ideia
+                            muda desde o primeiro rascunho atÃ© o resultado.
+                        </p>
+
+                    </article>
+
+
+                    <article class="feature">
+
+                        <div class="feature-number">
+                            03
+                        </div>
+
+                        <h3>
+                            Encontre colaboradores
+                        </h3>
+
+                        <p>
+                            Descubra pessoas, projetos e ideias que podem
+                            se conectar com aquilo que vocÃª estÃ¡ criando.
+                        </p>
+
+                    </article>
+
+
+                    <article class="feature">
+
+                        <div class="feature-number">
+                            04
+                        </div>
+
+                        <h3>
+                            Construa seu currÃ­culo mental
+                        </h3>
+
+                        <p>
+                            Mostre nÃ£o apenas o que vocÃª terminou,
+                            mas tambÃ©m aquilo que vocÃª pensou e construiu.
+                        </p>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             DEVELOPMENT
+        ====================================================== -->
+
+        <section class="development">
+
+            <div class="container">
+
+                <div class="section-header">
+
+                    <div class="section-label">
+                        Desenvolvimento
+                    </div>
+
+                    <h2>
+                        Estamos construindo o primeiro salÃ£o.
+                    </h2>
+
+                    <p class="section-description">
+                        O PalÃ¡cio Mental ainda estÃ¡ em desenvolvimento.
+                        Neste momento estamos transformando o conceito
+                        em um protÃ³tipo e validando a experiÃªncia.
+                    </p>
+
+                </div>
+
+
+                <div class="timeline">
+
+                    <div class="stage">
+
+                        <div class="stage-dot"></div>
+
+                        <small>
+                            Etapa 01
+                        </small>
+
+                        <h3>
+                            Conceito
+                        </h3>
+
+                        <p>
+                            Ideia e visÃ£o da plataforma.
+                        </p>
+
+                    </div>
+
+
+                    <div class="stage active">
+
+                        <div class="stage-dot"></div>
+
+                        <small>
+                            Etapa 02 Â· atual
+                        </small>
+
+                        <h3>
+                            ProtÃ³tipo
+                        </h3>
+
+                        <p>
+                            ConstruÃ§Ã£o e testes da primeira versÃ£o.
+                        </p>
+
+                    </div>
+
+
+                    <div class="stage active">
+
+                        <div class="stage-dot"></div>
+
+                        <small>
+                            Etapa 03
+                        </small>
+
+                        <h3>
+                            ValidaÃ§Ã£o
+                        </h3>
+
+                        <p>
+                            Descobrir o que realmente funciona.
+                        </p>
+
+                    </div>
+
+
+                    <div class="stage">
+
+                        <div class="stage-dot"></div>
+
+                        <small>
+                            Etapa 04
+                        </small>
+
+                        <h3>
+                            LanÃ§amento
+                        </h3>
+
+                        <p>
+                            Abrir as portas do PalÃ¡cio.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             WAITLIST
+        ====================================================== -->
+
+        <section class="wait-section">
+
+            <div class="container">
+
+                <div class="section-header">
+
+                    <div class="section-label">
+                        Lista de espera
+                    </div>
+
+                    <h2>
+                        Quer entrar antes das portas abrirem?
+                    </h2>
+
+                    <p class="section-description">
+                        Entre na lista de espera para acompanhar o
+                        desenvolvimento do PalÃ¡cio Mental e receber
+                        novidades quando houver novidades.
+                    </p>
+
+                </div>
+
+
+                <div class="wait-box" id="waitBox">
+
+                    <div id="formState">
+
+                        <p>
+                            VocÃª nÃ£o precisa criar uma conta agora.
+                            Basta deixar seu e-mail.
+                        </p>
+
+                        <form class="waitlist-form" id="waitlistFormBottom" method="post">
+                            {% csrf_token %}
+
+                            <input
+                                type="email"
+                                placeholder="Seu melhor e-mail"
+                                required
+                            >
+
+                            <button
+                                class="primary-button"
+                                type="submit"
+                            >
+                                Quero acompanhar
+                            </button>
+
+                        </form>
+
+                    </div>
+
+
+                    <!-- CONFIRMAÃ‡ÃƒO -->
+
+                    <div class="confirmation" id="confirmation">
+
+                        <div class="check">
+                            âœ“
+                        </div>
+
+                        <h3>
+                            VocÃª estÃ¡ na lista!
+                        </h3>
+
+                        <p>
+                            Obrigado por acreditar no PalÃ¡cio Mental.
+                            Avisaremos quando houver novidades.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer>
+
+        <div class="container footer-content">
+
+            <div>
+
+                <div class="logo">
+
+                    <div class="logo-symbol">
+                        â—‡
+                    </div>
+
+                    <div class="logo-name">
+                        PalÃ¡cio Mental
+                    </div>
+
+                </div>
+
+                <p class="footer-description">
+                    Um lugar para guardar, desenvolver e conectar ideias.
+                </p>
+
+            </div>
+
+
+            <nav class="footer-links">
+
+                <a href="#">
+                    Sobre
+                </a>
+
+                <a href="#">
+                    Projeto
+                </a>
+
+                <a href="#">
+                    Contato
+                </a>
+
+                <span>
+                    Â© 2026
+                </span>
+
+            </nav>
+
+        </div>
+
+    </footer>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script src="{% static 'palacio/js/main.js' %}"></script>
+
+</body>
+</html>

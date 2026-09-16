@@ -95,6 +95,9 @@ cp .env.example .env
 docker compose up -d
 # isso inicia o PostgreSQL em background, usando as variáveis do seu .env
 
+#5.5. the coop
+p
+
 # 6. Rode as migrações
 python manage.py migrate
 
