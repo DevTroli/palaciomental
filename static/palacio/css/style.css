@@ -98,6 +98,14 @@
             gap: 12px;
         }
 
+        .logo-img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            display: block;
+            background: transparent;
+        }
+
         .logo-symbol {
             width: 42px;
             height: 42px;
@@ -292,6 +300,31 @@
             color: #A49CA7;
         }
 
+        /* Formulário de cadastro: nome / telefone / e-mail empilhados */
+        .waitlist-form--stack {
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .waitlist-form--stack input {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--cream);
+            padding: 13px 16px;
+        }
+
+        .waitlist-form--stack input:focus {
+            border-color: var(--purple-soft);
+            background: var(--white);
+        }
+
+        .waitlist-form--stack .primary-button {
+            width: 100%;
+            padding: 14px 22px;
+            margin-top: 4px;
+        }
+
         .primary-button {
             border: none;
             border-radius: 10px;
@@ -316,13 +349,30 @@
             transform: translateY(-1px);
         }
 
-        .form-note {
+        .consent {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            max-width: 560px;
+
             margin-top: 12px;
 
             color: #918992;
 
             font-family: Arial, sans-serif;
-            font-size: 11px;
+            font-size: 12px;
+            line-height: 1.5;
+
+            cursor: pointer;
+        }
+
+        .consent input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
+            accent-color: var(--purple);
+            cursor: pointer;
         }
 
 
@@ -376,6 +426,15 @@
             position: relative;
         }
 
+        .palace-logo {
+            width: 120px;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            margin-bottom: 18px;
+            background: transparent;
+        }
+
         .palace-icon {
             width: 80px;
             height: 80px;
@@ -414,7 +473,7 @@
         .floating-card {
             position: absolute;
 
-            padding: 14px 17px;
+            padding: 16px 19px;
 
             background: white;
 
@@ -426,7 +485,7 @@
 
             font-family: Arial, sans-serif;
 
-            font-size: 11px;
+            font-size: 13px;
 
             animation: float 5s ease-in-out infinite;
         }
@@ -434,11 +493,13 @@
         .card-title {
             color: var(--purple-dark);
             font-weight: 700;
+            font-size: 14px;
             margin-bottom: 3px;
         }
 
         .card-info {
             color: #918992;
+            font-size: 12px;
         }
 
         .card-1 {
@@ -448,7 +509,7 @@
 
         .card-2 {
             top: 100px;
-            right: -10px;
+            right: 15px;
             animation-delay: 1s;
         }
 
@@ -462,6 +523,18 @@
             bottom: 15px;
             right: 30px;
             animation-delay: 3s;
+        }
+
+        .card-5 {
+            top: 195px;
+            left: -18px;
+            animation-delay: 4s;
+        }
+
+        .card-6 {
+            top: 215px;
+            right: 5px;
+            animation-delay: 5s;
         }
 
         @keyframes float {
@@ -517,11 +590,25 @@
 
 
         /* =====================================================
-           FEATURES
+           FEATURES — fundo roxo
         ===================================================== */
 
         .features {
-            background: white;
+            background: var(--purple-dark);
+            color: white;
+        }
+
+        .features .section-label {
+            color: var(--green-light);
+        }
+
+        .features h2 {
+            color: white;
+        }
+
+        .features .section-description {
+            color: #C8BCCF;
+            font-size: 21px;
         }
 
         .feature-grid {
@@ -533,18 +620,19 @@
         .feature {
             padding: 30px;
 
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.14);
 
             border-radius: var(--radius);
 
-            background: var(--cream);
+            background: rgba(255, 255, 255, 0.06);
 
             transition: 0.25s ease;
         }
 
         .feature:hover {
             transform: translateY(-4px);
-            box-shadow: 0 15px 35px rgba(50, 25, 67, 0.07);
+            background: rgba(255, 255, 255, 0.09);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
         }
 
         .feature-number {
@@ -568,164 +656,187 @@
 
         .feature h3 {
             font-family: "Cinzel", serif;
-            color: var(--purple-dark);
+            color: white;
             font-size: 20px;
 
             margin-bottom: 10px;
         }
 
         .feature p {
-            color: var(--text-soft);
-            font-size: 15px;
-        }
-
-
-        /* =====================================================
-           DEVELOPMENT
-        ===================================================== */
-
-        .development {
-            background: var(--purple-dark);
-            color: white;
-        }
-
-        .development h2 {
-            color: white;
-        }
-
-        .development .section-description {
             color: #C8BCCF;
-        }
-
-        .timeline {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-
-            position: relative;
-
-            margin-top: 70px;
-        }
-
-        .timeline::before {
-            content: "";
-
-            position: absolute;
-
-            top: 15px;
-            left: 0;
-            right: 0;
-
-            height: 1px;
-
-            background: rgba(255,255,255,0.20);
-        }
-
-        .stage {
-            position: relative;
-            padding-right: 25px;
-        }
-
-        .stage-dot {
-            width: 30px;
-            height: 30px;
-
-            border-radius: 50%;
-
-            background: var(--purple-dark);
-
-            border: 1px solid rgba(255,255,255,0.35);
-
-            margin-bottom: 20px;
-
-            position: relative;
-            z-index: 2;
-        }
-
-        .stage.active .stage-dot {
-            background: var(--green);
-            border-color: var(--green);
-            box-shadow: 0 0 0 7px rgba(108,155,115,0.14);
-        }
-
-        .stage small {
-            font-family: Arial, sans-serif;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-
-            color: #AFA1B7;
-        }
-
-        .stage h3 {
-            font-family: "Cinzel", serif;
-            font-size: 19px;
-
-            margin: 5px 0;
-
-            color: white;
-        }
-
-        .stage p {
-            color: #AFA1B7;
-            font-size: 14px;
+            font-size: 17px;
         }
 
 
         /* =====================================================
-           WHY WAITLIST
+           DIFERENÇA — tabela comparativa
         ===================================================== */
 
-        .wait-section {
-            text-align: center;
+        .difference {
+            background: var(--white);
         }
 
-        .wait-section .section-header {
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .wait-box {
-            max-width: 760px;
-            margin: 0 auto;
-
-            padding: 45px;
-
-            background: white;
+        .table-wrap {
+            overflow-x: auto;
 
             border: 1px solid var(--border);
-
             border-radius: var(--radius);
 
             box-shadow: 0 20px 60px rgba(50, 25, 67, 0.07);
         }
 
-        .wait-box p {
-            color: var(--text-soft);
-            margin-bottom: 25px;
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
+
+            background: var(--white);
         }
 
-        .wait-box .waitlist-form {
-            margin: 0 auto;
+        .diff-table th,
+        .diff-table td {
+            padding: 18px 20px;
+            text-align: left;
+            vertical-align: top;
+
+            border-bottom: 1px solid var(--border);
+        }
+
+        .diff-table thead th {
+            background: var(--purple-dark);
+            color: white;
+
+            font-family: "Cinzel", serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+
+            border-bottom: none;
+            white-space: nowrap;
+        }
+
+        .diff-table thead th small {
+            display: block;
+
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            font-weight: 400;
+
+            color: #C8BCCF;
+        }
+
+        .diff-table tbody tr:last-child th,
+        .diff-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .diff-table tbody tr:nth-child(even) {
+            background: rgba(84, 44, 114, 0.03);
+        }
+
+        .diff-table .factor {
+            font-weight: 700;
+            color: var(--purple-dark);
+            white-space: nowrap;
+        }
+
+        .diff-table td.highlight {
+            background: var(--green-light);
+            color: var(--green-dark);
+            font-weight: 600;
+        }
+
+        .diff-table thead th.highlight {
+            background: var(--green-dark);
+        }
+
+        .action {
+            display: inline-block;
+            padding: 5px 14px;
+
+            border-radius: 100px;
+
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+
+            white-space: nowrap;
+        }
+
+        .action-reduce {
+            background: #F5EAD3;
+            color: #8A5E1D;
+        }
+
+        .action-eliminate {
+            background: #F6E2E2;
+            color: #A33F3F;
+        }
+
+        .action-raise {
+            background: #E2EBF6;
+            color: #3F6FA3;
+        }
+
+        .action-create {
+            background: var(--green-light);
+            color: var(--green-dark);
         }
 
 
         /* =====================================================
-           CONFIRMATION
+           POPUP DE REGISTRO + FESTA
         ===================================================== */
 
-        .confirmation {
+        .popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+
             display: none;
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            background: rgba(50, 25, 67, 0.55);
+            backdrop-filter: blur(3px);
+        }
+
+        .popup-overlay.active {
+            display: flex;
+        }
+
+        .popup {
+            width: min(440px, 100%);
+
+            padding: 45px 40px;
+
+            background: var(--white);
+
+            border-radius: 20px;
+
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
 
             text-align: center;
+
+            animation: popIn 0.35s ease;
         }
 
-        .confirmation.active {
-            display: block;
+        @keyframes popIn {
+            from {
+                transform: scale(0.85) translateY(12px);
+                opacity: 0;
+            }
         }
 
-        .check {
-            width: 60px;
-            height: 60px;
+        .popup-check {
+            width: 70px;
+            height: 70px;
 
             display: grid;
             place-items: center;
@@ -735,24 +846,52 @@
             border-radius: 50%;
 
             background: var(--green-light);
+            color: var(--green-dark);
+
+            font-size: 34px;
+        }
+
+        .popup h3 {
+            font-family: "Cinzel", serif;
+            font-size: 26px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+
+            color: var(--purple-dark);
+
+            margin-bottom: 10px;
+        }
+
+        .popup-subtitle {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
 
             color: var(--green-dark);
 
-            font-size: 28px;
+            margin-bottom: 28px;
         }
 
-        .confirmation h3 {
-            font-family: "Cinzel", serif;
-            color: var(--purple-dark);
-
-            font-size: 26px;
-
-            margin-bottom: 8px;
+        .popup .primary-button {
+            width: 100%;
+            padding: 14px 22px;
         }
 
-        .confirmation p {
-            color: var(--text-soft);
-            font-size: 15px;
+        #partyCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: 1001;
+
+            width: 100%;
+            height: 100%;
+
+            display: none;
+            pointer-events: none;
+        }
+
+        #partyCanvas.active {
+            display: block;
         }
 
 
@@ -763,9 +902,10 @@
         footer {
             padding: 45px 0;
 
-            border-top: 1px solid var(--border);
+            border-top: 1px solid rgba(255, 255, 255, 0.14);
 
-            background: var(--white);
+            background: var(--purple-dark);
+            color: white;
         }
 
         .footer-content {
@@ -776,8 +916,20 @@
             gap: 30px;
         }
 
+        footer .logo-img {
+            width: 52px;
+            height: 52px;
+            padding: 7px;
+            border-radius: 50%;
+            background: var(--white);
+        }
+
+        footer .logo-name {
+            color: white;
+        }
+
         .footer-description {
-            color: var(--text-soft);
+            color: #C8BCCF;
             font-size: 14px;
         }
 
@@ -788,11 +940,15 @@
             font-family: Arial, sans-serif;
             font-size: 12px;
 
-            color: var(--text-soft);
+            color: #C8BCCF;
         }
 
         .footer-links a:hover {
-            color: var(--purple);
+            color: white;
+        }
+
+        .footer-links span {
+            color: #AFA1B7;
         }
 
 
@@ -898,7 +1054,15 @@
             }
 
             .card-2 {
-                right: -20px;
+                right: 0;
+            }
+
+            .card-5 {
+                left: 0;
+            }
+
+            .card-6 {
+                right: 0;
             }
 
             section {
@@ -909,32 +1073,49 @@
                 grid-template-columns: 1fr;
             }
 
-            .timeline {
-                grid-template-columns: 1fr;
-                gap: 30px;
-                margin-top: 40px;
+            .diff-table thead {
+                display: none;
             }
 
-            .timeline::before {
-                top: 0;
-                bottom: 0;
-                left: 14px;
-                width: 1px;
-                height: auto;
+            .diff-table,
+            .diff-table tbody,
+            .diff-table tr,
+            .diff-table td {
+                display: block;
+                width: 100%;
             }
 
-            .stage {
-                padding-left: 55px;
+            .diff-table tbody tr {
+                padding: 6px 0;
+                border-bottom: 1px solid var(--border);
             }
 
-            .stage-dot {
-                position: absolute;
-                left: 0;
-                top: 0;
+            .diff-table tbody tr:last-child {
+                border-bottom: none;
             }
 
-            .wait-box {
-                padding: 28px 20px;
+            .diff-table td {
+                border-bottom: none;
+                padding: 8px 20px;
+            }
+
+            .diff-table td::before {
+                content: attr(data-label);
+                display: block;
+
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+
+                color: var(--purple-soft);
+                margin-bottom: 4px;
+            }
+
+            .diff-table td.highlight {
+                border-radius: 10px;
+                margin: 4px 10px 12px;
+                width: auto;
             }
 
             .footer-content {
