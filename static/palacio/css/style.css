@@ -636,8 +636,8 @@
         }
 
         .feature-number {
-            width: 36px;
-            height: 36px;
+            width: 43px;
+            height: 43px;
 
             display: grid;
             place-items: center;
@@ -648,7 +648,7 @@
             color: var(--green-dark);
 
             font-family: Arial, sans-serif;
-            font-size: 11px;
+            font-size: 18px;
             font-weight: 700;
 
             margin-bottom: 25px;
@@ -931,6 +931,7 @@
         .footer-description {
             color: #C8BCCF;
             font-size: 14px;
+            margin-top: 14px;
         }
 
         .footer-links {
@@ -980,7 +981,24 @@
             }
 
             .hero-visual {
-                min-height: 420px;
+                min-height: 0;
+
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                align-content: start;
+            }
+
+            .palace {
+                grid-column: 1 / -1;
+                justify-self: center;
+                margin-bottom: 12px;
+            }
+
+            /* Em telas menores os cards saem do absoluto e viram
+               grade fixa: impossível sobrepor um ao outro. */
+            .floating-card {
+                position: static;
             }
 
         }
@@ -1032,7 +1050,7 @@
             }
 
             .hero-visual {
-                min-height: 350px;
+                min-height: 0;
             }
 
             .palace {
@@ -1043,26 +1061,6 @@
             .palace-inner {
                 width: 210px;
                 height: 210px;
-            }
-
-            .floating-card {
-                transform: scale(0.85);
-            }
-
-            .card-1 {
-                left: -10px;
-            }
-
-            .card-2 {
-                right: 0;
-            }
-
-            .card-5 {
-                left: 0;
-            }
-
-            .card-6 {
-                right: 0;
             }
 
             section {
