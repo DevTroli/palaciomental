@@ -70,54 +70,68 @@ Aplicação conteinerizada com Docker. CI/CD via GitHub Actions.
 
 ---
 
-### Instalação Local
+### Instalação Rápida (Docker Compose — Recomendado)
 
-Pré-requisitos: [Git](https://git-scm.com/), [Python 3.x](https://www.python.org/) e [Docker](https://www.docker.com/) (usado para rodar o banco de dados de forma isolada e idêntica para todo o time, sem precisar instalar PostgreSQL na máquina).
+Pré-requisitos: [Git](https://git-scm.com/) e [Docker](https://www.docker.com/) + Docker Compose.
 
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/DevTroli/palaciomental.git
 cd palaciomental
 
-# 2. Crie e ative um ambiente virtual
-python -m venv venv
-source venv/bin/activate      # Linux/Mac
-venv\Scripts\activate         # Windows
-
-# 3. Instale as dependências
-pip install -r requirements.txt
-
-# 4. Copie o arquivo de variáveis de ambiente
+# 2. Configure variáveis de ambiente
 cp .env.example .env
-# edite o .env com suas credenciais de banco de dados
+# (as defaults já funcionam para desenvolvimento)
 
-# 5. Suba o banco de dados via Docker
-docker compose up -d
-# isso inicia o PostgreSQL em background, usando as variáveis do seu .env
+# 3. Suba tudo de uma vez
+docker compose up --build -d
+```
 
-#5.5. the coop
-p
+| Serviço | URL | Descrição |
+|---|---|---|
+| **Django** | http://localhost:8000 | Frontend (Lista de Espera) + API REST |
+| **Spring Boot** | http://localhost:8080/actuator/health | API de status/saúde |
+| **PostgreSQL** | localhost:5433 | Banco de dados (credenciais no `.env`) |
 
-# 6. Rode as migrações
+> O `docker compose` sobe os 3 serviços com healthchecks: banco → Django → API Java. O Django roda migrações automaticamente no entrypoint.
+
+---
+
+### Desenvolvimento com Hot-Reload (Opcional)
+
+Se quiser editar código Django e ver mudanças instantâneas sem rebuild:
+
+```bash
+# 1. Suba apenas o banco
+docker compose up -d database
+
+# 2. Ambiente virtual local
+python -m venv venv && source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate  # Windows
+
+# 3. Dependências e migrações
+pip install -r requirements.txt
 python manage.py migrate
 
-# 7. Suba o servidor de desenvolvimento
+# 4. Runserver com hot-reload
 python manage.py runserver
 ```
 
-A aplicação estará disponível em `http://localhost:8000`.
+> A API Java (`status_api`) continua no Docker se quiser — basta não derrubar o container dela (`docker compose up -d status_api`).
 
-> O frontend (HTML/CSS/JS) é servido pelo próprio Django via templates/arquivos estáticos nesta fase do projeto. Consulte `Docs/GUIA_GITHUB_GESTAO.md` para detalhes específicos do ambiente configurado.
+---
 
-**Comandos Docker úteis:**
+**Comandos Docker do dia a dia:**
 
 | Comando | O que faz |
 |---|---|
-| `docker compose up -d` | Sobe o banco em background |
-| `docker compose down` | Para e remove o container (dados persistem no volume) |
-| `docker compose down -v` | Para e **apaga** os dados do banco também |
-| `docker compose logs -f database` | Acompanha os logs do banco em tempo real |
-| `docker compose ps` | Mostra o status dos containers |
+| `docker compose up --build -d` | Sobe **tudo** (DB + Django + API Java) |
+| `docker compose up -d database` | Sobe só o PostgreSQL |
+| `docker compose down` | Para tudo (dados persistem no volume `pgdata`) |
+| `docker compose down -v` | Para e **apaga** dados do banco |
+| `docker compose logs -f django` | Logs do Django em tempo real |
+| `docker compose logs -f status_api` | Logs da API Java |
+| `docker compose ps` | Status de todos os containers |
 
 ---
 
