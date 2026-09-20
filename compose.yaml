@@ -8,7 +8,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U palacio_user -d palacio_mental"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -18,14 +18,17 @@ services:
       context: .
     env_file:
       - .env
-    environment:
-      - POSTGRES_HOST=database
-      - POSTGRES_PORT=5432
     ports:
       - "8000:8000"
     depends_on:
       database:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/saude')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     volumes:
       - .:/app
 
@@ -38,6 +41,8 @@ services:
       - .env
     depends_on:
       database:
+        condition: service_healthy
+      django:
         condition: service_healthy
 
 volumes:
