@@ -1,9 +1,28 @@
 *.log
 .env 
 .venv 
-env/ 
-venv/ 
-ENV/ 
-env.bak/ 
-venv.bak/
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Staticfiles
+staticfiles/
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
