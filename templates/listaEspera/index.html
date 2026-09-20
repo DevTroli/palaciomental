@@ -1,519 +1,441 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Palácio Mental — Lista de Espera</title>
+  <title>Palácio Mental — Lista de Espera</title>
 
-    <!-- Tipografia da identidade -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Forum&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'palacio/css/style.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Forum&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 
 <body>
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+  <header>
 
-    <header>
+    <div class="container nav">
 
-        <div class="container nav">
+      <a href="/" class="logo">
 
-            <a href="#" class="logo">
+        <img class="logo-img" src="{% static 'img/mind_palace_logo.png' %}" alt="Palácio Mental">
 
-                <img class="logo-img" src="{% static 'palacio/img/mind_palace_logo.png' %}" alt="Palácio Mental">
-
-                <div class="logo-name">
-                    Palácio Mental
-                </div>
-
-            </a>
-
-            <div class="status">
-                <span class="status-dot"></span>
-                Em desenvolvimento
-            </div>
-
+        <div class="logo-name">
+          Palácio Mental
         </div>
 
-    </header>
-
-
-    <!-- =====================================================
-         HERO
-    ====================================================== -->
-
-    <main>
-
-        <section class="hero container">
-
-            <div class="hero-content">
-
-                <div class="eyebrow">
-                    <span class="eyebrow-line"></span>
-                    Um espaço para suas ideias
-                </div>
-
-                <h1>
-                    Suas ideias merecem
-                    <span>um lugar para crescer.</span>
-                </h1>
-
-                <p class="hero-description">
-                    O Palácio Mental é uma plataforma para organizar,
-                    desenvolver e compartilhar projetos, ideias e criações.
-                    Um espaço onde aquilo que você imagina pode evoluir.
-                </p>
-
-
-                <!-- FORM -->
-
-                <form class="waitlist-form waitlist-form--stack" id="waitlistForm" method="post">
-                    {% csrf_token %}
-
-                    <input
-                        type="text"
-                        id="nome"
-                        name="nome"
-                        placeholder="Seu nome"
-                        autocomplete="name"
-                        required
-                    >
-
-                    <input
-                        type="tel"
-                        id="telefone"
-                        name="telefone"
-                        placeholder="(00) 00000-0000"
-                        autocomplete="tel"
-                        inputmode="numeric"
-                        pattern="\(\d{2}\) \d{5}-\d{4}"
-                        maxlength="15"
-                        title="Digite no formato (DD) 00000-0000"
-                        required
-                    >
-
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="Seu melhor e-mail"
-                        autocomplete="email"
-                        required
-                    >
-
-                    <button class="primary-button" type="submit">
-                        Entrar na lista
-                    </button>
-
-                </form>
-
-                <label class="consent">
-                    <input
-                        type="checkbox"
-                        id="consent"
-                        name="consent"
-                        form="waitlistForm"
-                        required
-                    >
-                    <span>
-                        Concordo em ser contatado(a) e autorizo o uso dos
-                        meus dados (nome, telefone e e-mail) para novidades
-                        do Palácio Mental, nos termos da LGPD.
-                    </span>
-                </label>
-
-            </div>
-
-
-            <!-- =================================================
-                 VISUAL
-            ================================================== -->
-
-            <div class="hero-visual">
-
-                <div class="palace">
-
-                    <div class="palace-inner">
-
-                        <img class="palace-logo" src="{% static 'palacio/img/mind_palace_logo.png' %}" alt="Palácio Mental">
-
-                        <div class="palace-title">
-                            Palácio Mental
-                        </div>
-
-                        <div class="palace-subtitle">
-                            ideias em construção
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="floating-card card-1">
-
-                    <div class="card-title">
-                        Projeto
-                    </div>
-
-                    <div class="card-info">
-                        Trabalho acadêmico
-                    </div>
-
-                </div>
-
-
-                <div class="floating-card card-2">
-
-                    <div class="card-title">
-                        Nova versão
-                    </div>
-
-                    <div class="card-info">
-                        Atualizado hoje
-                    </div>
-
-                </div>
-
-
-                <div class="floating-card card-3">
-
-                    <div class="card-title">
-                        Colaboradores
-                    </div>
-
-                    <div class="card-info">
-                        + 3 pessoas
-                    </div>
-
-                </div>
-
-
-                <div class="floating-card card-4">
-
-                    <div class="card-title">
-                        Currículo mental
-                    </div>
-
-                    <div class="card-info">
-                        12 projetos
-                    </div>
-
-                </div>
-
-
-                <div class="floating-card card-5">
-
-                    <div class="card-title">
-                        Ideias
-                    </div>
-
-                    <div class="card-info">
-                        Rascunhos guardados
-                    </div>
-
-                </div>
-
-
-                <div class="floating-card card-6">
-
-                    <div class="card-title">
-                        Versionamento
-                    </div>
-
-                    <div class="card-info">
-                        Evolução visível
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =====================================================
-             FEATURES
-        ====================================================== -->
-
-        <section class="features">
-
-            <div class="container">
-
-                <div class="section-header">
-
-                    <div class="section-label">
-                        O que é o Palácio Mental
-                    </div>
-
-                    <h2>
-                        Um lugar para transformar
-                        pensamentos em projetos.
-                    </h2>
-
-                    <p class="section-description">
-                        Uma plataforma pensada para pessoas que criam,
-                        estudam, pesquisam, experimentam e querem acompanhar
-                        a evolução das próprias ideias.
-                    </p>
-
-                </div>
-
-
-                <div class="feature-grid">
-
-                    <article class="feature">
-
-                        <div class="feature-number">
-                            01
-                        </div>
-
-                        <h3>
-                            Organize seus projetos
-                        </h3>
-
-                        <p>
-                            Reúna trabalhos, ideias, textos e criações
-                            em um único espaço simples de entender.
-                        </p>
-
-                    </article>
-
-
-                    <article class="feature">
-
-                        <div class="feature-number">
-                            02
-                        </div>
-
-                        <h3>
-                            Acompanhe sua evolução
-                        </h3>
-
-                        <p>
-                            Registre versões e acompanhe como uma ideia
-                            muda desde o primeiro rascunho até o resultado.
-                        </p>
-
-                    </article>
-
-
-                    <article class="feature">
-
-                        <div class="feature-number">
-                            03
-                        </div>
-
-                        <h3>
-                            Encontre colaboradores
-                        </h3>
-
-                        <p>
-                            Descubra pessoas, projetos e ideias que podem
-                            se conectar com aquilo que você está criando.
-                        </p>
-
-                    </article>
-
-
-                    <article class="feature">
-
-                        <div class="feature-number">
-                            04
-                        </div>
-
-                        <h3>
-                            Construa seu currículo mental
-                        </h3>
-
-                        <p>
-                            Mostre não apenas o que você terminou,
-                            mas também aquilo que você pensou e construiu.
-                        </p>
-
-                    </article>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =====================================================
-             DIFERENÇA
-        ====================================================== -->
-
-        <section class="difference">
-
-            <div class="container">
-
-                <div class="section-header">
-
-                    <div class="section-label">
-                        Comparativo
-                    </div>
-
-                    <h2>
-                        Onde está a diferença
-                    </h2>
-
-                    <p class="section-description">
-                        O que o Palácio Mental faz de diferente das
-                        ferramentas que você já usa hoje.
-                    </p>
-
-                </div>
-
-
-                <div class="table-wrap">
-
-                    <table class="diff-table">
-
-                        <thead>
-                            <tr>
-                                <th scope="col">Ação</th>
-                                <th scope="col">Fator de competição</th>
-                                <th scope="col">Mercado atual <small>GitHub / Drive / LinkedIn</small></th>
-                                <th scope="col" class="highlight">Palácio Mental</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr>
-                                <td data-label="Ação"><span class="action action-reduce">Reduzir</span></td>
-                                <td data-label="Fator de competição" class="factor">Complexidade de entrada</td>
-                                <td data-label="Mercado atual">Alta (exige código ou documentação completa)</td>
-                                <td data-label="Palácio Mental" class="highlight">Baixa (primeira versão simples)</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Ação"><span class="action action-eliminate">Eliminar</span></td>
-                                <td data-label="Fator de competição" class="factor">Dispersão de contexto</td>
-                                <td data-label="Mercado atual">Alta (informações espalhadas)</td>
-                                <td data-label="Palácio Mental" class="highlight">Inexistente (histórico centralizado)</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Ação"><span class="action action-raise">Elevar</span></td>
-                                <td data-label="Fator de competição" class="factor">Visibilidade do processo</td>
-                                <td data-label="Mercado atual">Baixa (foco no resultado final)</td>
-                                <td data-label="Palácio Mental" class="highlight">Alta (foco na evolução e marcos)</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Ação"><span class="action action-create">Criar</span></td>
-                                <td data-label="Fator de competição" class="factor">Sustentabilidade de ideias</td>
-                                <td data-label="Mercado atual">Inexistente (projetos morrem após inatividade)</td>
-                                <td data-label="Palácio Mental" class="highlight">Nova categoria (legado e continuidade)</td>
-                            </tr>
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- =====================================================
-         FOOTER
-    ====================================================== -->
-
-    <footer>
-
-        <div class="container footer-content">
-
-            <div>
-
-                <div class="logo">
-
-                    <img class="logo-img" src="{% static 'palacio/img/mind_palace_logo.png' %}" alt="Palácio Mental">
-
-                    <div class="logo-name">
-                        Palácio Mental
-                    </div>
-
-                </div>
-
-                <p class="footer-description">
-                    Um lugar para guardar, desenvolver e conectar ideias.
-                </p>
-
-            </div>
-
-
-            <nav class="footer-links">
-
-                <a href="#">
-                    Sobre
-                </a>
-
-                <a href="#">
-                    Projeto
-                </a>
-
-                <a href="#">
-                    Contato
-                </a>
-
-                <span>
-                    © 2026
-                </span>
-
-            </nav>
-
-        </div>
-
-    </footer>
-
-
-    <!-- =====================================================
-         POPUP DE REGISTRO
-    ====================================================== -->
-
-    <div class="popup-overlay" id="popupOverlay" aria-hidden="true">
-
-        <div class="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
-
-            <div class="popup-check">
-                ✓
-            </div>
-
-            <h3 id="popupTitle">
-                Você foi registrado
-            </h3>
-
-            <p class="popup-subtitle">
-                A sua ideia merece continuidade
-            </p>
-
-            <button class="primary-button" id="popupClose" type="button">
-                Continuar
-            </button>
-
-        </div>
+      </a>
+
+      <div class="status">
+        <span class="status-dot"></span>
+        Em desenvolvimento
+      </div>
 
     </div>
 
-    <canvas id="partyCanvas"></canvas>
+  </header>
+
+  <main>
+
+    <section class="hero container">
+
+      <div class="hero-content">
+
+        <div class="eyebrow">
+          <span class="eyebrow-line"></span>
+          Um espaço para suas ideias
+        </div>
+
+        <h1>
+          Suas ideias merecem
+          <span>um lugar para crescer.</span>
+        </h1>
+
+        <p class="hero-description">
+          O Palácio Mental é uma plataforma para organizar,
+          desenvolver e compartilhar projetos, ideias e criações.
+          Um espaço onde aquilo que você imagina pode evoluir.
+        </p>
+
+        <form class="waitlist-form waitlist-form--stack" id="waitlistForm" method="post">
+          {% csrf_token %}
+
+          <input type="text" id="nome" name="nome" placeholder="Seu nome" autocomplete="name" required>
+
+          <input type="tel" id="telefone" name="telefone" placeholder="(00) 00000-0000" autocomplete="tel"
+            inputmode="numeric" pattern="\(\d{2}\) \d{5}-\d{4}" maxlength="15" title="Digite no formato (DD) 00000-0000"
+            required>
+
+          <input type="email" id="email" name="email" placeholder="Seu melhor e-mail" autocomplete="email" required>
+
+          <button class="primary-button" type="submit">
+            Entrar na lista
+          </button>
+
+        </form>
+
+        <label class="consent">
+          <input type="checkbox" id="consent" name="consent" form="waitlistForm" required>
+          <span>
+            Concordo em ser contatado(a) e autorizo o uso dos
+            meus dados (nome, telefone e e-mail) para novidades
+            do Palácio Mental, nos termos da LGPD.
+          </span>
+        </label>
+
+      </div>
+
+      <div class="hero-visual">
+
+        <div class="palace">
+
+          <div class="palace-inner">
+
+            <img class="palace-logo" src="{% static 'img/mind_palace_logo.png' %}" alt="Palácio Mental">
+
+            <div class="palace-title">
+              Palácio Mental
+            </div>
+
+          </div>
+
+        </div>
 
 
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
+        <div class="floating-card card-1">
 
-    <script src="{% static 'palacio/js/main.js' %}?v=6"></script>
+          <div class="card-title">
+            Projeto
+          </div>
+
+          <div class="card-info">
+            Trabalho acadêmico
+          </div>
+
+        </div>
+
+
+        <div class="floating-card card-2">
+
+          <div class="card-title">
+            Nova versão
+          </div>
+
+          <div class="card-info">
+            Atualizado hoje
+          </div>
+
+        </div>
+
+
+        <div class="floating-card card-3">
+
+          <div class="card-title">
+            Colaboradores
+          </div>
+
+          <div class="card-info">
+            + 3 pessoas
+          </div>
+
+        </div>
+
+
+        <div class="floating-card card-4">
+
+          <div class="card-title">
+            Currículo mental
+          </div>
+
+          <div class="card-info">
+            12 projetos
+          </div>
+
+        </div>
+
+
+        <div class="floating-card card-5">
+
+          <div class="card-title">
+            Ideias
+          </div>
+
+          <div class="card-info">
+            Rascunhos guardados
+          </div>
+
+        </div>
+
+
+        <div class="floating-card card-6">
+
+          <div class="card-title">
+            Versionamento
+          </div>
+
+          <div class="card-info">
+            Evolução visível
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section class="features">
+
+      <div class="container">
+
+        <div class="section-header">
+
+          <div class="section-label">
+            O que é o Palácio Mental?
+          </div>
+
+          <h2>
+            Transforme suas
+            ideias em projetos.
+          </h2>
+
+          <p class="section-description">
+            Uma plataforma pensada para pessoas que criam,
+            estudam, pesquisam, experimentam e querem acompanhar
+            a evolução das próprias ideias.
+          </p>
+
+        </div>
+
+
+        <div class="feature-grid">
+
+          <article class="feature">
+
+            <div class="feature-number">
+              01
+            </div>
+
+            <h3>
+              Organize seus projetos
+            </h3>
+
+            <p>
+              Reúna trabalhos, ideias, textos e criações
+              em um único espaço simples de entender.
+            </p>
+
+          </article>
+
+
+          <article class="feature">
+
+            <div class="feature-number">
+              02
+            </div>
+
+            <h3>
+              Acompanhe sua evolução
+            </h3>
+
+            <p>
+              Registre versões e acompanhe como uma ideia
+              muda desde o primeiro rascunho até o resultado.
+            </p>
+
+          </article>
+
+
+          <article class="feature">
+
+            <div class="feature-number">
+              03
+            </div>
+
+            <h3>
+              Encontre colaboradores
+            </h3>
+
+            <p>
+              Descubra pessoas, projetos e ideias que podem
+              se conectar com aquilo que você está criando.
+            </p>
+
+          </article>
+
+
+          <article class="feature">
+
+            <div class="feature-number">
+              04
+            </div>
+
+            <h3>
+              Construa um Portifolio Vivo
+            </h3>
+
+            <p>
+              Mostre não apenas o projeto finalizado,
+              mas também todo o o ciclo de vida de realizar o projeto.
+            </p>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="difference">
+
+      <div class="container">
+
+        <div class="section-header">
+
+          <h2>
+            Nosso Diferencial
+          </h2>
+
+          <p class="section-description">
+            O que o Palácio Mental faz de diferente das
+            ferramentas que você já usa hoje.
+          </p>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+          <table class="diff-table">
+
+            <thead>
+              <tr>
+                <th scope="col">Ação</th>
+                <th scope="col">Fator de competição</th>
+                <th scope="col">Mercado atual <small>GitHub / Drive / LinkedIn</small></th>
+                <th scope="col" class="highlight">Palácio Mental</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td data-label="Ação"><span class="action action-reduce">Reduzir</span></td>
+                <td data-label="Fator de competição" class="factor">Complexidade de entrada</td>
+                <td data-label="Mercado atual">Alta (exige código ou documentação completa)</td>
+                <td data-label="Palácio Mental" class="highlight">Baixa (primeira versão simples)</td>
+              </tr>
+
+              <tr>
+                <td data-label="Ação"><span class="action action-eliminate">Eliminar</span></td>
+                <td data-label="Fator de competição" class="factor">Dispersão de contexto</td>
+                <td data-label="Mercado atual">Alta (informações espalhadas)</td>
+                <td data-label="Palácio Mental" class="highlight">Inexistente (histórico centralizado)</td>
+              </tr>
+
+              <tr>
+                <td data-label="Ação"><span class="action action-raise">Elevar</span></td>
+                <td data-label="Fator de competição" class="factor">Visibilidade do processo</td>
+                <td data-label="Mercado atual">Baixa (foco no resultado final)</td>
+                <td data-label="Palácio Mental" class="highlight">Alta (foco na evolução e marcos)</td>
+              </tr>
+
+              <tr>
+                <td data-label="Ação"><span class="action action-create">Criar</span></td>
+                <td data-label="Fator de competição" class="factor">Sustentabilidade de ideias</td>
+                <td data-label="Mercado atual">Inexistente (projetos morrem após inatividade)</td>
+                <td data-label="Palácio Mental" class="highlight">Nova categoria (legado e continuidade)</td>
+              </tr>
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    <div class="container footer-content">
+
+      <div>
+
+        <div class="logo">
+
+          <img class="logo-img" src="{% static 'img/mind_palace_logo.png' %}" alt="Palácio Mental">
+
+          <div class="logo-name">
+            Palácio Mental
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <nav class="footer-links">
+
+        <a href="#">
+          Sobre
+        </a>
+
+        <a href="#">
+          Projeto
+        </a>
+
+        <a href="#">
+          Contato
+        </a>
+
+        <span>
+          © 2026
+        </span>
+
+      </nav>
+
+    </div>
+
+  </footer>
+
+  <div class="popup-overlay" id="popupOverlay" aria-hidden="true">
+
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+
+      <div class="popup-check">
+        ✓
+      </div>
+
+      <h3 id="popupTitle">
+        Você foi registrado
+      </h3>
+
+      <p class="popup-subtitle">
+        A sua ideia merece continuidade
+      </p>
+
+      <button class="primary-button" id="popupClose" type="button">
+        Continuar
+      </button>
+
+    </div>
+
+  </div>
+
+  <canvas id="partyCanvas"></canvas>
+
+
+  <script src="{% static 'js/main.js' %}?v=6"></script>
 
 </body>
+
 </html>
