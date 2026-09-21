@@ -10,3 +10,7 @@ spring:
 django:
   app:
     url: ${DJANGO_APP_URL:http://django:8000}
+
+springdoc:
+  swagger-ui:
+    path: /

@@ -1,5 +1,7 @@
 package br.com.palaciomental.status_api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+@Tag(name = "Health Check", description = "Endpoints de verificação de saúde do sistema")
 @RestController
 @RequestMapping("/v1")
 public class StatusController {
@@ -23,12 +26,16 @@ public class StatusController {
     this.jdbcTemplate = jdbcTemplate;
   }
 
+  @Operation(
+      summary = "Readiness probe",
+      description = "Verifica saúde do banco de dados e da aplicação Django")
   @GetMapping("/status")
   public Map<String, Object> getStatus() {
     Map<String, Object> database = checkDatabase();
     Map<String, Object> django = checkDjango();
 
-    boolean allOk = "operacional".equals(database.get("status")) && "operacional".equals(django.get("status"));
+    boolean allOk =
+        "operacional".equals(database.get("status")) && "operacional".equals(django.get("status"));
 
     return Map.of(
         "service",
@@ -44,8 +51,9 @@ public class StatusController {
   private Map<String, Object> checkDatabase() {
     long start = System.currentTimeMillis();
     try {
-      Map<String, Object> row = jdbcTemplate.queryForMap(
-          """
+      Map<String, Object> row =
+          jdbcTemplate.queryForMap(
+              """
                   SELECT version() AS version,
                          (SELECT setting FROM pg_settings WHERE name = 'max_connections') AS max_connections,
                          (SELECT count(*) FROM pg_stat_activity) AS used_connections
@@ -76,5 +84,11 @@ public class StatusController {
       return Map.of(
           "status", "indisponivel", "response_time_ms", System.currentTimeMillis() - start);
     }
+  }
+
+  @Operation(summary = "Liveness probe", description = "Verifica se a aplicação está rodando")
+  @GetMapping("/ping")
+  public String ping() {
+    return "pong";
   }
 }
