@@ -320,15 +320,54 @@ function celebrate() {
     showConfirmation(form);
   }
 
-  form.addEventListener("submit", function(event) {
+  form.addEventListener("submit", async function(event) {
 
     event.preventDefault();
 
-    showConfirmation(this);
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.textContent : '';
 
-    setCookie(REGISTER_KEY, "1", 365);
+    // Desabilita botão durante envio
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+    }
 
-    openPopup();
+    try {
+      const submitUrl = this.dataset.submitUrl || "/lista-espera/";
+      const response = await fetch(submitUrl, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showConfirmation(this);
+        setCookie(REGISTER_KEY, "1", 365);
+        openPopup();
+      } else {
+        // Reabilita botão em caso de erro
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+        // Mostra erro para o usuário
+        alert(data.error || "Erro ao cadastrar. Tente novamente.");
+      }
+    } catch (err) {
+      // Reabilita botão em caso de erro de rede
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      }
+      alert("Erro de conexão. Tente novamente.");
+    }
 
   });
 
