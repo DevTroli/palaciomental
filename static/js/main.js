@@ -351,6 +351,12 @@ function celebrate() {
         showConfirmation(this);
         setCookie(REGISTER_KEY, "1", 365);
         openPopup();
+        if (typeof gtag === 'function') {
+          gtag('event', 'waitlist_signup', {
+            event_category: 'engagement',
+            event_label: 'hero_form'
+          });
+        }
       } else {
         // Reabilita botão em caso de erro
         if (submitBtn) {

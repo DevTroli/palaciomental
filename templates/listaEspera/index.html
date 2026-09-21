@@ -16,8 +16,10 @@
   <!-- Primary Meta Tags -->
   <title>Palácio Mental — Organize, desenvolva e compartilhe suas ideias</title>
   <meta name="title" content="Palácio Mental — Organize, desenvolva e compartilhe suas ideias">
-  <meta name="description" content="O Palácio Mental é uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Um espaço onde aquilo que você imagina pode evoluir. Entre na lista de espera para acesso antecipado.">
-  <meta name="keywords" content="organizar ideias, gestão de projetos, plataforma criativa, desenvolvimento pessoal, portfólio, colaboração, lista de espera beta">
+  <meta name="description"
+    content="O Palácio Mental é uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Um espaço onde aquilo que você imagina pode evoluir. Entre na lista de espera para acesso antecipado.">
+  <meta name="keywords"
+    content="organizar ideias, gestão de projetos, plataforma criativa, desenvolvimento pessoal, portfólio, colaboração, lista de espera beta">
   <meta name="author" content="Palácio Mental">
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
@@ -26,7 +28,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://palaciomental.com.br/">
   <meta property="og:title" content="Palácio Mental — Organize, desenvolva e compartilhe suas ideias">
-  <meta property="og:description" content="Uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Entre na lista de espera para acesso antecipado ao beta.">
+  <meta property="og:description"
+    content="Uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Entre na lista de espera para acesso antecipado ao beta.">
   <meta property="og:image" content="https://palaciomental.com.br{% static 'img/mind_palace_logo.png' %}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -39,7 +42,8 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://palaciomental.com.br/">
   <meta name="twitter:title" content="Palácio Mental — Organize, desenvolva e compartilhe suas ideias">
-  <meta name="twitter:description" content="Uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Entre na lista de espera para acesso antecipado.">
+  <meta name="twitter:description"
+    content="Uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Entre na lista de espera para acesso antecipado.">
   <meta name="twitter:image" content="https://palaciomental.com.br{% static 'img/mind_palace_logo.png' %}">
   <meta name="twitter:image:alt" content="Logotipo do Palácio Mental">
 
@@ -98,6 +102,16 @@
 
   <!-- Sitemap e robots (referência) -->
   <link rel="sitemap" href="https://palaciomental.com.br/sitemap.xml">
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0PBD6TCJ79"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-0PBD6TCJ79');
+  </script>
 </head>
 
 <body>
@@ -147,7 +161,8 @@
           Um espaço onde aquilo que você imagina pode evoluir.
         </p>
 
-        <form class="waitlist-form waitlist-form--stack" id="waitlistForm" method="post" data-submit-url="{% url 'listaEspera:waitlist_submit' %}">
+        <form class="waitlist-form waitlist-form--stack" id="waitlistForm" method="post"
+          data-submit-url="{% url 'listaEspera:waitlist_submit' %}">
           {% csrf_token %}
 
           <input type="text" id="nome" name="nome" placeholder="Seu nome" autocomplete="name" required>
