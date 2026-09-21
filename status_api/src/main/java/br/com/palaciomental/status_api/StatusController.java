@@ -2,6 +2,7 @@ package br.com.palaciomental.status_api;
 
 import java.time.Instant;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,9 @@ public class StatusController {
 
   private final JdbcTemplate jdbcTemplate;
   private final RestTemplate restTemplate = new RestTemplate();
+
+  @Value("${django.app.url}")
+  private String djangoAppUrl;
 
   public StatusController(JdbcTemplate jdbcTemplate) {
     this.jdbcTemplate = jdbcTemplate;
@@ -62,7 +66,7 @@ public class StatusController {
   private Map<String, Object> checkDjango() {
     long start = System.currentTimeMillis();
     try {
-      var response = restTemplate.getForEntity("http://django:8000/saude", String.class);
+      var response = restTemplate.getForEntity(djangoAppUrl + "/saude", String.class);
       return Map.of(
           "status",
           response.getStatusCode().is2xxSuccessful() ? "operacional" : "degradado",
