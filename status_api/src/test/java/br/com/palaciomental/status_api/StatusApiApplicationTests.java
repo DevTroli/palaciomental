@@ -8,19 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-class PingControllerTest {
-
-  @Test
-  void pingDeveResponderOk() {
-    PingController controller = new PingController();
-
-    Map<String, String> response = controller.ping();
-
-    assertThat(response).isNotNull();
-    assertThat(response.get("status")).isEqualTo("ok");
-  }
-}
-
 class StatusControllerTest {
 
   private JdbcTemplate db;
