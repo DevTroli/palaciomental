@@ -5,16 +5,99 @@
   {% load static %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4a1d5e">
 
-  <link rel="icon" type="image" href="{% static "img/favicon.svg" %}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/mind_palace_logo.png' %}">
 
-  <title>Palácio Mental — Lista de Espera</title>
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://palaciomental.com.br/">
 
+  <!-- Primary Meta Tags -->
+  <title>Palácio Mental — Organize, desenvolva e compartilhe suas ideias</title>
+  <meta name="title" content="Palácio Mental — Organize, desenvolva e compartilhe suas ideias">
+  <meta name="description" content="O Palácio Mental é uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Um espaço onde aquilo que você imagina pode evoluir. Entre na lista de espera para acesso antecipado.">
+  <meta name="keywords" content="organizar ideias, gestão de projetos, plataforma criativa, desenvolvimento pessoal, portfólio, colaboração, lista de espera beta">
+  <meta name="author" content="Palácio Mental">
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
+
+  <!-- Open Graph / Facebook, LinkedIn, WhatsApp -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://palaciomental.com.br/">
+  <meta property="og:title" content="Palácio Mental — Organize, desenvolva e compartilhe suas ideias">
+  <meta property="og:description" content="Uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Entre na lista de espera para acesso antecipado ao beta.">
+  <meta property="og:image" content="https://palaciomental.com.br{% static 'img/mind_palace_logo.png' %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Logotipo do Palácio Mental — plataforma para organizar e evoluir ideias">
+  <meta property="og:site_name" content="Palácio Mental">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:locale:alternate" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://palaciomental.com.br/">
+  <meta name="twitter:title" content="Palácio Mental — Organize, desenvolva e compartilhe suas ideias">
+  <meta name="twitter:description" content="Uma plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações. Entre na lista de espera para acesso antecipado.">
+  <meta name="twitter:image" content="https://palaciomental.com.br{% static 'img/mind_palace_logo.png' %}">
+  <meta name="twitter:image:alt" content="Logotipo do Palácio Mental">
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Palácio Mental",
+    "url": "https://palaciomental.com.br/",
+    "description": "Plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://palaciomental.com.br/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Palácio Mental",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://palaciomental.com.br{% static 'img/mind_palace_logo.png' %}"
+      }
+    },
+    "inLanguage": "pt-BR"
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Palácio Mental",
+    "url": "https://palaciomental.com.br/",
+    "logo": "https://palaciomental.com.br{% static 'img/mind_palace_logo.png' %}",
+    "description": "Plataforma para organizar, desenvolver e compartilhar projetos, ideias e criações.",
+    "sameAs": [
+      "https://github.com/DevTroli/palaciomental",
+      "https://www.linkedin.com/company/palaciomental"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+55-13-99999-9999",
+      "contactType": "customer service",
+      "availableLanguage": ["Portuguese", "English"]
+    }
+  }
+  </script>
+
+  <!-- Preconnect para fontes (performance) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Forum&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  <!-- Sitemap e robots (referência) -->
+  <link rel="sitemap" href="https://palaciomental.com.br/sitemap.xml">
 </head>
 
 <body>
