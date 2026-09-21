@@ -6,6 +6,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <link rel="icon" type="image" href="{% static "img/favicon.svg" %}">
+
   <title>Palácio Mental — Lista de Espera</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -62,7 +64,7 @@
           Um espaço onde aquilo que você imagina pode evoluir.
         </p>
 
-        <form class="waitlist-form waitlist-form--stack" id="waitlistForm" method="post">
+        <form class="waitlist-form waitlist-form--stack" id="waitlistForm" method="post" data-submit-url="{% url 'listaEspera:waitlist_submit' %}">
           {% csrf_token %}
 
           <input type="text" id="nome" name="nome" placeholder="Seu nome" autocomplete="name" required>
