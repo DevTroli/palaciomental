@@ -20,6 +20,12 @@ DEBUG = config('DEBUG', cast=bool, default=True)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='localhost,127.0.0.1')
 
+# CSRF trusted origins for production (required for HTTPS origins)
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv(), default='')
+
+# Proxy SSL header for Railway/Reverse proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 
