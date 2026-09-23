@@ -114,6 +114,8 @@
                 <title id="chart-title">Evolução acumulada da lista de espera</title>
                 <desc id="chart-description">Gráfico com o crescimento acumulado da lista de espera desde {{ analytics.first_signup }} até hoje, com {{ analytics.total }} pessoas interessadas.</desc>
                 <line class="chart-axis" x1="42" y1="186" x2="708" y2="186"></line>
+                <text class="chart-scale" x="8" y="23">{{ analytics.chart_max }}</text>
+                <text class="chart-scale" x="28" y="189">0</text>
                 <polyline class="chart-line" points="{{ analytics.polyline }}"></polyline>
                 {% for point in analytics.points %}
                   <circle class="chart-point" cx="{{ point.x }}" cy="{{ point.y }}" r="4"><title>{{ point.label }}: {{ point.value }} pessoas</title></circle>

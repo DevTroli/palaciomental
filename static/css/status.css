@@ -91,6 +91,7 @@ h1 { margin: 0 0 15px; color: var(--purple-dark); font-size: clamp(38px, 6vw, 62
 .chart-line { fill: none; stroke: var(--purple); stroke-linecap: round; stroke-linejoin: round; stroke-width: 4; }
 .chart-point { fill: var(--green); stroke: var(--white); stroke-width: 2; }
 .chart-label { fill: var(--muted); font-family: Arial, sans-serif; font-size: 11px; }
+.chart-scale { fill: var(--muted); font-family: Arial, sans-serif; font-size: 11px; text-anchor: end; }
 .chart-label--end { text-anchor: end; }
 .chart-data { margin-top: 10px; color: var(--purple); font-size: 13px; }
 .chart-data ul { columns: 3; margin-bottom: 0; padding-left: 20px; color: var(--muted); }

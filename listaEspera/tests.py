@@ -66,7 +66,7 @@ class StatusViewTests(TestCase):
 
     @patch("listaEspera.views.urlopen", side_effect=TimeoutError)
     def test_status_page_shows_aggregated_waitlist_analytics(self, mock_urlopen):
-        for index in range(3):
+        for index in range(7):
             entry = WaitlistEntry.objects.create(
                 nome=f"Pessoa {index}",
                 telefone=f"(11) 99999-000{index}",
@@ -79,7 +79,7 @@ class StatusViewTests(TestCase):
         response = self.client.get(reverse("listaEspera:status"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "3")
+        self.assertContains(response, "7")
         self.assertContains(response, "pessoas interessadas")
         self.assertContains(response, "Crescimento da lista")
         self.assertContains(response, "Ver dados do gráfico")
