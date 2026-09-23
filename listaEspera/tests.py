@@ -63,6 +63,7 @@ class StatusViewTests(TestCase):
         self.assertContains(response, "Status indisponível no momento")
         self.assertContains(response, "Não foi possível verificar este serviço agora.")
         self.assertContains(response, "Deploy atual")
+        self.assertEqual(self.client.get("/status/").status_code, 200)
 
     @patch("listaEspera.views.urlopen", side_effect=TimeoutError)
     def test_status_page_shows_aggregated_waitlist_analytics(self, mock_urlopen):
