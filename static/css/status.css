@@ -72,6 +72,12 @@ h1 { margin: 0 0 15px; color: var(--purple-dark); font-size: clamp(38px, 6vw, 62
 .service-metrics div { min-width: 0; }
 .service-metrics dt { color: var(--muted); font-size: 11px; }
 .service-metrics dd { margin: 2px 0 0; color: var(--purple-dark); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.deployment-section { margin-top: 60px; padding-top: 38px; border-top: 1px solid var(--border); }
+.deployment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; margin: 0; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.deployment-grid div { min-width: 0; padding: 16px 18px; background: var(--white); }
+.deployment-grid dt { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.deployment-grid dd { margin: 6px 0 0; color: var(--purple-dark); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.deployment-help { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
 .status-note { display: flex; align-items: center; gap: 9px; margin: 36px 0 0; color: var(--muted); font-size: 13px; }
 .status-note span { display: grid; flex: 0 0 20px; height: 20px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-weight: 700; }
 .status-footer { padding: 24px 0; background: var(--white); border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }

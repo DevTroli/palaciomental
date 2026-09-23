@@ -37,7 +37,7 @@ class StatusViewTests(TestCase):
 
     @patch("listaEspera.views.urlopen")
     def test_status_page_renders_all_services_from_api(self, mock_urlopen):
-        response_body = b'{"status":"operacional","checked_at":"2026-09-23T10:15:00Z","dependencies":{"database":{"status":"operacional"},"django_app":{"status":"degradado"}}}'
+        response_body = b'{"status":"operacional","checked_at":"2026-09-23T10:15:00Z","deployment":{"commit":"abcdef1234567890","author":"Pablo Troli","branch":"main","service":"django","environment":"production"},"dependencies":{"database":{"status":"operacional"},"django_app":{"status":"degradado"}}}'
         response = mock_urlopen.return_value.__enter__.return_value
         response.status = 200
         response.read.return_value = response_body
@@ -50,6 +50,8 @@ class StatusViewTests(TestCase):
         self.assertContains(response, "Aplicação web")
         self.assertContains(response, "API de status")
         self.assertContains(response, "Instabilidade")
+        self.assertContains(response, "abcdef123456")
+        self.assertContains(response, "Pablo Troli")
 
     @patch("listaEspera.views.urlopen", side_effect=TimeoutError)
     def test_status_page_does_not_break_when_api_is_unavailable(self, mock_urlopen):

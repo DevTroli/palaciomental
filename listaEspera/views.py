@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -17,7 +18,18 @@ def index(request):
 
 
 def saude(request):
-    return JsonResponse({"status": "ok"})
+    deployment = {
+        label: value
+        for label, value in {
+            "commit": os.getenv("RAILWAY_GIT_COMMIT_SHA"),
+            "author": os.getenv("RAILWAY_GIT_AUTHOR"),
+            "branch": os.getenv("RAILWAY_GIT_BRANCH"),
+            "service": os.getenv("RAILWAY_SERVICE_NAME"),
+            "environment": os.getenv("RAILWAY_ENVIRONMENT_NAME"),
+        }.items()
+        if value
+    }
+    return JsonResponse({"status": "ok", "deployment": deployment})
 
 
 STATUS_COPY = {
@@ -82,6 +94,21 @@ def _response_metric(service):
     return [{"label": "Resposta", "value": f"{service['response_time_ms']} ms"}]
 
 
+def _deployment_metrics(deployment):
+    labels = {
+        "commit": "Commit",
+        "author": "Autor",
+        "branch": "Branch",
+        "service": "Serviço",
+        "environment": "Ambiente",
+    }
+    return [
+        {"label": labels[key], "value": value[:12] if key == "commit" else value}
+        for key, value in deployment.items()
+        if key in labels and value
+    ]
+
+
 def status_page(request):
     """Exibe o estado resumido dos serviços sem depender da disponibilidade da API."""
     context = {"status_available": False, "services": []}
@@ -94,6 +121,7 @@ def status_page(request):
         dependencies = payload.get("dependencies") or {}
         database = dependencies.get("database") or {}
         django = dependencies.get("django_app") or {}
+        deployment = payload.get("deployment") or django.get("deployment") or {}
         context.update(
             status_available=True,
             overall_status=_service_status(payload.get("status"))[0],
@@ -105,12 +133,17 @@ def status_page(request):
                     "Banco de dados", "▦", database.get("status"), _database_metrics(database), "Banco de dados"
                 ),
                 _service_card(
-                    "Aplicação web", "⌂", django.get("status"), _response_metric(django), "Servidor web"
+                    "Aplicação web (Django)",
+                    "⌂",
+                    django.get("status"),
+                    _response_metric(django) + ([{"label": "Verificação", "value": "GET /saude"}] if django else []),
+                    "Servidor web",
                 ),
                 _service_card(
                     "API de status", "↗", payload.get("status"), _response_metric(payload), "APIs e serviços"
                 ),
             ],
+            deployment_metrics=_deployment_metrics(deployment),
         )
         checked_at = payload.get("checked_at")
         if checked_at:
