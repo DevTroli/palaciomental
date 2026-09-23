@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
+from unittest.mock import patch
 from .models import WaitlistEntry
 
 
@@ -29,6 +30,34 @@ class WaitlistViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "listaEspera/index.html")
         self.assertContains(response, 'id="waitlistForm"')
+
+
+class StatusViewTests(TestCase):
+    """A página pública deve ser útil mesmo quando a API externa falha."""
+
+    @patch("listaEspera.views.urlopen")
+    def test_status_page_renders_all_services_from_api(self, mock_urlopen):
+        response_body = b'{"status":"operacional","checked_at":"2026-09-23T10:15:00Z","dependencies":{"database":{"status":"operacional"},"django_app":{"status":"degradado"}}}'
+        response = mock_urlopen.return_value.__enter__.return_value
+        response.status = 200
+        response.read.return_value = response_body
+
+        response = self.client.get(reverse("listaEspera:status"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "status.html")
+        self.assertContains(response, "Banco de dados")
+        self.assertContains(response, "Aplicação web")
+        self.assertContains(response, "API de status")
+        self.assertContains(response, "Instabilidade")
+
+    @patch("listaEspera.views.urlopen", side_effect=TimeoutError)
+    def test_status_page_does_not_break_when_api_is_unavailable(self, mock_urlopen):
+        response = self.client.get(reverse("listaEspera:status"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Status indisponível no momento")
+        self.assertContains(response, "Não foi possível verificar este serviço agora.")
 
 
 class WaitlistSubmitTests(TestCase):

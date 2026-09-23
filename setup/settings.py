@@ -42,6 +42,14 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
+# Endpoint externo usado somente pela página pública de status. O timeout curto
+# garante que uma indisponibilidade da API não afete as demais páginas.
+STATUS_API_URL = config(
+    "STATUS_API_URL",
+    default="https://api.palaciomental.com.br/v1/status",
+)
+STATUS_API_TIMEOUT = config("STATUS_API_TIMEOUT", cast=float, default=3.0)
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
