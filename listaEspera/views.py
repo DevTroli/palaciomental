@@ -1,10 +1,13 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from django.conf import settings
+from django.db import DatabaseError
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
@@ -109,9 +112,59 @@ def _deployment_metrics(deployment):
     ]
 
 
+def _waitlist_analytics():
+    """Prepara apenas dados agregados e públicos para a seção de tração."""
+    try:
+        now = datetime.now().astimezone()
+        start = now - timedelta(days=29)
+        daily_rows = list(
+            WaitlistEntry.objects.filter(created_at__date__gte=start.date())
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(total=Count("id"))
+            .order_by("day")
+        )
+        total = WaitlistEntry.objects.count()
+        last_seven_days = WaitlistEntry.objects.filter(
+            created_at__date__gte=(now - timedelta(days=6)).date()
+        ).count()
+    except DatabaseError:
+        return {"total": None, "last_seven_days": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
+    cumulative = total - sum(row["total"] for row in daily_rows)
+    points = []
+    width, height = 720, 220
+    left, right, top, bottom = 42, 12, 18, 34
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    cumulative_values = []
+    for row in daily_rows:
+        cumulative += row["total"]
+        cumulative_values.append(cumulative)
+    chart_max = max(cumulative_values or [1])
+    cumulative = total - sum(row["total"] for row in daily_rows)
+    for index, row in enumerate(daily_rows):
+        cumulative += row["total"]
+        x = left if len(daily_rows) == 1 else left + (chart_width * index / (len(daily_rows) - 1))
+        y = top + chart_height - (chart_height * cumulative / chart_max)
+        points.append({
+            "x": round(x, 2),
+            "y": round(y, 2),
+            "value": cumulative,
+            "label": row["day"].strftime("%d/%m"),
+        })
+    return {
+        "total": total,
+        "last_seven_days": last_seven_days,
+        "points": points,
+        "polyline": " ".join(f"{point['x']},{point['y']}" for point in points),
+        "chart_max": chart_max,
+        "has_data": bool(points),
+    }
+
+
 def status_page(request):
     """Exibe o estado resumido dos serviços sem depender da disponibilidade da API."""
-    context = {"status_available": False, "services": []}
+    context = {"status_available": False, "services": [], "analytics": _waitlist_analytics()}
     try:
         payload = _fetch_status_api()
     except (OSError, URLError, TimeoutError, ValueError, json.JSONDecodeError):

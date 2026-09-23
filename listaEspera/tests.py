@@ -1,6 +1,8 @@
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import patch
+from datetime import timedelta
 from .models import WaitlistEntry
 
 
@@ -61,6 +63,26 @@ class StatusViewTests(TestCase):
         self.assertContains(response, "Status indisponível no momento")
         self.assertContains(response, "Não foi possível verificar este serviço agora.")
         self.assertContains(response, "Deploy atual")
+
+    @patch("listaEspera.views.urlopen", side_effect=TimeoutError)
+    def test_status_page_shows_aggregated_waitlist_analytics(self, mock_urlopen):
+        for index in range(3):
+            entry = WaitlistEntry.objects.create(
+                nome=f"Pessoa {index}",
+                telefone=f"(11) 99999-000{index}",
+                email=f"pessoa{index}@email.com",
+                consent=True,
+            )
+            entry.created_at = timezone.now() - timedelta(days=index)
+            entry.save(update_fields=["created_at"])
+
+        response = self.client.get(reverse("listaEspera:status"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "3")
+        self.assertContains(response, "pessoas interessadas")
+        self.assertContains(response, "Evolução das inscrições")
+        self.assertContains(response, "Ver dados do gráfico")
 
 
 class WaitlistSubmitTests(TestCase):
