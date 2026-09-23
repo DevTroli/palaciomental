@@ -60,6 +60,7 @@ class StatusViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Status indisponível no momento")
         self.assertContains(response, "Não foi possível verificar este serviço agora.")
+        self.assertContains(response, "Deploy atual")
 
 
 class WaitlistSubmitTests(TestCase):

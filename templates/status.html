@@ -24,9 +24,7 @@
   <main class="status-main">
     <div class="status-container">
       <section class="status-intro" aria-labelledby="status-title">
-        <p class="eyebrow"><span aria-hidden="true"></span> Transparência e cuidado</p>
         <h1 id="status-title">Status do sistema</h1>
-        <p class="intro-copy">Acompanhe a saúde dos serviços que mantêm o Palácio Mental no ar.</p>
       </section>
 
       {% if status_available %}
@@ -80,22 +78,24 @@
         </div>
       </section>
 
-      {% if deployment_metrics %}
-        <section class="deployment-section" aria-labelledby="deployment-title">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Entrega em execução</p>
-              <h2 id="deployment-title">Deploy atual</h2>
-            </div>
+      <section class="deployment-section" aria-labelledby="deployment-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Entrega em execução</p>
+            <h2 id="deployment-title">Deploy atual</h2>
           </div>
+        </div>
+        {% if deployment_metrics %}
           <dl class="deployment-grid">
             {% for metric in deployment_metrics %}
               <div><dt>{{ metric.label }}</dt><dd>{{ metric.value }}</dd></div>
             {% endfor %}
           </dl>
           <p class="deployment-help">Essas informações identificam a versão que está respondendo agora. Elas são fornecidas pelo ambiente de deploy e não incluem segredos.</p>
-        </section>
-      {% endif %}
+        {% else %}
+          <div class="deployment-empty">Os metadados do deploy ainda não estão disponíveis neste ambiente.</div>
+        {% endif %}
+      </section>
 
       <p class="status-note"><span aria-hidden="true">i</span> Os indicadores técnicos exibidos ajudam nossa equipe a acompanhar a operação sem expor logs ou dados sensíveis.</p>
     </div>

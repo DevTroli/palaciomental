@@ -78,6 +78,7 @@ h1 { margin: 0 0 15px; color: var(--purple-dark); font-size: clamp(38px, 6vw, 62
 .deployment-grid dt { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .deployment-grid dd { margin: 6px 0 0; color: var(--purple-dark); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
 .deployment-help { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+.deployment-empty { padding: 18px 20px; background: var(--neutral-bg); border: 1px solid #d8dde2; border-radius: 12px; color: var(--neutral); font-size: 14px; }
 .status-note { display: flex; align-items: center; gap: 9px; margin: 36px 0 0; color: var(--muted); font-size: 13px; }
 .status-note span { display: grid; flex: 0 0 20px; height: 20px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-weight: 700; }
 .status-footer { padding: 24px 0; background: var(--white); border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
