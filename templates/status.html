@@ -84,17 +84,17 @@
             <p class="eyebrow">Tração da comunidade</p>
             <h2 id="growth-title">Lista de espera</h2>
           </div>
-          <p class="checked-at">Dados agregados<br><strong>atualizados agora</strong></p>
+          <p class="checked-at">Dados agregados<br><strong>desde o primeiro cadastro</strong></p>
         </div>
         <div class="growth-summary">
           {% if analytics.total is not None %}
             <div class="growth-total">
               <span class="growth-number">{{ analytics.total }}</span>
-              <span class="growth-label">pessoas interessadas</span>
+              <span class="growth-label">pessoas interessadas desde o início da lista</span>
             </div>
             <div class="growth-stat">
-              <span>{{ analytics.last_seven_days }}</span>
-              <small>novos nos últimos 7 dias</small>
+              <span>{{ analytics.first_signup }}</span>
+              <small>primeiro cadastro recebido</small>
             </div>
           {% else %}
             <div class="growth-total growth-total--empty">
@@ -105,14 +105,14 @@
         </div>
         <div class="chart-card">
           <div class="chart-heading">
-            <div><h3>Evolução das inscrições</h3><p>Total acumulado nos últimos 30 dias</p></div>
+            <div><h3>Crescimento da lista</h3><p>Total acumulado desde o primeiro cadastro</p></div>
             {% if analytics.has_data %}<strong>{{ analytics.chart_max }}</strong>{% endif %}
           </div>
           {% if analytics.has_data %}
             <div class="chart-wrap">
               <svg class="growth-chart" viewBox="0 0 720 220" role="img" aria-labelledby="chart-title chart-description">
                 <title id="chart-title">Evolução acumulada da lista de espera</title>
-                <desc id="chart-description">Gráfico com {{ analytics.total }} pessoas interessadas no total e {{ analytics.last_seven_days }} novas inscrições nos últimos sete dias.</desc>
+                <desc id="chart-description">Gráfico com o crescimento acumulado da lista de espera desde {{ analytics.first_signup }} até hoje, com {{ analytics.total }} pessoas interessadas.</desc>
                 <line class="chart-axis" x1="42" y1="186" x2="708" y2="186"></line>
                 <polyline class="chart-line" points="{{ analytics.polyline }}"></polyline>
                 {% for point in analytics.points %}
@@ -129,7 +129,7 @@
               <ul>{% for point in analytics.points %}<li>{{ point.label }}: {{ point.value }} pessoas</li>{% endfor %}</ul>
             </details>
           {% else %}
-            <div class="chart-empty">Não houve novas inscrições nos últimos 30 dias. A evolução aparecerá conforme novos cadastros forem registrados.</div>
+            <div class="chart-empty">Ainda não há cadastros para formar a evolução. O gráfico aparecerá assim que a primeira pessoa entrar na lista.</div>
           {% endif %}
         </div>
       </section>

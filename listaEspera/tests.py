@@ -81,7 +81,7 @@ class StatusViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "3")
         self.assertContains(response, "pessoas interessadas")
-        self.assertContains(response, "Evolução das inscrições")
+        self.assertContains(response, "Crescimento da lista")
         self.assertContains(response, "Ver dados do gráfico")
 
 

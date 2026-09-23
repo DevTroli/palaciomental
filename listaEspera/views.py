@@ -116,45 +116,46 @@ def _waitlist_analytics():
     """Prepara apenas dados agregados e públicos para a seção de tração."""
     try:
         now = datetime.now().astimezone()
-        start = now - timedelta(days=29)
+        first_signup = WaitlistEntry.objects.order_by("created_at").values_list("created_at", flat=True).first()
+        total = WaitlistEntry.objects.count()
+        if not first_signup:
+            return {"total": 0, "first_signup": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
+        first_date = first_signup.astimezone().date()
         daily_rows = list(
-            WaitlistEntry.objects.filter(created_at__date__gte=start.date())
+            WaitlistEntry.objects.filter(created_at__date__gte=first_date)
             .annotate(day=TruncDate("created_at"))
             .values("day")
             .annotate(total=Count("id"))
             .order_by("day")
         )
-        total = WaitlistEntry.objects.count()
-        last_seven_days = WaitlistEntry.objects.filter(
-            created_at__date__gte=(now - timedelta(days=6)).date()
-        ).count()
+        daily_totals = {row["day"]: row["total"] for row in daily_rows}
     except DatabaseError:
-        return {"total": None, "last_seven_days": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
-    cumulative = total - sum(row["total"] for row in daily_rows)
+        return {"total": None, "first_signup": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
+    cumulative = 0
     points = []
     width, height = 720, 220
     left, right, top, bottom = 42, 12, 18, 34
     chart_width = width - left - right
     chart_height = height - top - bottom
-    cumulative_values = []
-    for row in daily_rows:
-        cumulative += row["total"]
-        cumulative_values.append(cumulative)
-    chart_max = max(cumulative_values or [1])
-    cumulative = total - sum(row["total"] for row in daily_rows)
-    for index, row in enumerate(daily_rows):
-        cumulative += row["total"]
-        x = left if len(daily_rows) == 1 else left + (chart_width * index / (len(daily_rows) - 1))
+    dates = []
+    cursor = first_date
+    while cursor <= now.date():
+        dates.append(cursor)
+        cursor += timedelta(days=1)
+    chart_max = max(total, 1)
+    for index, current_date in enumerate(dates):
+        cumulative += daily_totals.get(current_date, 0)
+        x = left if len(dates) == 1 else left + (chart_width * index / (len(dates) - 1))
         y = top + chart_height - (chart_height * cumulative / chart_max)
         points.append({
             "x": round(x, 2),
             "y": round(y, 2),
             "value": cumulative,
-            "label": row["day"].strftime("%d/%m"),
+            "label": current_date.strftime("%d/%m"),
         })
     return {
         "total": total,
-        "last_seven_days": last_seven_days,
+        "first_signup": first_signup.astimezone().strftime("%d/%m/%Y"),
         "points": points,
         "polyline": " ".join(f"{point['x']},{point['y']}" for point in points),
         "chart_max": chart_max,
