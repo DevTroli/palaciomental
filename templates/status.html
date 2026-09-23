@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#321943">
+  <meta name="description" content="Acompanhe o estado dos serviços do Palácio Mental.">
+  <title>Status do sistema — Palácio Mental</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/status.css' %}">
+</head>
+<body>
+  <header class="status-header">
+    <div class="status-container status-nav">
+      <a class="brand" href="{% url 'listaEspera:index' %}" aria-label="Voltar para a página inicial">
+        <img src="{% static 'img/mind_palace_logo.png' %}" alt="" width="42" height="42">
+        <span>Palácio Mental</span>
+      </a>
+      <a class="back-link" href="{% url 'listaEspera:index' %}">Voltar à página inicial</a>
+    </div>
+  </header>
+
+  <main class="status-main">
+    <div class="status-container">
+      <section class="status-intro" aria-labelledby="status-title">
+        <h1 id="status-title">Status do sistema</h1>
+      </section>
+
+      {% if status_available %}
+        <section class="overall overall--{{ overall_status }}" aria-live="polite">
+          <div class="overall-icon" aria-hidden="true">{{ overall_icon }}</div>
+          <div>
+            <p class="overall-label">Estado geral</p>
+            <h2>{{ overall_label }}</h2>
+            <p>{{ overall_message }}</p>
+          </div>
+        </section>
+      {% else %}
+        <section class="overall overall--unknown" aria-live="polite">
+          <div class="overall-icon" aria-hidden="true">?</div>
+          <div>
+            <p class="overall-label">Estado geral</p>
+            <h2>Status indisponível no momento</h2>
+            <p>Não foi possível consultar os serviços agora. Tente novamente em alguns instantes.</p>
+          </div>
+        </section>
+      {% endif %}
+
+      <section aria-labelledby="services-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Visão operacional</p>
+            <h2 id="services-title">Serviços monitorados</h2>
+          </div>
+          {% if checked_at %}<p class="checked-at">Última verificação<br><strong>{{ checked_at }}</strong></p>{% endif %}
+        </div>
+
+        <div class="service-grid">
+          {% for service in services %}
+            <article class="service-card service-card--{{ service.status }}">
+              <p class="service-group">{{ service.group }}</p>
+              <div class="service-card-top">
+                <div class="service-icon" aria-hidden="true">{{ service.icon }}</div>
+                <span class="status-badge"><span class="status-dot" aria-hidden="true"></span>{{ service.label }}</span>
+              </div>
+              <h3>{{ service.name }}</h3>
+              <p>{{ service.message }}</p>
+              {% if service.metrics %}
+                <dl class="service-metrics">
+                  {% for metric in service.metrics %}
+                    <div><dt>{{ metric.label }}</dt><dd>{{ metric.value }}</dd></div>
+                  {% endfor %}
+                </dl>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="growth-section" aria-labelledby="growth-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Tração da comunidade</p>
+            <h2 id="growth-title">Lista de espera</h2>
+          </div>
+          <p class="checked-at">Dados agregados<br><strong>desde o primeiro cadastro</strong></p>
+        </div>
+        <div class="growth-summary">
+          {% if analytics.total is not None %}
+            <div class="growth-total">
+              <span class="growth-number">{{ analytics.total }}</span>
+              <span class="growth-label">pessoas interessadas desde o início da lista</span>
+            </div>
+            <div class="growth-stat">
+              <span>{{ analytics.first_signup }}</span>
+              <small>primeiro cadastro recebido</small>
+            </div>
+          {% else %}
+            <div class="growth-total growth-total--empty">
+              <span class="growth-number">—</span>
+              <span class="growth-label">métricas indisponíveis no momento</span>
+            </div>
+          {% endif %}
+        </div>
+        <div class="chart-card">
+          <div class="chart-heading">
+            <div><h3>Crescimento da lista</h3><p>Total acumulado desde o primeiro cadastro</p></div>
+            {% if analytics.has_data %}<strong>{{ analytics.chart_max }}</strong>{% endif %}
+          </div>
+          {% if analytics.has_data %}
+            <div class="chart-wrap">
+              <svg class="growth-chart" viewBox="0 0 720 220" role="img" aria-labelledby="chart-title chart-description">
+                <title id="chart-title">Evolução acumulada da lista de espera</title>
+                <desc id="chart-description">Gráfico com o crescimento acumulado da lista de espera desde {{ analytics.first_signup }} até hoje, com {{ analytics.total }} pessoas interessadas.</desc>
+                <line class="chart-axis" x1="42" y1="186" x2="708" y2="186"></line>
+                <text class="chart-scale" x="8" y="23">{{ analytics.chart_max }}</text>
+                <text class="chart-scale" x="28" y="189">0</text>
+                <polyline class="chart-line" points="{{ analytics.polyline }}"></polyline>
+                {% for point in analytics.points %}
+                  <circle class="chart-point" cx="{{ point.x }}" cy="{{ point.y }}" r="4"><title>{{ point.label }}: {{ point.value }} pessoas</title></circle>
+                {% endfor %}
+                {% with first=analytics.points|first last=analytics.points|last %}
+                  <text class="chart-label" x="42" y="210">{{ first.label }}</text>
+                  <text class="chart-label chart-label--end" x="708" y="210">{{ last.label }}</text>
+                {% endwith %}
+              </svg>
+            </div>
+            <details class="chart-data">
+              <summary>Ver dados do gráfico</summary>
+              <ul>{% for point in analytics.points %}<li>{{ point.label }}: {{ point.value }} pessoas</li>{% endfor %}</ul>
+            </details>
+          {% else %}
+            <div class="chart-empty">Ainda não há cadastros para formar a evolução. O gráfico aparecerá assim que a primeira pessoa entrar na lista.</div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="deployment-section" aria-labelledby="deployment-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Entrega em execução</p>
+            <h2 id="deployment-title">Deploy atual</h2>
+          </div>
+        </div>
+        {% if deployment_metrics %}
+          <dl class="deployment-grid">
+            {% for metric in deployment_metrics %}
+              <div><dt>{{ metric.label }}</dt><dd>{{ metric.value }}</dd></div>
+            {% endfor %}
+          </dl>
+          <p class="deployment-help">Essas informações identificam a versão que está respondendo agora. Elas são fornecidas pelo ambiente de deploy e não incluem segredos.</p>
+        {% else %}
+          <div class="deployment-empty">Os metadados do deploy ainda não estão disponíveis neste ambiente.</div>
+        {% endif %}
+      </section>
+
+      <p class="status-note"><span aria-hidden="true">i</span> Os indicadores técnicos exibidos ajudam nossa equipe a acompanhar a operação sem expor logs ou dados sensíveis.</p>
+    </div>
+  </main>
+
+  <footer class="status-footer">
+    <div class="status-container"><span>Palácio Mental</span><a href="{% url 'listaEspera:index' %}">Página inicial</a></div>
+  </footer>
+</body>
+</html>

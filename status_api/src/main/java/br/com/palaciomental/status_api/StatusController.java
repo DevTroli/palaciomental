@@ -3,6 +3,7 @@ package br.com.palaciomental.status_api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,8 +45,26 @@ public class StatusController {
         Instant.now().toString(),
         "status",
         allOk ? "operacional" : "degradado",
+        "deployment",
+        deploymentInfo(),
         "dependencies",
         Map.of("database", database, "django_app", django));
+  }
+
+  private Map<String, String> deploymentInfo() {
+    Map<String, String> info = new LinkedHashMap<>();
+    putIfPresent(info, "commit", System.getenv("RAILWAY_GIT_COMMIT_SHA"));
+    putIfPresent(info, "author", System.getenv("RAILWAY_GIT_AUTHOR"));
+    putIfPresent(info, "branch", System.getenv("RAILWAY_GIT_BRANCH"));
+    putIfPresent(info, "service", System.getenv("RAILWAY_SERVICE_NAME"));
+    putIfPresent(info, "environment", System.getenv("RAILWAY_ENVIRONMENT_NAME"));
+    return info;
+  }
+
+  private void putIfPresent(Map<String, String> info, String key, String value) {
+    if (value != null && !value.isBlank()) {
+      info.put(key, value);
+    }
   }
 
   private Map<String, Object> checkDatabase() {
@@ -74,12 +93,14 @@ public class StatusController {
   private Map<String, Object> checkDjango() {
     long start = System.currentTimeMillis();
     try {
-      var response = restTemplate.getForEntity(djangoAppUrl + "/saude", String.class);
-      return Map.of(
-          "status",
-          response.getStatusCode().is2xxSuccessful() ? "operacional" : "degradado",
-          "response_time_ms",
-          System.currentTimeMillis() - start);
+      var response = restTemplate.getForEntity(djangoAppUrl + "/saude", Map.class);
+      Map<String, Object> result = new LinkedHashMap<>();
+      result.put("status", response.getStatusCode().is2xxSuccessful() ? "operacional" : "degradado");
+      result.put("response_time_ms", System.currentTimeMillis() - start);
+      if (response.getBody() != null && response.getBody().get("deployment") instanceof Map<?, ?> deployment) {
+        result.put("deployment", deployment);
+      }
+      return result;
     } catch (Exception e) {
       return Map.of(
           "status", "indisponivel", "response_time_ms", System.currentTimeMillis() - start);
