@@ -37,6 +37,13 @@
           font-family: "Forum", serif;
           font-size: 18px;
           line-height: 1.6;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        main {
+          flex: 1;
         }
 
         a {

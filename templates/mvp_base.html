@@ -11,14 +11,12 @@
 <body>
   <header class="mvp-header">
     <div class="mvp-container nav-shell">
-      <a class="brand" href="{% url 'listaEspera:index' %}">
+      <a class="brand" href="{% url 'core:index' %}">
         <img src="{% static 'img/mind_palace_logo.png' %}" alt="">
         <span>Palácio Mental</span>
       </a>
       <nav class="main-nav" aria-label="Navegação principal">
         <a href="{% url 'listaEspera:projects' %}">Projetos</a>
-        <a href="{% url 'listaEspera:projects' %}?status=ideia">Ideias</a>
-        <a href="{% url 'listaEspera:projects' %}">Colaboradores</a>
       </nav>
       <div class="nav-actions">
         <form class="nav-search" action="{% url 'listaEspera:projects' %}" method="get">

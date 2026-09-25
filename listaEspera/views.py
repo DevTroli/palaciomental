@@ -20,12 +20,6 @@ from django.views.decorators.csrf import csrf_exempt
 from .forms import MemberCreationForm, ProfileForm, ProjectForm
 from .models import MemberProfile, Project, ProjectMember, WaitlistEntry
 
-
-def index(request):
-    latest_projects = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner")[:3]
-    return render(request, "listaEspera/index.html", {"latest_projects": latest_projects})
-
-
 def register(request):
     if request.user.is_authenticated:
         return redirect("listaEspera:profile", username=request.user.username)
@@ -51,7 +45,7 @@ def login_view(request):
 @require_http_methods(["POST"])
 def logout_view(request):
     logout(request)
-    return redirect("listaEspera:index")
+    return redirect("core:index")
 
 
 def profile(request, username):

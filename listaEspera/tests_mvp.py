@@ -36,7 +36,7 @@ class MvpProjectTests(TestCase):
         self.project = Project.objects.create(owner=self.owner, title="Projeto Aurora", direction="Tornar ideias visíveis.", category="Educação", tags="pesquisa, educação")
 
     def test_public_project_appears_on_home_and_explorer(self):
-        self.assertContains(self.client.get(reverse("listaEspera:index")), "Projeto Aurora")
+        self.assertContains(self.client.get(reverse("core:index")), "Projeto Aurora")
         self.assertContains(self.client.get(reverse("listaEspera:projects")), "Projeto Aurora")
         self.assertContains(self.client.get(reverse("listaEspera:projects") + "?tag=pesquisa"), "Projeto Aurora")
 

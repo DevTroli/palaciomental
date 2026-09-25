@@ -24,14 +24,15 @@ class WaitlistModelTests(TestCase):
 
 
 class WaitlistViewTests(TestCase):
-    """Teste essencial da view index (GET /)."""
+    """A homepage core é a porta de entrada do produto."""
 
     def test_get_index_returns_200_with_form(self):
         """GET na home deve retornar 200 com formulário."""
-        response = self.client.get(reverse("listaEspera:index"))
+        response = self.client.get(reverse("core:index"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "listaEspera/index.html")
-        self.assertContains(response, 'id="waitlistForm"')
+        self.assertTemplateUsed(response, "core/index.html")
+        self.assertContains(response, "Projetos recentes")
+        self.assertContains(response, "Criar meu primeiro projeto")
 
 
 class StatusViewTests(TestCase):
