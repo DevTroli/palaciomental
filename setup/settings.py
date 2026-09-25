@@ -42,6 +42,10 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
+LOGIN_URL = "listaEspera:login"
+LOGIN_REDIRECT_URL = "listaEspera:projects"
+LOGOUT_REDIRECT_URL = "listaEspera:index"
+
 # Endpoint externo usado somente pela página pública de status. O timeout curto
 # garante que uma indisponibilidade da API não afete as demais páginas.
 STATUS_API_URL = config(

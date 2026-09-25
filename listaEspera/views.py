@@ -5,19 +5,121 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import WaitlistEntry
+from .forms import MemberCreationForm, ProfileForm, ProjectForm
+from .models import MemberProfile, Project, ProjectMember, WaitlistEntry
 
 
 def index(request):
-    return render(request, "listaEspera/index.html")
+    latest_projects = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner")[:3]
+    return render(request, "listaEspera/index.html", {"latest_projects": latest_projects})
+
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect("listaEspera:profile", username=request.user.username)
+    form = MemberCreationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        MemberProfile.objects.create(user=user)
+        login(request, user)
+        messages.success(request, "Conta criada. Agora você pode dar forma ao seu primeiro projeto.")
+        return redirect("listaEspera:profile", username=user.username)
+    return render(request, "auth/register.html", {"form": form})
+
+
+def login_view(request):
+    from django.contrib.auth.forms import AuthenticationForm
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.get_user())
+        return redirect(request.GET.get("next") or "listaEspera:projects")
+    return render(request, "auth/login.html", {"form": form})
+
+
+@require_http_methods(["POST"])
+def logout_view(request):
+    logout(request)
+    return redirect("listaEspera:index")
+
+
+def profile(request, username):
+    user = get_object_or_404(User, username=username)
+    MemberProfile.objects.get_or_create(user=user)
+    owned = user.owned_projects.filter(visibility=Project.VISIBILITY_PUBLIC)
+    collaborated = Project.objects.filter(memberships__user=user, visibility=Project.VISIBILITY_PUBLIC).exclude(owner=user).distinct()
+    return render(request, "members/profile.html", {"member": user, "owned_projects": owned, "collaborated_projects": collaborated})
+
+
+@login_required
+def profile_edit(request):
+    profile_obj, _ = MemberProfile.objects.get_or_create(user=request.user)
+    form = ProfileForm(request.POST or None, instance=profile_obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Seu perfil foi atualizado.")
+        return redirect("listaEspera:profile", username=request.user.username)
+    return render(request, "members/profile_edit.html", {"form": form})
+
+
+def projects(request):
+    queryset = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner")
+    query = request.GET.get("q", "").strip()
+    category = request.GET.get("category", "").strip()
+    status = request.GET.get("status", "").strip()
+    tag = request.GET.get("tag", "").strip()
+    if query:
+        queryset = queryset.filter(Q(title__icontains=query) | Q(direction__icontains=query))
+    if category:
+        queryset = queryset.filter(category__iexact=category)
+    if status:
+        queryset = queryset.filter(status=status)
+    if tag:
+        queryset = queryset.filter(tags__icontains=tag)
+    categories = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
+    context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag}}
+    return render(request, "projects/list.html", context)
+
+
+def project_detail(request, pk):
+    project = get_object_or_404(Project.objects.select_related("owner"), pk=pk)
+    if project.visibility == Project.VISIBILITY_PRIVATE and project.owner != request.user and not project.memberships.filter(user=request.user).exists():
+        raise Http404
+    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user")})
+
+
+@login_required
+def project_create(request):
+    form = ProjectForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        project = form.save(commit=False)
+        project.owner = request.user
+        project.save()
+        messages.success(request, "Projeto criado. Agora você pode acompanhar sua evolução.")
+        return redirect("listaEspera:project_detail", pk=project.pk)
+    return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto", "submit_label": "Criar projeto"})
+
+
+@login_required
+def project_edit(request, pk):
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    form = ProjectForm(request.POST or None, instance=project)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Projeto atualizado.")
+        return redirect("listaEspera:project_detail", pk=project.pk)
+    return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto", "submit_label": "Salvar alterações", "project": project})
 
 
 def saude(request):

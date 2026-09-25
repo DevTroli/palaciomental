@@ -1,0 +1,43 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Palácio Mental{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/mvp.css' %}">
+</head>
+<body>
+  <header class="mvp-header">
+    <div class="mvp-container nav-shell">
+      <a class="brand" href="{% url 'listaEspera:index' %}">
+        <img src="{% static 'img/mind_palace_logo.png' %}" alt="">
+        <span>Palácio Mental</span>
+      </a>
+      <nav class="main-nav" aria-label="Navegação principal">
+        <a href="{% url 'listaEspera:projects' %}">Projetos</a>
+        <a href="{% url 'listaEspera:projects' %}?status=ideia">Ideias</a>
+        <a href="{% url 'listaEspera:projects' %}">Colaboradores</a>
+      </nav>
+      <div class="nav-actions">
+        <form class="nav-search" action="{% url 'listaEspera:projects' %}" method="get">
+          <label class="sr-only" for="nav-search">Pesquisar projetos</label>
+          <input id="nav-search" name="q" placeholder="Pesquisar projetos, tags ou pessoas..." value="{{ request.GET.q }}">
+          <button aria-label="Pesquisar" type="submit">⌕</button>
+        </form>
+        {% if request.user.is_authenticated %}
+          <a class="nav-user" href="{% url 'listaEspera:profile' request.user.username %}">{{ request.user.first_name|default:request.user.username }}</a>
+          <form method="post" action="{% url 'listaEspera:logout' %}">{% csrf_token %}<button class="link-button" type="submit">Sair</button></form>
+        {% else %}
+          <a class="nav-login" href="{% url 'listaEspera:login' %}">Entrar</a>
+          <a class="button button-green button-small" href="{% url 'listaEspera:register' %}">Cadastre-se</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  {% if messages %}<div class="mvp-container messages" aria-live="polite">{% for message in messages %}<p class="message">{{ message }}</p>{% endfor %}</div>{% endif %}
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="mvp-footer"><div class="mvp-container"><span>Palácio Mental</span><a href="{% url 'listaEspera:status' %}">Status do sistema</a></div></footer>
+</body>
+</html>
