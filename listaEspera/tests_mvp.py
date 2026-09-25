@@ -33,7 +33,7 @@ class MvpProjectTests(TestCase):
         self.owner = User.objects.create_user(username="owner", email="owner@example.com", password="Senha-forte-123", first_name="Owner")
         self.collaborator = User.objects.create_user(username="collab", email="collab@example.com", password="Senha-forte-123")
         MemberProfile.objects.create(user=self.owner, bio="Crio coisas")
-        self.project = Project.objects.create(owner=self.owner, title="Projeto Aurora", direction="Tornar ideias visíveis.", category="Educação", tags="pesquisa, educação")
+        self.project = Project.objects.create(owner=self.owner, title="Projeto Aurora", direction="Tornar ideias visíveis.", category="Educação", tags="pesquisa, educação", visibility=Project.VISIBILITY_PUBLIC)
 
     def test_public_project_appears_on_home_and_explorer(self):
         self.assertContains(self.client.get(reverse("core:index")), "Projeto Aurora")

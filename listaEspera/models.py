@@ -52,7 +52,7 @@ class Project(models.Model):
     title = models.CharField("Título", max_length=140)
     direction = models.TextField("Direção", max_length=1000, help_text="Por que este projeto existe?")
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_IDEA)
-    visibility = models.CharField("Visibilidade", max_length=20, choices=VISIBILITY_CHOICES, default=VISIBILITY_PUBLIC)
+    visibility = models.CharField("Visibilidade", max_length=20, choices=VISIBILITY_CHOICES, default=VISIBILITY_PRIVATE)
     category = models.CharField("Categoria", max_length=80)
     tags = models.CharField("Tags", max_length=300, blank=True, help_text="Separe as tags por vírgula")
     created_at = models.DateTimeField(auto_now_add=True)
