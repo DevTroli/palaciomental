@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#321943">
+  <meta name="description" content="Palácio Mental: organize, desenvolva e compartilhe seus projetos.">
+  <title>Palácio Mental — Projetos que continuam</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/core.css' %}">
+</head>
+<body>
+  <header class="core-header">
+    <div class="core-container core-nav">
+      <a class="core-brand" href="{% url 'core:index' %}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>PALÁCIO MENTAL</span></a>
+      <nav class="core-menu" aria-label="Navegação principal"><a href="{% url 'listaEspera:projects' %}">Projetos</a></nav>
+      <form class="core-search" action="{% url 'listaEspera:projects' %}" method="get"><label class="sr-only" for="home-search">Pesquisar projetos</label><input id="home-search" name="q" placeholder="Pesquisar projetos, tags ou pessoas..."><button type="submit" aria-label="Pesquisar">⌕</button></form>
+      <div class="core-auth">{% if request.user.is_authenticated %}<a href="{% url 'listaEspera:profile' request.user.username %}">Meu perfil</a>{% else %}<a href="{% url 'listaEspera:login' %}">Entrar</a><a class="core-register" href="{% url 'listaEspera:register' %}">Cadastre-se</a>{% endif %}</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="core-hero">
+      <div class="core-container hero-inner">
+        <h1>A plataforma para armazenar, versionar e<br class="desktop-only"> encontrar talentos para suas iniciativas criativas.</h1>
+        <div class="hero-actions"><a class="core-button core-button-green" href="{% url 'listaEspera:project_create' %}">Criar meu primeiro projeto</a><a class="core-button core-button-lilac" href="{% url 'listaEspera:projects' %}">Explorar projetos ativos</a></div>
+      </div>
+    </section>
+
+    <section class="core-container capability-grid" aria-label="Capacidades do Palácio Mental">
+      <article class="capability-card"><span class="capability-icon capability-folder" aria-hidden="true">▰</span><div><h2>Armazene e organize</h2><p>Projetos, processos e referências em um só lugar.</p></div></article>
+      <article class="capability-card"><span class="capability-icon capability-plus" aria-hidden="true">＋</span><div><h2>Versionamento simples</h2><p>Acompanhe mudanças, marcos e evolução.</p></div></article>
+      <article class="capability-card"><span class="capability-icon capability-project" aria-hidden="true">✦</span><div><h2>Encontre projetos</h2><p>Descubra iniciativas e pessoas com objetivos próximos.</p></div></article>
+    </section>
+
+    <section class="core-container recent-section">
+      <div class="core-section-heading"><h2>Projetos recentes</h2><a href="{% url 'listaEspera:projects' %}">Ver todos →</a></div>
+      {% if latest_projects %}<div class="recent-grid">{% for project in latest_projects %}<article class="recent-card"><div class="recent-card-head"><span class="project-avatar">✦</span><span class="project-status">{{ project.get_status_display }}</span></div><h3><a href="{% url 'listaEspera:project_detail' project.pk %}">{{ project.title }}</a></h3><p>{{ project.direction|truncatewords:18 }}</p><div class="project-tags">{% for tag in project.tag_list %}<span>#{{ tag }}</span>{% endfor %}</div><small>por @{{ project.owner.username }}</small></article>{% endfor %}</div>{% else %}<div class="core-empty">Os primeiros projetos aparecerão aqui. <a href="{% url 'listaEspera:register' %}">Crie sua conta para começar.</a></div>{% endif %}
+    </section>
+
+    <section class="core-container how-section"><p class="core-kicker">COMO FUNCIONA</p><div class="how-steps"><div class="how-step"><span>1</span><strong>Crie</strong><small>Dê uma direção ao seu projeto</small></div><i aria-hidden="true">→</i><div class="how-step"><span>2</span><strong>Desenvolva</strong><small>Registre o processo e os marcos</small></div><i aria-hidden="true">→</i><div class="how-step"><span>3</span><strong>Continue</strong><small>Construa com outras pessoas</small></div></div></section>
+  </main>
+
+  <footer class="core-footer"><div class="core-container core-footer-inner"><span>© 2026 Palácio Mental</span><nav aria-label="Links do rodapé"><a href="{% url 'listaEspera:status' %}">Status do sistema</a><a href="{% url 'listaEspera:projects' %}">Projetos</a></nav></div></footer>
+</body>
+</html>
