@@ -19,7 +19,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--cream); color: var(--text); font-family: Arial, sans-serif; line-height: 1.5; }
+body { min-height: 100vh; display: flex; flex-direction: column; margin: 0; background: var(--cream); color: var(--text); font-family: Arial, sans-serif; line-height: 1.5; }
 a { color: inherit; }
  a:focus-visible { outline: 3px solid #c89631; outline-offset: 4px; border-radius: 4px; }
 .status-container { width: min(1060px, calc(100% - 40px)); margin: 0 auto; }
@@ -28,7 +28,7 @@ a { color: inherit; }
 .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; font-family: Georgia, serif; font-size: 19px; font-weight: 700; }
 .brand img { object-fit: contain; }
 .back-link { min-height: 44px; display: inline-flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,.55); text-decoration: none; font-size: 14px; }
-.status-main { padding: 72px 0 92px; }
+.status-main { flex: 1; padding: 72px 0 92px; }
 .status-intro { max-width: 690px; margin-bottom: 34px; }
 .eyebrow { margin: 0 0 10px; color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .eyebrow span { display: inline-block; width: 24px; height: 2px; margin: 0 8px 3px 0; background: currentColor; }
@@ -105,7 +105,7 @@ h1 { margin: 0 0 15px; color: var(--purple-dark); font-size: clamp(38px, 6vw, 62
 .deployment-empty { padding: 18px 20px; background: var(--neutral-bg); border: 1px solid #d8dde2; border-radius: 12px; color: var(--neutral); font-size: 14px; }
 .status-note { display: flex; align-items: center; gap: 9px; margin: 36px 0 0; color: var(--muted); font-size: 13px; }
 .status-note span { display: grid; flex: 0 0 20px; height: 20px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-weight: 700; }
-.status-footer { padding: 24px 0; background: var(--white); border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
+.status-footer { margin-top: auto; padding: 24px 0; background: var(--white); border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
 .status-footer .status-container { display: flex; justify-content: space-between; gap: 20px; }
 .status-footer a { color: var(--purple); font-weight: 700; }
 @media (prefers-contrast: more) {
@@ -114,7 +114,7 @@ h1 { margin: 0 0 15px; color: var(--purple-dark); font-size: clamp(38px, 6vw, 62
 }
 @media (max-width: 720px) {
   .status-container { width: min(100% - 28px, 560px); }
-  .status-main { padding: 48px 0 64px; }
+  .status-main { flex: 1; padding: 48px 0 64px; }
   .status-nav { min-height: 70px; }
   .back-link { font-size: 12px; }
   .brand { font-size: 16px; }
