@@ -80,6 +80,10 @@ class CollaborationRequestForm(forms.ModelForm):
         widgets = {"message": forms.Textarea(attrs={"rows": 3, "maxlength": 500, "placeholder": "Conte brevemente seu interesse e como pode ajudar."})}
 
 class ProjectBasicsForm(forms.ModelForm):
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.project_owner = owner or getattr(self.instance, "owner", None)
+
     class Meta:
         model = Project
         fields = ("title", "direction", "status", "visibility")
@@ -88,6 +92,8 @@ class ProjectBasicsForm(forms.ModelForm):
         title = self.cleaned_data["title"].strip()
         if len(title) < 3:
             raise forms.ValidationError("Use um título com pelo menos 3 caracteres.")
+        if self.project_owner and Project.objects.filter(owner=self.project_owner, title__iexact=title).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Você já possui um projeto com este título. Escolha outro nome para não confundir os projetos.")
         return title
 
 class ProjectContextForm(forms.ModelForm):

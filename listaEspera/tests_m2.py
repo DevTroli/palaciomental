@@ -119,3 +119,26 @@ class M2AcceptanceTests(TestCase):
         ProjectMember.objects.create(project=project, user=self.member, can_manage_milestones=False)
         self.client.force_login(self.member)
         self.assertEqual(self.client.post(reverse("listaEspera:add_milestone", args=[project.pk]), {"title": "x", "description": "x", "milestone_type": "avanco"}).status_code, 404)
+
+class M2AuthorControlsTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(username="titleowner", password="Senha-forte-123")
+        self.other = User.objects.create_user(username="otherauthor", password="Senha-forte-123")
+        MemberProfile.objects.create(user=self.owner)
+        MemberProfile.objects.create(user=self.other)
+
+    def test_owner_cannot_create_duplicate_project_title(self):
+        Project.objects.create(owner=self.owner, title="Mesmo nome", direction="Rumo", category="", visibility=Project.VISIBILITY_PRIVATE)
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("listaEspera:project_create"), {"title": "mesmo nome", "direction": "Outro rumo", "status": "ideia", "visibility": "privado"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Você já possui um projeto com este título")
+        self.assertEqual(Project.objects.filter(owner=self.owner).count(), 1)
+
+    def test_only_original_author_can_delete_project(self):
+        project = Project.objects.create(owner=self.owner, title="Excluir", direction="Rumo", category="", visibility=Project.VISIBILITY_PRIVATE)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(reverse("listaEspera:project_delete", args=[project.pk])).status_code, 404)
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.post(reverse("listaEspera:project_delete", args=[project.pk])).status_code, 302)
+        self.assertFalse(Project.objects.filter(pk=project.pk).exists())

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
 import uuid
 
 
@@ -66,6 +67,7 @@ class Project(models.Model):
     class Meta:
         ordering = ["-updated_at"]
         indexes = [models.Index(fields=["visibility", "status", "category"])]
+        constraints = [models.UniqueConstraint(Lower("title"), "owner", name="unique_owner_project_title_ci")]
 
     def tag_list(self):
         return [tag.strip() for tag in self.tags.split(",") if tag.strip()]

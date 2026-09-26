@@ -126,7 +126,7 @@ def project_detail(request, pk):
     return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
-    form = ProjectBasicsForm(request.POST or None)
+    form = ProjectBasicsForm(request.POST or None, owner=request.user)
     if request.method == "POST" and form.is_valid():
         project = form.save(commit=False)
         project.owner = request.user
@@ -135,6 +135,15 @@ def project_create(request):
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
         return redirect("listaEspera:project_context", pk=project.pk)
     return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto", "submit_label": "Continuar", "form_phase": "basics"})
+
+@login_required
+@require_http_methods(["POST"])
+def project_delete(request, pk):
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    title = project.title
+    project.delete()
+    messages.success(request, f"O projeto {title} foi excluído.")
+    return redirect("listaEspera:profile", username=request.user.username)
 
 @login_required
 def project_context(request, pk):
@@ -155,7 +164,7 @@ def project_context(request, pk):
         else:
             messages.success(request, "Contexto salvo. Seu projeto está pronto para continuar.")
         return redirect("listaEspera:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Adicionar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project})
+    return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto" if (project.category or project.tags or project.links.exists()) else "Adicionar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project})
 
 @login_required
 def project_edit(request, pk):
