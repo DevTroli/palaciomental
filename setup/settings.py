@@ -30,6 +30,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Application definition
 
 INSTALLED_APPS = [
+    "core.apps.CoreConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -41,6 +42,10 @@ INSTALLED_APPS = [
 ]
 
 SITE_ID = 1
+
+LOGIN_URL = "listaEspera:login"
+LOGIN_REDIRECT_URL = "listaEspera:projects"
+LOGOUT_REDIRECT_URL = "core:index"
 
 # Endpoint externo usado somente pela página pública de status. O timeout curto
 # garante que uma indisponibilidade da API não afete as demais páginas.

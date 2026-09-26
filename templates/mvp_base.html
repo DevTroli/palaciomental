@@ -1,0 +1,28 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Palácio Mental{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/mvp.css' %}">
+</head>
+<body>
+  <header class="mvp-header"><div class="mvp-container mvp-nav">
+    <a class="mvp-brand" href="{% url 'core:index' %}" aria-label="Palácio Mental — início do MVP"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""></a>
+    {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}<nav class="mvp-menu" aria-label="Navegação principal"><a href="{% url 'listaEspera:projects' %}">Vitrine</a></nav>{% endif %}
+    <div class="mvp-actions">
+      {% if request.resolver_match.url_name == 'projects' %}<button class="mvp-search-trigger" type="button" aria-expanded="false" aria-controls="mvp-search-panel" aria-label="Abrir busca"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg></button><form class="mvp-search-panel" id="mvp-search-panel" action="{% url 'listaEspera:projects' %}" method="get" hidden><label class="sr-only" for="mvp-search">Pesquisar projetos</label><input id="mvp-search" name="q" placeholder="Buscar na vitrine..." value="{{ request.GET.q }}"><button type="submit">Buscar</button></form>{% endif %}
+      {% if request.user.is_authenticated %}
+        <a class="mvp-create" href="{% url 'listaEspera:project_create' %}" aria-label="Iniciar novo projeto" title="Iniciar novo projeto"><span aria-hidden="true">+</span></a>
+        <details class="account-menu"><summary class="account-trigger" aria-label="Abrir menu da conta"><span class="account-avatar">{{ request.user.first_name|default:request.user.username|first|upper }}</span><span class="account-name">{{ request.user.first_name|default:request.user.username }}</span><span class="account-chevron" aria-hidden="true">⌄</span></summary><div class="account-dropdown" role="menu"><div class="account-heading"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><small>@{{ request.user.username }}</small></div><a role="menuitem" href="{% url 'listaEspera:profile' request.user.username %}">Meu espaço</a><a role="menuitem" href="{% url 'listaEspera:profile_edit' %}">Editar perfil</a><form method="post" action="{% url 'listaEspera:logout' %}">{% csrf_token %}<button role="menuitem" type="submit">Sair</button></form></div></details>
+      {% elif request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}<a class="mvp-login" href="{% url 'listaEspera:login' %}">Entrar</a><a class="mvp-register" href="{% url 'listaEspera:register' %}">Começar</a>{% endif %}
+    </div>
+  </div></header>
+  <nav class="breadcrumbs mvp-container" aria-label="Você está aqui"><a href="{% url 'core:index' %}">MVP</a><span aria-hidden="true">/</span><span>{% block breadcrumb_label %}Página{% endblock %}</span></nav>
+  {% if messages %}<div class="mvp-container messages" aria-live="polite">{% for message in messages %}<p class="message">{{ message }}</p>{% endfor %}</div>{% endif %}
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="mvp-footer"><div class="mvp-container footer-inner"><a class="footer-brand" href="{% url 'core:index' %}" aria-label="Palácio Mental — início do MVP"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>Palácio Mental</span></a><nav aria-label="Links do rodapé"><a href="{% url 'listaEspera:status' %}">Status do sistema</a><a href="{% url 'listaEspera:projects' %}">Vitrine</a></nav></div></footer>
+  <script>const trigger=document.querySelector('.mvp-search-trigger'),panel=document.querySelector('#mvp-search-panel');if(trigger&&panel){trigger.addEventListener('click',()=>{const open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));panel.hidden=open;if(!open)panel.querySelector('input').focus();});}</script>
+</body>
+</html>
