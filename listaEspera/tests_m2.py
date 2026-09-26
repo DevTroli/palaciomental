@@ -68,3 +68,55 @@ class CommunityM2Tests(TestCase):
         self.client.force_login(self.member)
         self.assertEqual(self.client.post(reverse("listaEspera:add_comment", args=[self.project.pk]), {"content": "x"}).status_code, 404)
         self.assertEqual(self.client.post(reverse("listaEspera:toggle_vote", args=[self.project.pk])).status_code, 404)
+
+
+class M2AcceptanceTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(username="author", password="Senha-forte-123")
+        self.member = User.objects.create_user(username="reader", password="Senha-forte-123")
+        MemberProfile.objects.create(user=self.owner)
+        MemberProfile.objects.create(user=self.member)
+
+    def test_restricted_project_requires_access_link_and_private_is_owner_only(self):
+        restricted = Project.objects.create(owner=self.owner, title="Restrito", direction="Rumo", category="", visibility=Project.VISIBILITY_RESTRICTED)
+        private = Project.objects.create(owner=self.owner, title="Privado", direction="Rumo", category="", visibility=Project.VISIBILITY_PRIVATE)
+        self.assertEqual(self.client.get(reverse("listaEspera:project_detail", args=[restricted.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("listaEspera:project_detail", args=[restricted.pk]) + f"?access={restricted.access_token}").status_code, 200)
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.get(reverse("listaEspera:project_detail", args=[private.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("listaEspera:project_detail", args=[restricted.pk]) + f"?access={restricted.access_token}").status_code, 200)
+
+    def test_create_starts_with_basics_then_generates_action_milestone(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("listaEspera:project_create"), {"title": "Nova ideia", "direction": "Um rumo", "status": "ideia", "visibility": "privado"})
+        project = Project.objects.get(title="Nova ideia")
+        self.assertRedirects(response, reverse("listaEspera:project_context", args=[project.pk]))
+        self.assertTrue(ProjectMilestone.objects.filter(project=project, title="Projeto iniciado").exists())
+
+    def test_context_can_add_links_and_creates_progress_milestone(self):
+        project = Project.objects.create(owner=self.owner, title="Links", direction="Rumo", category="", visibility=Project.VISIBILITY_PRIVATE)
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("listaEspera:project_context", args=[project.pk]), {
+            "category": "Pesquisa", "tags": "contexto, design", "visibility": "restrito", "seeking_collaborators": "",
+            "collaboration_description": "", "collaboration_tags": "", "links-TOTAL_FORMS": "1", "links-INITIAL_FORMS": "0", "links-MIN_NUM_FORMS": "0", "links-MAX_NUM_FORMS": "12",
+            "links-0-label": "Documento", "links-0-url": "https://example.com",
+        })
+        project.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(project.visibility, Project.VISIBILITY_RESTRICTED)
+        self.assertEqual(project.links.count(), 1)
+        self.assertTrue(ProjectMilestone.objects.filter(project=project, description__icontains="links").exists())
+
+    def test_unread_inbox_is_counted_and_marked_read_when_opened(self):
+        notification = Notification.objects.create(recipient=self.owner, kind="test", message="Nova atualização")
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse("listaEspera:inbox"))
+        self.assertContains(response, "Nova atualização")
+        notification.refresh_from_db()
+        self.assertIsNotNone(notification.read_at)
+
+    def test_member_without_milestone_permission_cannot_manage(self):
+        project = Project.objects.create(owner=self.owner, title="Permissões", direction="Rumo", category="", visibility=Project.VISIBILITY_PUBLIC)
+        ProjectMember.objects.create(project=project, user=self.member, can_manage_milestones=False)
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.post(reverse("listaEspera:add_milestone", args=[project.pk]), {"title": "x", "description": "x", "milestone_type": "avanco"}).status_code, 404)

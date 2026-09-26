@@ -831,3 +831,5 @@ main {
     display: none
   }
 }
+.core-inbox-quick{position:relative;display:grid;place-items:center;width:34px;height:34px;color:var(--purple)}.core-inbox-quick svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}.core-inbox-quick:hover{color:var(--green)}
+.core-inbox-quick b{position:absolute;top:-4px;right:-5px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:10px;background:var(--green);color:#fff;font-size:10px;line-height:1}

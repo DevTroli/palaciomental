@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import uuid
 
 
 class WaitlistEntry(models.Model):
@@ -46,13 +47,15 @@ class Project(models.Model):
     )
     VISIBILITY_PUBLIC = "publico"
     VISIBILITY_PRIVATE = "privado"
-    VISIBILITY_CHOICES = ((VISIBILITY_PUBLIC, "Público"), (VISIBILITY_PRIVATE, "Privado"))
+    VISIBILITY_RESTRICTED = "restrito"
+    VISIBILITY_CHOICES = ((VISIBILITY_PUBLIC, "Público"), (VISIBILITY_RESTRICTED, "Restrito — acesso por link"), (VISIBILITY_PRIVATE, "Privado"))
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="owned_projects")
     title = models.CharField("Título", max_length=140)
     direction = models.TextField("Direção", max_length=1000, help_text="Por que este projeto existe?")
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_IDEA)
     visibility = models.CharField("Visibilidade", max_length=20, choices=VISIBILITY_CHOICES, default=VISIBILITY_PRIVATE)
+    access_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     category = models.CharField("Categoria", max_length=80)
     tags = models.CharField("Tags", max_length=300, blank=True, help_text="Separe as tags por vírgula")
     seeking_collaborators = models.BooleanField("Buscando colaboradores", default=False)
@@ -72,10 +75,24 @@ class Project(models.Model):
         return self.title
 
 
+class ProjectLink(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="links")
+    label = models.CharField("Nome do link", max_length=80)
+    url = models.URLField("URL", max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.label} — {self.project.title}"
+
+
 class ProjectMember(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="memberships")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="project_memberships")
     role = models.CharField("Papel", max_length=80, default="Colaborador")
+    can_manage_milestones = models.BooleanField("Pode gerenciar marcos", default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -18,8 +18,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectForm
-from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectMember, ProjectMilestone, ProjectVote, WaitlistEntry
+from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet
+from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, WaitlistEntry
 
 def index(request):
     """Página pública exclusiva da lista de espera durante a validação."""
@@ -57,7 +57,7 @@ def logout_view(request):
 def profile(request, username):
     user = get_object_or_404(User, username=username)
     MemberProfile.objects.get_or_create(user=user)
-    owned = user.owned_projects.filter(visibility=Project.VISIBILITY_PUBLIC)
+    owned = user.owned_projects.all() if request.user == user else user.owned_projects.filter(visibility=Project.VISIBILITY_PUBLIC)
     collaborated = Project.objects.filter(memberships__user=user, visibility=Project.VISIBILITY_PUBLIC).exclude(owner=user).distinct()
     return render(request, "members/profile.html", {"member": user, "owned_projects": owned, "collaborated_projects": collaborated})
 
@@ -96,49 +96,86 @@ def projects(request):
     return render(request, "projects/list.html", context)
 
 
+def _project_accessible(project, user, access_token=""):
+    if project.visibility == Project.VISIBILITY_PUBLIC:
+        return True
+    if user.is_authenticated and project.owner == user:
+        return True
+    return project.visibility == Project.VISIBILITY_RESTRICTED and str(project.access_token) == str(access_token or "")
+
+def _can_manage_milestones(project, user):
+    if not user.is_authenticated:
+        return False
+    if project.owner == user:
+        return True
+    return project.memberships.filter(user=user, can_manage_milestones=True).exists()
+
+def _auto_milestone(project, actor, title, description, milestone_type=ProjectMilestone.TYPE_PROGRESS):
+    ProjectMilestone.objects.create(project=project, author=actor, title=title, description=description, milestone_type=milestone_type)
+
 def project_detail(request, pk):
     project = get_object_or_404(Project.objects.select_related("owner"), pk=pk)
-    if project.visibility == Project.VISIBILITY_PRIVATE and project.owner != request.user and not project.memberships.filter(user=request.user).exists():
+    access_token = request.GET.get("access", "")
+    if not _project_accessible(project, request.user, access_token):
         raise Http404
     comments = project.comments.filter(parent__isnull=True).select_related("author").prefetch_related("replies__author")
     voted = request.user.is_authenticated and project.votes.filter(user=request.user).exists()
-    can_manage = request.user.is_authenticated and (request.user == project.owner or project.memberships.filter(user=request.user).exists())
+    can_manage = _can_manage_milestones(project, request.user)
     collaboration_request = project.collaboration_requests.filter(requester=request.user).first() if request.user.is_authenticated else None
-    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.select_related("requester") if request.user == project.owner else []})
-
-
+    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.select_related("requester") if request.user == project.owner else [], "access_token": access_token, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
-    form = ProjectForm(request.POST or None)
+    form = ProjectBasicsForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         project = form.save(commit=False)
         project.owner = request.user
         project.save()
-        messages.success(request, "Projeto criado. Agora você pode acompanhar sua evolução.")
-        return redirect("listaEspera:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto", "submit_label": "Criar projeto"})
+        _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
+        messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
+        return redirect("listaEspera:project_context", pk=project.pk)
+    return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto", "submit_label": "Continuar", "form_phase": "basics"})
 
+@login_required
+def project_context(request, pk):
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    form = ProjectContextForm(request.POST or None, instance=project)
+    formset = ProjectLinkFormSet(request.POST or None, instance=project, prefix="links")
+    if request.method == "POST" and form.is_valid() and formset.is_valid():
+        before = {"category": project.category, "tags": project.tags, "visibility": project.visibility, "seeking_collaborators": project.seeking_collaborators, "links": project.links.count()}
+        project = form.save()
+        formset.save()
+        changes = [label for key, label in [("category", "categoria"), ("tags", "tags"), ("visibility", "visibilidade"), ("seeking_collaborators", "colaboração")] if before[key] != getattr(project, key)]
+        if formset.has_changed():
+            changes.append("links")
+        if changes:
+            _auto_milestone(project, request.user, "Contexto atualizado", "Atualizações em: " + ", ".join(changes) + ".")
+        if project.visibility == Project.VISIBILITY_PRIVATE:
+            messages.info(request, "O projeto continua privado até você decidir compartilhá-lo.")
+        else:
+            messages.success(request, "Contexto salvo. Seu projeto está pronto para continuar.")
+        return redirect("listaEspera:project_detail", pk=project.pk)
+    return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Adicionar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project})
 
 @login_required
 def project_edit(request, pk):
     project = get_object_or_404(Project, pk=pk, owner=request.user)
-    form = ProjectForm(request.POST or None, instance=project)
+    form = ProjectBasicsForm(request.POST or None, instance=project)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        before_title, before_status = project.title, project.status
+        project = form.save()
+        changes = []
+        if before_title != project.title: changes.append("nome")
+        if before_status != project.status: changes.append("status")
+        if changes: _auto_milestone(project, request.user, "Projeto atualizado", "Alterações em: " + ", ".join(changes) + ".")
         messages.success(request, "Projeto atualizado.")
         return redirect("listaEspera:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto", "submit_label": "Salvar alterações", "project": project})
-
-
-def _project_accessible(project, user):
-    return project.visibility == Project.VISIBILITY_PUBLIC or (user.is_authenticated and (project.owner == user or project.memberships.filter(user=user).exists()))
-
+    return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto", "submit_label": "Salvar alterações", "form_phase": "basics", "project": project})
 
 @login_required
 @require_http_methods(["POST"])
 def add_comment(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    if not _project_accessible(project, request.user):
+    if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
     form = CommentForm(request.POST)
     if form.is_valid():
@@ -149,10 +186,12 @@ def add_comment(request, pk):
             parent = get_object_or_404(ProjectComment, pk=parent_id, project=project)
             if parent.parent_id:
                 messages.error(request, "As respostas têm apenas um nível neste MVP.")
-                return redirect("listaEspera:project_detail", pk=pk)
+                access = request.POST.get("access", "")
+                return redirect(f"/projetos/{pk}/?access={access}" if access else f"/projetos/{pk}/")
             comment.parent = parent
         comment.save()
-    return redirect("listaEspera:project_detail", pk=pk)
+    access = request.POST.get("access", "")
+    return redirect(f"/projetos/{pk}/?access={access}" if access else f"/projetos/{pk}/")
 
 
 @login_required
@@ -178,19 +217,32 @@ def delete_comment(request, comment_id):
 @require_http_methods(["POST"])
 def toggle_vote(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    if not _project_accessible(project, request.user):
+    if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
     vote, created = ProjectVote.objects.get_or_create(project=project, user=request.user)
     if not created:
         vote.delete()
-    return redirect(request.POST.get("next") or "listaEspera:project_detail", pk=pk) if not request.POST.get("next") else redirect(request.POST["next"])
+    if request.POST.get("next"):
+        return redirect(request.POST["next"])
+    access = request.POST.get("access", "")
+    return redirect(f"/projetos/{pk}/?access={access}" if access else f"/projetos/{pk}/")
 
+
+@login_required
+@require_http_methods(["POST"])
+def set_milestone_permission(request, pk):
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    member = get_object_or_404(ProjectMember, pk=request.POST.get("member_id"), project=project)
+    member.can_manage_milestones = request.POST.get("can_manage") == "1"
+    member.save(update_fields=["can_manage_milestones"])
+    messages.success(request, "Permissão de marcos atualizada.")
+    return redirect("listaEspera:project_detail", pk=pk)
 
 @login_required
 @require_http_methods(["POST"])
 def add_milestone(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    if not (project.owner == request.user or project.memberships.filter(user=request.user).exists()):
+    if not _can_manage_milestones(project, request.user):
         raise Http404
     form = MilestoneForm(request.POST)
     if form.is_valid():
@@ -251,7 +303,7 @@ def decide_collaboration(request, request_id):
 @login_required
 def inbox(request):
     notifications = request.user.notifications.all()
-    request.user.notifications.filter(read_at__isnull=False).update(read_at=timezone.now())
+    request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     return render(request, "notifications/inbox.html", {"notifications": notifications})
 
 
