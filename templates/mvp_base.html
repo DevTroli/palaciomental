@@ -1,3 +1,39 @@
 {% load static %}
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Palácio Mental{% endblock %}</title><link rel="icon" href="{% static 'img/favicon.svg' %}"><link rel="stylesheet" href="{% static 'css/mvp.css' %}"></head>
-<body><header class="mvp-header"><div class="mvp-container nav-shell"><a class="brand" href="{% url 'core:index' %}" aria-label="Palácio Mental — página inicial"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""></a><nav class="main-nav" aria-label="Navegação principal"><a href="{% url 'listaEspera:projects' %}">Projetos</a></nav><div class="nav-actions"><button class="search-trigger" type="button" aria-expanded="false" aria-controls="mvp-search-panel" aria-label="Abrir busca"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg></button><form class="search-panel" id="mvp-search-panel" action="{% url 'listaEspera:projects' %}" method="get" hidden><label class="sr-only" for="mvp-search">Pesquisar projetos</label><input id="mvp-search" name="q" placeholder="Buscar projetos, tags ou pessoas..." value="{{ request.GET.q }}"><button type="submit">Buscar</button></form>{% if request.user.is_authenticated %}<a class="nav-user" href="{% url 'listaEspera:profile' request.user.username %}">{{ request.user.first_name|default:request.user.username }}</a><form method="post" action="{% url 'listaEspera:logout' %}">{% csrf_token %}<button class="link-button" type="submit">Sair</button></form>{% else %}<a class="nav-login" href="{% url 'listaEspera:login' %}">Entrar</a><a class="button button-green button-small" href="{% url 'listaEspera:register' %}">Criar conta</a>{% endif %}</div></div></header><nav class="breadcrumbs mvp-container" aria-label="Você está aqui"><a href="{% url 'core:index' %}">MVP</a><span aria-hidden="true">/</span><span>{% block breadcrumb_label %}Página{% endblock %}</span></nav>{% if messages %}<div class="mvp-container messages" aria-live="polite">{% for message in messages %}<p class="message">{{ message }}</p>{% endfor %}</div>{% endif %}<main>{% block content %}{% endblock %}</main><footer class="mvp-footer"><div class="mvp-container"><span>Palácio Mental</span><a href="{% url 'listaEspera:status' %}">Status do sistema</a></div></footer><script>document.querySelectorAll('.search-trigger').forEach(trigger=>{const panel=document.getElementById(trigger.getAttribute('aria-controls'));trigger.addEventListener('click',()=>{const open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));panel.hidden=open;if(!open)panel.querySelector('input').focus();});});</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Palácio Mental{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/mvp.css' %}">
+</head>
+<body>
+  <header class="mvp-header">
+    <div class="mvp-container mvp-nav">
+      <a class="mvp-brand" href="{% url 'core:index' %}" aria-label="Palácio Mental — início do MVP"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""></a>
+      <nav class="mvp-menu" aria-label="Navegação principal">
+        <a href="{% url 'listaEspera:projects' %}">Vitrine</a>
+        <a href="{% url 'core:index' %}#how">Como funciona</a>
+      </nav>
+      <div class="mvp-auth">
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'listaEspera:profile' request.user.username %}">Meu espaço</a>
+          <form method="post" action="{% url 'listaEspera:logout' %}">{% csrf_token %}<button class="mvp-quiet-action" type="submit">Sair</button></form>
+        {% else %}
+          <a href="{% url 'listaEspera:login' %}">Entrar</a>
+          <a class="mvp-register" href="{% url 'listaEspera:register' %}">Começar</a>
+        {% endif %}
+        {% if 'projetos' in request.path %}
+          <button class="mvp-search-trigger" type="button" aria-expanded="false" aria-controls="mvp-search-panel" aria-label="Abrir busca"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg></button>
+          <form class="mvp-search-panel" id="mvp-search-panel" action="{% url 'listaEspera:projects' %}" method="get" hidden><label class="sr-only" for="mvp-search">Pesquisar projetos</label><input id="mvp-search" name="q" placeholder="Buscar na vitrine..." value="{{ request.GET.q }}"><button type="submit">Buscar</button></form>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  <nav class="breadcrumbs mvp-container" aria-label="Você está aqui"><a href="{% url 'core:index' %}">MVP</a><span aria-hidden="true">/</span><span>{% block breadcrumb_label %}Página{% endblock %}</span></nav>
+  {% if messages %}<div class="mvp-container messages" aria-live="polite">{% for message in messages %}<p class="message">{{ message }}</p>{% endfor %}</div>{% endif %}
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="mvp-footer"><div class="mvp-container"><span>Palácio Mental</span><a href="{% url 'listaEspera:status' %}">Status do sistema</a></div></footer>
+  <script>const trigger=document.querySelector('.mvp-search-trigger'),panel=document.querySelector('#mvp-search-panel');if(trigger&&panel){trigger.addEventListener('click',()=>{const open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));panel.hidden=open;if(!open)panel.querySelector('input').focus();});}</script>
+</body>
+</html>
