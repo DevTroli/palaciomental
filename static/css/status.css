@@ -131,3 +131,4 @@ h1 { margin: 0 0 15px; color: var(--purple-dark); font-size: clamp(38px, 6vw, 62
   .chart-data ul { columns: 1; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+.status-breadcrumb{display:flex;align-items:center;gap:9px;padding-top:20px;color:var(--muted);font-size:12px}.status-breadcrumb a{color:var(--purple);font-weight:700}.status-breadcrumb a:hover{text-decoration:underline}.status-breadcrumb span:last-child{color:var(--text)}
