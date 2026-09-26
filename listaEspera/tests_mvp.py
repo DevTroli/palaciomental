@@ -59,4 +59,4 @@ class MvpProjectTests(TestCase):
         self.client.force_login(self.collaborator)
         self.assertEqual(self.client.get(reverse("listaEspera:project_detail", kwargs={"pk": self.project.pk})).status_code, 404)
         ProjectMember.objects.create(project=self.project, user=self.collaborator)
-        self.assertEqual(self.client.get(reverse("listaEspera:project_detail", kwargs={"pk": self.project.pk})).status_code, 200)
+        self.assertEqual(self.client.get(reverse("listaEspera:project_detail", kwargs={"pk": self.project.pk})).status_code, 404)

@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
+import uuid
 
 
 class WaitlistEntry(models.Model):
@@ -46,21 +48,26 @@ class Project(models.Model):
     )
     VISIBILITY_PUBLIC = "publico"
     VISIBILITY_PRIVATE = "privado"
-    VISIBILITY_CHOICES = ((VISIBILITY_PUBLIC, "Público"), (VISIBILITY_PRIVATE, "Privado"))
+    VISIBILITY_RESTRICTED = "restrito"
+    VISIBILITY_CHOICES = ((VISIBILITY_PUBLIC, "Público"), (VISIBILITY_RESTRICTED, "Restrito — acesso por link"), (VISIBILITY_PRIVATE, "Privado"))
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="owned_projects")
     title = models.CharField("Título", max_length=140)
     direction = models.TextField("Direção", max_length=1000, help_text="Por que este projeto existe?")
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_IDEA)
     visibility = models.CharField("Visibilidade", max_length=20, choices=VISIBILITY_CHOICES, default=VISIBILITY_PRIVATE)
+    access_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     category = models.CharField("Categoria", max_length=80)
     tags = models.CharField("Tags", max_length=300, blank=True, help_text="Separe as tags por vírgula")
+    seeking_collaborators = models.BooleanField("Buscando colaboradores", default=False)
+    collaboration_description = models.CharField("O que procura", max_length=280, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-updated_at"]
         indexes = [models.Index(fields=["visibility", "status", "category"])]
+        constraints = [models.UniqueConstraint(Lower("title"), "owner", name="unique_owner_project_title_ci")]
 
     def tag_list(self):
         return [tag.strip() for tag in self.tags.split(",") if tag.strip()]
@@ -69,10 +76,24 @@ class Project(models.Model):
         return self.title
 
 
+class ProjectLink(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="links")
+    label = models.CharField("Nome do link", max_length=80)
+    url = models.URLField("URL", max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.label} — {self.project.title}"
+
+
 class ProjectMember(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="memberships")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="project_memberships")
     role = models.CharField("Papel", max_length=80, default="Colaborador")
+    can_manage_milestones = models.BooleanField("Pode gerenciar marcos", default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -81,3 +102,74 @@ class ProjectMember(models.Model):
 
     def __str__(self):
         return f"{self.user} em {self.project}"
+
+
+class ProjectComment(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="project_comments")
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies")
+    content = models.TextField("Comentário", max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Comentário de {self.author} em {self.project}"
+
+
+class ProjectVote(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="votes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="project_votes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["project", "user"], name="unique_project_vote")]
+
+
+class ProjectMilestone(models.Model):
+    TYPE_START = "inicio"
+    TYPE_PROGRESS = "avanco"
+    TYPE_PAUSE = "pausa"
+    TYPE_COMPLETE = "conclusao"
+    TYPE_CHOICES = ((TYPE_START, "Início"), (TYPE_PROGRESS, "Avanço"), (TYPE_PAUSE, "Pausa"), (TYPE_COMPLETE, "Conclusão"))
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="milestones")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="project_milestones")
+    title = models.CharField("Título", max_length=140)
+    description = models.TextField("Descrição", max_length=1000)
+    milestone_type = models.CharField("Tipo", max_length=20, choices=TYPE_CHOICES, default=TYPE_PROGRESS)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class CollaborationRequest(models.Model):
+    PENDING = "pendente"
+    ACCEPTED = "aceita"
+    REJECTED = "recusada"
+    STATUS_CHOICES = ((PENDING, "Pendente"), (ACCEPTED, "Aceita"), (REJECTED, "Recusada"))
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="collaboration_requests")
+    requester = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collaboration_requests")
+    message = models.CharField("Mensagem", max_length=500)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["project", "requester"], name="unique_collaboration_request")]
+        ordering = ["-created_at"]
+
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    kind = models.CharField(max_length=40)
+    message = models.CharField(max_length=280)
+    url = models.CharField(max_length=300, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
