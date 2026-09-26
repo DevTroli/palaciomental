@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import MemberProfile, Project
+from .models import CollaborationRequest, MemberProfile, Project, ProjectComment, ProjectMilestone
 
 User = get_user_model()
 
@@ -33,10 +33,12 @@ class ProfileForm(forms.ModelForm):
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ("title", "direction", "status", "visibility", "category", "tags")
+        fields = ("title", "direction", "status", "visibility", "category", "tags", "seeking_collaborators", "collaboration_description", "collaboration_tags")
         widgets = {
             "direction": forms.Textarea(attrs={"rows": 5, "placeholder": "Por que este projeto existe? Que transformação você quer construir?"}),
             "tags": forms.TextInput(attrs={"placeholder": "educação, pesquisa, criatividade"}),
+            "collaboration_description": forms.TextInput(attrs={"placeholder": "Ex.: pessoa para pesquisa e prototipação"}),
+            "collaboration_tags": forms.TextInput(attrs={"placeholder": "pesquisa, design, desenvolvimento"}),
         }
 
     def clean_title(self):
@@ -50,3 +52,27 @@ class ProjectForm(forms.ModelForm):
         if not category:
             raise forms.ValidationError("Informe uma categoria para facilitar a descoberta.")
         return category
+
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = ProjectComment
+        fields = ("content",)
+        labels = {"content": "Comentário"}
+        widgets = {"content": forms.Textarea(attrs={"rows": 3, "maxlength": 2000, "placeholder": "Compartilhe um contexto útil sobre este projeto."})}
+
+
+class MilestoneForm(forms.ModelForm):
+    class Meta:
+        model = ProjectMilestone
+        fields = ("title", "description", "milestone_type")
+        labels = {"title": "Título do marco", "description": "O que mudou?", "milestone_type": "Tipo de avanço"}
+        widgets = {"description": forms.Textarea(attrs={"rows": 3, "maxlength": 1000})}
+
+
+class CollaborationRequestForm(forms.ModelForm):
+    class Meta:
+        model = CollaborationRequest
+        fields = ("message",)
+        labels = {"message": "Como você pode contribuir?"}
+        widgets = {"message": forms.Textarea(attrs={"rows": 3, "maxlength": 500, "placeholder": "Conte brevemente seu interesse e como pode ajudar."})}

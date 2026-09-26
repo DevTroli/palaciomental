@@ -10,15 +10,16 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.functions import TruncDate
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import MemberCreationForm, ProfileForm, ProjectForm
-from .models import MemberProfile, Project, ProjectMember, WaitlistEntry
+from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectForm
+from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectMember, ProjectMilestone, ProjectVote, WaitlistEntry
 
 def index(request):
     """Página pública exclusiva da lista de espera durante a validação."""
@@ -73,11 +74,13 @@ def profile_edit(request):
 
 
 def projects(request):
-    queryset = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner")
+    vote_exists = ProjectVote.objects.filter(project=OuterRef("pk"), user=request.user) if request.user.is_authenticated else ProjectVote.objects.none()
+    queryset = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner").annotate(relevance=Count("votes"), user_voted=Exists(vote_exists))
     query = request.GET.get("q", "").strip()
     category = request.GET.get("category", "").strip()
     status = request.GET.get("status", "").strip()
     tag = request.GET.get("tag", "").strip()
+    ordering = request.GET.get("ordering", "recent")
     if query:
         queryset = queryset.filter(Q(title__icontains=query) | Q(direction__icontains=query))
     if category:
@@ -86,8 +89,10 @@ def projects(request):
         queryset = queryset.filter(status=status)
     if tag:
         queryset = queryset.filter(tags__icontains=tag)
+    if ordering == "relevance":
+        queryset = queryset.order_by("-relevance", "-updated_at")
     categories = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
-    context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag}}
+    context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag, "ordering": ordering}}
     return render(request, "projects/list.html", context)
 
 
@@ -95,7 +100,11 @@ def project_detail(request, pk):
     project = get_object_or_404(Project.objects.select_related("owner"), pk=pk)
     if project.visibility == Project.VISIBILITY_PRIVATE and project.owner != request.user and not project.memberships.filter(user=request.user).exists():
         raise Http404
-    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user")})
+    comments = project.comments.filter(parent__isnull=True).select_related("author").prefetch_related("replies__author")
+    voted = request.user.is_authenticated and project.votes.filter(user=request.user).exists()
+    can_manage = request.user.is_authenticated and (request.user == project.owner or project.memberships.filter(user=request.user).exists())
+    collaboration_request = project.collaboration_requests.filter(requester=request.user).first() if request.user.is_authenticated else None
+    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.select_related("requester") if request.user == project.owner else []})
 
 
 @login_required
@@ -119,6 +128,131 @@ def project_edit(request, pk):
         messages.success(request, "Projeto atualizado.")
         return redirect("listaEspera:project_detail", pk=project.pk)
     return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto", "submit_label": "Salvar alterações", "project": project})
+
+
+def _project_accessible(project, user):
+    return project.visibility == Project.VISIBILITY_PUBLIC or (user.is_authenticated and (project.owner == user or project.memberships.filter(user=user).exists()))
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_comment(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    if not _project_accessible(project, request.user):
+        raise Http404
+    form = CommentForm(request.POST)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.project, comment.author = project, request.user
+        parent_id = request.POST.get("parent")
+        if parent_id:
+            parent = get_object_or_404(ProjectComment, pk=parent_id, project=project)
+            if parent.parent_id:
+                messages.error(request, "As respostas têm apenas um nível neste MVP.")
+                return redirect("listaEspera:project_detail", pk=pk)
+            comment.parent = parent
+        comment.save()
+    return redirect("listaEspera:project_detail", pk=pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(ProjectComment, pk=comment_id, author=request.user)
+    form = CommentForm(request.POST, instance=comment)
+    if form.is_valid():
+        form.save()
+    return redirect("listaEspera:project_detail", pk=comment.project_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(ProjectComment, pk=comment_id, author=request.user)
+    project_id = comment.project_id
+    comment.delete()
+    return redirect("listaEspera:project_detail", pk=project_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_vote(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    if not _project_accessible(project, request.user):
+        raise Http404
+    vote, created = ProjectVote.objects.get_or_create(project=project, user=request.user)
+    if not created:
+        vote.delete()
+    return redirect(request.POST.get("next") or "listaEspera:project_detail", pk=pk) if not request.POST.get("next") else redirect(request.POST["next"])
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_milestone(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    if not (project.owner == request.user or project.memberships.filter(user=request.user).exists()):
+        raise Http404
+    form = MilestoneForm(request.POST)
+    if form.is_valid():
+        milestone = form.save(commit=False)
+        milestone.project, milestone.author = project, request.user
+        milestone.save()
+    return redirect("listaEspera:project_detail", pk=pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def edit_milestone(request, milestone_id):
+    milestone = get_object_or_404(ProjectMilestone, pk=milestone_id, author=request.user)
+    form = MilestoneForm(request.POST, instance=milestone)
+    if form.is_valid():
+        form.save()
+    return redirect("listaEspera:project_detail", pk=milestone.project_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_milestone(request, milestone_id):
+    milestone = get_object_or_404(ProjectMilestone, pk=milestone_id, author=request.user)
+    project_id = milestone.project_id
+    milestone.delete()
+    return redirect("listaEspera:project_detail", pk=project_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def request_collaboration(request, pk):
+    project = get_object_or_404(Project, pk=pk, visibility=Project.VISIBILITY_PUBLIC)
+    if project.owner == request.user or project.memberships.filter(user=request.user).exists():
+        return redirect("listaEspera:project_detail", pk=pk)
+    form = CollaborationRequestForm(request.POST)
+    if form.is_valid():
+        collaboration, created = CollaborationRequest.objects.get_or_create(project=project, requester=request.user, defaults={"message": form.cleaned_data["message"]})
+        if created:
+            Notification.objects.create(recipient=project.owner, kind="collaboration_request", message=f"{request.user.get_username()} quer colaborar em {project.title}.", url=f"/projetos/{project.pk}/")
+    return redirect("listaEspera:project_detail", pk=pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def decide_collaboration(request, request_id):
+    collaboration = get_object_or_404(CollaborationRequest.objects.select_related("project", "requester"), pk=request_id, project__owner=request.user, status=CollaborationRequest.PENDING)
+    decision = request.POST.get("decision")
+    if decision not in (CollaborationRequest.ACCEPTED, CollaborationRequest.REJECTED):
+        return redirect("listaEspera:project_detail", pk=collaboration.project_id)
+    collaboration.status, collaboration.decided_at = decision, timezone.now()
+    collaboration.save(update_fields=["status", "decided_at"])
+    if decision == CollaborationRequest.ACCEPTED:
+        ProjectMember.objects.get_or_create(project=collaboration.project, user=collaboration.requester, defaults={"role": "Colaborador"})
+    Notification.objects.create(recipient=collaboration.requester, kind="collaboration_decision", message=f"Seu pedido para {collaboration.project.title} foi {collaboration.get_status_display().lower()}.", url=f"/projetos/{collaboration.project.pk}/")
+    return redirect("listaEspera:project_detail", pk=collaboration.project_id)
+
+
+@login_required
+def inbox(request):
+    notifications = request.user.notifications.all()
+    request.user.notifications.filter(read_at__isnull=False).update(read_at=timezone.now())
+    return render(request, "notifications/inbox.html", {"notifications": notifications})
 
 
 def saude(request):
