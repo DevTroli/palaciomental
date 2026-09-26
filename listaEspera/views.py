@@ -14,6 +14,7 @@ from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.functions import TruncDate
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -122,7 +123,7 @@ def project_detail(request, pk):
     voted = request.user.is_authenticated and project.votes.filter(user=request.user).exists()
     can_manage = _can_manage_milestones(project, request.user)
     collaboration_request = project.collaboration_requests.filter(requester=request.user).first() if request.user.is_authenticated else None
-    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.select_related("requester") if request.user == project.owner else [], "access_token": access_token, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
+    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
     form = ProjectBasicsForm(request.POST or None)
@@ -292,11 +293,12 @@ def decide_collaboration(request, request_id):
     decision = request.POST.get("decision")
     if decision not in (CollaborationRequest.ACCEPTED, CollaborationRequest.REJECTED):
         return redirect("listaEspera:project_detail", pk=collaboration.project_id)
-    collaboration.status, collaboration.decided_at = decision, timezone.now()
-    collaboration.save(update_fields=["status", "decided_at"])
+    project_title, project_pk, requester = collaboration.project.title, collaboration.project.pk, collaboration.requester
+    status_label = "aceito" if decision == CollaborationRequest.ACCEPTED else "recusado"
     if decision == CollaborationRequest.ACCEPTED:
         ProjectMember.objects.get_or_create(project=collaboration.project, user=collaboration.requester, defaults={"role": "Colaborador"})
-    Notification.objects.create(recipient=collaboration.requester, kind="collaboration_decision", message=f"Seu pedido para {collaboration.project.title} foi {collaboration.get_status_display().lower()}.", url=f"/projetos/{collaboration.project.pk}/")
+    Notification.objects.create(recipient=requester, kind="collaboration_decision", message=f"Seu pedido para {project_title} foi {status_label}.", url=f"/projetos/{project_pk}/")
+    collaboration.delete()
     return redirect("listaEspera:project_detail", pk=collaboration.project_id)
 
 

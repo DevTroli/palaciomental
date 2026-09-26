@@ -57,8 +57,7 @@ class CommunityM2Tests(TestCase):
         self.assertEqual(collaboration.status, CollaborationRequest.PENDING)
         self.client.force_login(self.owner)
         self.client.post(reverse("listaEspera:decide_collaboration", args=[collaboration.pk]), {"decision": CollaborationRequest.ACCEPTED})
-        collaboration.refresh_from_db()
-        self.assertEqual(collaboration.status, CollaborationRequest.ACCEPTED)
+        self.assertFalse(CollaborationRequest.objects.filter(pk=collaboration.pk).exists())
         self.assertTrue(ProjectMember.objects.filter(project=self.project, user=self.member).exists())
         self.assertTrue(Notification.objects.filter(recipient=self.member).exists())
 
@@ -98,7 +97,7 @@ class M2AcceptanceTests(TestCase):
         self.client.force_login(self.owner)
         response = self.client.post(reverse("listaEspera:project_context", args=[project.pk]), {
             "category": "Pesquisa", "tags": "contexto, design", "visibility": "restrito", "seeking_collaborators": "",
-            "collaboration_description": "", "collaboration_tags": "", "links-TOTAL_FORMS": "1", "links-INITIAL_FORMS": "0", "links-MIN_NUM_FORMS": "0", "links-MAX_NUM_FORMS": "12",
+            "collaboration_description": "", "links-TOTAL_FORMS": "1", "links-INITIAL_FORMS": "0", "links-MIN_NUM_FORMS": "0", "links-MAX_NUM_FORMS": "12",
             "links-0-label": "Documento", "links-0-url": "https://example.com",
         })
         project.refresh_from_db()

@@ -60,7 +60,6 @@ class Project(models.Model):
     tags = models.CharField("Tags", max_length=300, blank=True, help_text="Separe as tags por vírgula")
     seeking_collaborators = models.BooleanField("Buscando colaboradores", default=False)
     collaboration_description = models.CharField("O que procura", max_length=280, blank=True)
-    collaboration_tags = models.CharField("Tags de colaboração", max_length=300, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

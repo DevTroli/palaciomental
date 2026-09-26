@@ -34,12 +34,11 @@ class ProfileForm(forms.ModelForm):
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ("title", "direction", "status", "visibility", "category", "tags", "seeking_collaborators", "collaboration_description", "collaboration_tags")
+        fields = ("title", "direction", "status", "visibility", "category", "tags", "seeking_collaborators", "collaboration_description")
         widgets = {
             "direction": forms.Textarea(attrs={"rows": 5, "placeholder": "Por que este projeto existe? Que transformação você quer construir?"}),
             "tags": forms.TextInput(attrs={"placeholder": "educação, pesquisa, criatividade"}),
             "collaboration_description": forms.TextInput(attrs={"placeholder": "Ex.: pessoa para pesquisa e prototipação"}),
-            "collaboration_tags": forms.TextInput(attrs={"placeholder": "pesquisa, design, desenvolvimento"}),
         }
 
     def clean_title(self):
@@ -98,12 +97,12 @@ class ProjectContextForm(forms.ModelForm):
 
     class Meta:
         model = Project
-        fields = ("category", "tags", "seeking_collaborators", "collaboration_description", "collaboration_tags", "visibility")
+        fields = ("category", "tags", "seeking_collaborators", "collaboration_description", "visibility")
         widgets = {
             "category": forms.TextInput(attrs={"placeholder": "Ex.: Educação, pesquisa ou produto"}),
             "tags": forms.TextInput(attrs={"placeholder": "até 8 tags, separadas por vírgula"}),
-            "collaboration_description": forms.TextInput(attrs={"placeholder": "Ex.: pesquisa e prototipação"}),
-            "collaboration_tags": forms.TextInput(attrs={"placeholder": "até 8 tags, separadas por vírgula"}),
+            "collaboration_description": forms.Textarea(attrs={"rows": 3, "placeholder": "Ex.: buscamos alguém para pesquisa e prototipação"}),
+            "seeking_collaborators": forms.CheckboxInput(attrs={"class": "collaboration-check"}),
         }
     def _clean_tags(self, value, label):
         tags = [tag.strip() for tag in (value or "").split(",") if tag.strip()]
@@ -114,8 +113,6 @@ class ProjectContextForm(forms.ModelForm):
         return ", ".join(tags)
     def clean_tags(self):
         return self._clean_tags(self.cleaned_data.get("tags"), "tags")
-    def clean_collaboration_tags(self):
-        return self._clean_tags(self.cleaned_data.get("collaboration_tags"), "tags de colaboração")
     def clean_visibility(self):
         return self.cleaned_data.get("visibility") or Project.VISIBILITY_PRIVATE
     def clean_category(self):
