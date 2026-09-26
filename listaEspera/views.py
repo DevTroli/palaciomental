@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -9,7 +9,9 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db import DatabaseError
+from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -17,6 +19,11 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .forms import MemberCreationForm, ProfileForm, ProjectForm
 from .models import MemberProfile, Project, ProjectMember, WaitlistEntry
+
+def index(request):
+    """Página pública exclusiva da lista de espera durante a validação."""
+    return render(request, "listaEspera/index.html")
+
 
 def register(request):
     if request.user.is_authenticated:
@@ -206,9 +213,60 @@ def _deployment_metrics(deployment):
     ]
 
 
+def _waitlist_analytics():
+    """Prepara apenas dados agregados e públicos para a seção de tração."""
+    try:
+        now = datetime.now().astimezone()
+        first_signup = WaitlistEntry.objects.order_by("created_at").values_list("created_at", flat=True).first()
+        total = WaitlistEntry.objects.count()
+        if not first_signup:
+            return {"total": 0, "first_signup": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
+        first_date = first_signup.astimezone().date()
+        daily_rows = list(
+            WaitlistEntry.objects.filter(created_at__date__gte=first_date)
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(total=Count("id"))
+            .order_by("day")
+        )
+        daily_totals = {row["day"]: row["total"] for row in daily_rows}
+    except DatabaseError:
+        return {"total": None, "first_signup": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
+    cumulative = 0
+    points = []
+    width, height = 720, 220
+    left, right, top, bottom = 42, 12, 18, 34
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    dates = []
+    cursor = first_date
+    while cursor <= now.date():
+        dates.append(cursor)
+        cursor += timedelta(days=1)
+    chart_max = max(total, 1)
+    for index, current_date in enumerate(dates):
+        cumulative += daily_totals.get(current_date, 0)
+        x = left if len(dates) == 1 else left + (chart_width * index / (len(dates) - 1))
+        y = top + chart_height - (chart_height * cumulative / chart_max)
+        points.append({
+            "x": round(x, 2),
+            "y": round(y, 2),
+            "value": cumulative,
+            "label": current_date.strftime("%d/%m"),
+        })
+    return {
+        "total": total,
+        "first_signup": first_signup.astimezone().strftime("%d/%m/%Y"),
+        "points": points,
+        "polyline": " ".join(f"{point['x']},{point['y']}" for point in points),
+        "chart_max": chart_max,
+        "has_data": bool(points),
+    }
+
+
 def status_page(request):
     """Exibe o estado resumido dos serviços sem depender da disponibilidade da API."""
-    context = {"status_available": False, "services": []}
+    context = {"status_available": False, "services": [], "analytics": _waitlist_analytics()}
     try:
         payload = _fetch_status_api()
     except (OSError, URLError, TimeoutError, ValueError, json.JSONDecodeError):

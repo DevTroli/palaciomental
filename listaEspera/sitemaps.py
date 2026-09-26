@@ -8,19 +8,19 @@ class StaticViewSitemap(Sitemap):
     changefreq = "weekly"
 
     def items(self):
-        return ["core:index", "listaEspera:projects", "listaEspera:status", "listaEspera:saude"]
+        return ["listaEspera:index", "core:index", "listaEspera:projects", "listaEspera:status", "listaEspera:saude"]
 
     def location(self, item):
         return reverse(item)
 
 
 class WaitlistSitemap(Sitemap):
-    """Sitemap para a página de lista de espera (mesma que index)."""
+    """Sitemap para a página própria da lista de espera."""
     priority = 1.0
     changefreq = "daily"
 
     def items(self):
-        return ["core:index"]
+        return ["listaEspera:index"]
 
     def location(self, item):
         return reverse(item)

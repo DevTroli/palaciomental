@@ -77,6 +77,64 @@
           {% endfor %}
         </div>
       </section>
+      <section class="growth-section" aria-labelledby="growth-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Tração da comunidade</p>
+            <h2 id="growth-title">Lista de espera</h2>
+          </div>
+          <p class="checked-at">Dados agregados<br><strong>desde o primeiro cadastro</strong></p>
+        </div>
+        <div class="growth-summary">
+          {% if analytics.total is not None %}
+            <div class="growth-total">
+              <span class="growth-number">{{ analytics.total }}</span>
+              <span class="growth-label">pessoas interessadas desde o início da lista</span>
+            </div>
+            <div class="growth-stat">
+              <span>{{ analytics.first_signup }}</span>
+              <small>primeiro cadastro recebido</small>
+            </div>
+          {% else %}
+            <div class="growth-total growth-total--empty">
+              <span class="growth-number">—</span>
+              <span class="growth-label">métricas indisponíveis no momento</span>
+            </div>
+          {% endif %}
+        </div>
+        <div class="chart-card">
+          <div class="chart-heading">
+            <div><h3>Crescimento da lista</h3><p>Total acumulado desde o primeiro cadastro</p></div>
+            {% if analytics.has_data %}<strong>{{ analytics.chart_max }}</strong>{% endif %}
+          </div>
+          {% if analytics.has_data %}
+            <div class="chart-wrap">
+              <svg class="growth-chart" viewBox="0 0 720 220" role="img" aria-labelledby="chart-title chart-description">
+                <title id="chart-title">Evolução acumulada da lista de espera</title>
+                <desc id="chart-description">Gráfico com o crescimento acumulado da lista de espera desde {{ analytics.first_signup }} até hoje, com {{ analytics.total }} pessoas interessadas.</desc>
+                <line class="chart-axis" x1="42" y1="186" x2="708" y2="186"></line>
+                <text class="chart-scale" x="8" y="23">{{ analytics.chart_max }}</text>
+                <text class="chart-scale" x="28" y="189">0</text>
+                <polyline class="chart-line" points="{{ analytics.polyline }}"></polyline>
+                {% for point in analytics.points %}
+                  <circle class="chart-point" cx="{{ point.x }}" cy="{{ point.y }}" r="4"><title>{{ point.label }}: {{ point.value }} pessoas</title></circle>
+                {% endfor %}
+                {% with first=analytics.points|first last=analytics.points|last %}
+                  <text class="chart-label" x="42" y="210">{{ first.label }}</text>
+                  <text class="chart-label chart-label--end" x="708" y="210">{{ last.label }}</text>
+                {% endwith %}
+              </svg>
+            </div>
+            <details class="chart-data">
+              <summary>Ver dados do gráfico</summary>
+              <ul>{% for point in analytics.points %}<li>{{ point.label }}: {{ point.value }} pessoas</li>{% endfor %}</ul>
+            </details>
+          {% else %}
+            <div class="chart-empty">Ainda não há cadastros para formar a evolução. O gráfico aparecerá assim que a primeira pessoa entrar na lista.</div>
+          {% endif %}
+        </div>
+      </section>
+
 <section class="deployment-section" aria-labelledby="deployment-title">
         <div class="section-heading">
           <div>

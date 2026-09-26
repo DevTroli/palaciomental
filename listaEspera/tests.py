@@ -1,6 +1,8 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from unittest.mock import patch
+from django.utils import timezone
+from datetime import timedelta
 from .models import WaitlistEntry
 
 
@@ -22,15 +24,15 @@ class WaitlistModelTests(TestCase):
 
 
 class WaitlistViewTests(TestCase):
-    """A homepage core é a porta de entrada do produto."""
+    """A raiz permanece exclusiva da lista de espera durante a validação."""
 
     def test_get_index_returns_200_with_form(self):
         """GET na home deve retornar 200 com formulário."""
-        response = self.client.get(reverse("core:index"))
+        response = self.client.get(reverse("listaEspera:index"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "core/index.html")
-        self.assertContains(response, "Últimos projetos abertos")
-        self.assertContains(response, "Criar um projeto")
+        self.assertTemplateUsed(response, "listaEspera/index.html")
+        self.assertContains(response, "Entrar na lista")
+        self.assertContains(response, "Suas ideias merecem")
 
 
 class StatusViewTests(TestCase):
@@ -64,6 +66,26 @@ class StatusViewTests(TestCase):
         self.assertContains(response, "Deploy atual")
         self.assertEqual(self.client.get("/status/").status_code, 200)
 
+
+    @patch("listaEspera.views.urlopen", side_effect=TimeoutError)
+    def test_status_page_shows_aggregated_waitlist_analytics(self, mock_urlopen):
+        for index in range(7):
+            entry = WaitlistEntry.objects.create(
+                nome=f"Pessoa {index}",
+                telefone=f"(11) 99999-000{index}",
+                email=f"pessoa{index}@email.com",
+                consent=True,
+            )
+            entry.created_at = timezone.now() - timedelta(days=index)
+            entry.save(update_fields=["created_at"])
+
+        response = self.client.get(reverse("listaEspera:status"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "7")
+        self.assertContains(response, "pessoas interessadas")
+        self.assertContains(response, "Crescimento da lista")
+        self.assertContains(response, "Ver dados do gráfico")
 
 class WaitlistSubmitTests(TestCase):
     """Testes críticos da view waitlist_submit (POST /lista-espera/)."""

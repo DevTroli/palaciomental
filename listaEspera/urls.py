@@ -4,6 +4,7 @@ from . import views as v
 app_name = "listaEspera"
 
 urlpatterns = [
+    path("", v.index, name="index"),
     path("entrar/", v.login_view, name="login"),
     path("cadastrar/", v.register, name="register"),
     path("sair/", v.logout_view, name="logout"),
