@@ -23,6 +23,15 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='localhost,127.0.0.1
 # CSRF trusted origins for production (required for HTTPS origins)
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv(), default='')
 
+# Resolução institucional: o wildcard DNS aponta para a aplicação e o banco
+# decide se o hostname está cadastrado e ativo.
+PALACIO_BASE_DOMAIN = config('PALACIO_BASE_DOMAIN', default='palaciomental.com.br').lower().strip('.')
+TENANT_RESERVED_HOSTS = config(
+    'TENANT_RESERVED_HOSTS',
+    cast=Csv(),
+    default='www,api,status,admin,app',
+)
+
 # Proxy SSL header for Railway/Reverse proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -61,6 +70,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "listaEspera.middleware.TenantResolutionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
