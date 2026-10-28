@@ -1,5 +1,52 @@
 from django.contrib import admin
-from .models import CollaborationRequest, Notification, ProjectComment, ProjectMilestone, ProjectVote, WaitlistEntry
+from .models import (
+    CollaborationRequest,
+    ConviteOrganizacao,
+    DominioOrganizacao,
+    IdentidadeOrganizacao,
+    MembroOrganizacao,
+    Notification,
+    Organizacao,
+    ProjectComment,
+    ProjectMilestone,
+    ProjectVote,
+    WaitlistEntry,
+)
+
+
+@admin.register(Organizacao)
+class OrganizacaoAdmin(admin.ModelAdmin):
+    list_display = ("nome", "slug", "status", "atualizado_em")
+    list_filter = ("status",)
+    search_fields = ("nome", "slug", "nome_legal")
+
+
+@admin.register(IdentidadeOrganizacao)
+class IdentidadeOrganizacaoAdmin(admin.ModelAdmin):
+    list_display = ("organizacao", "nome_exibicao", "cor_primaria", "cor_fundo")
+    search_fields = ("organizacao__nome", "nome_exibicao")
+
+
+@admin.register(DominioOrganizacao)
+class DominioOrganizacaoAdmin(admin.ModelAdmin):
+    list_display = ("hostname", "organizacao", "tipo", "principal", "status_verificacao")
+    list_filter = ("tipo", "principal", "status_verificacao")
+    search_fields = ("hostname", "organizacao__nome")
+
+
+@admin.register(MembroOrganizacao)
+class MembroOrganizacaoAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "organizacao", "papel", "status", "entrou_em")
+    list_filter = ("papel", "status")
+    search_fields = ("usuario__username", "usuario__email", "organizacao__nome")
+
+
+@admin.register(ConviteOrganizacao)
+class ConviteOrganizacaoAdmin(admin.ModelAdmin):
+    list_display = ("email", "organizacao", "papel", "status", "expira_em")
+    list_filter = ("papel", "status")
+    search_fields = ("email", "organizacao__nome")
+    readonly_fields = ("hash_token", "criado_em", "aceito_em")
 
 
 @admin.register(WaitlistEntry)

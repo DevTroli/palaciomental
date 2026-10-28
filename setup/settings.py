@@ -42,7 +42,7 @@ INSTALLED_APPS = [
 ]
 
 SITE_ID = 1
-
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 LOGIN_URL = "listaEspera:login"
 LOGIN_REDIRECT_URL = "listaEspera:projects"
 LOGOUT_REDIRECT_URL = "core:index"
