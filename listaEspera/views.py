@@ -58,8 +58,11 @@ def logout_view(request):
 def profile(request, username):
     user = get_object_or_404(User, username=username)
     MemberProfile.objects.get_or_create(user=user)
-    owned = user.owned_projects.all() if request.user == user else user.owned_projects.filter(visibility=Project.VISIBILITY_PUBLIC)
-    collaborated = Project.objects.filter(memberships__user=user, visibility=Project.VISIBILITY_PUBLIC).exclude(owner=user).distinct()
+    project_scope = _project_scope(request)
+    owned = project_scope.filter(owner=user)
+    if request.user != user:
+        owned = owned.filter(visibility=Project.VISIBILITY_PUBLIC)
+    collaborated = project_scope.filter(memberships__user=user, visibility=Project.VISIBILITY_PUBLIC).exclude(owner=user).distinct()
     return render(request, "members/profile.html", {"member": user, "owned_projects": owned, "collaborated_projects": collaborated})
 
 
@@ -76,7 +79,7 @@ def profile_edit(request):
 
 def projects(request):
     vote_exists = ProjectVote.objects.filter(project=OuterRef("pk"), user=request.user) if request.user.is_authenticated else ProjectVote.objects.none()
-    queryset = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner").annotate(relevance=Count("votes"), user_voted=Exists(vote_exists))
+    queryset = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner").annotate(relevance=Count("votes"), user_voted=Exists(vote_exists))
     query = request.GET.get("q", "").strip()
     category = request.GET.get("category", "").strip()
     status = request.GET.get("status", "").strip()
@@ -92,9 +95,21 @@ def projects(request):
         queryset = queryset.filter(tags__icontains=tag)
     if ordering == "relevance":
         queryset = queryset.order_by("-relevance", "-updated_at")
-    categories = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
+    categories = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
     context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag, "ordering": ordering}}
     return render(request, "projects/list.html", context)
+
+
+def _project_scope(request):
+    """Retorna apenas projetos do tenant atual ou projetos pessoais globais."""
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None:
+        return Project.objects.filter(organizacao__isnull=True)
+    return Project.objects.filter(organizacao=organizacao)
+
+
+def _project_for_request(request, **filters):
+    return get_object_or_404(_project_scope(request), **filters)
 
 
 def _project_accessible(project, user, access_token=""):
@@ -115,7 +130,7 @@ def _auto_milestone(project, actor, title, description, milestone_type=ProjectMi
     ProjectMilestone.objects.create(project=project, author=actor, title=title, description=description, milestone_type=milestone_type)
 
 def project_detail(request, pk):
-    project = get_object_or_404(Project.objects.select_related("owner"), pk=pk)
+    project = get_object_or_404(_project_scope(request).select_related("owner"), pk=pk)
     access_token = request.GET.get("access", "")
     if not _project_accessible(project, request.user, access_token):
         raise Http404
@@ -130,6 +145,7 @@ def project_create(request):
     if request.method == "POST" and form.is_valid():
         project = form.save(commit=False)
         project.owner = request.user
+        project.organizacao = getattr(request, "organizacao", None)
         project.save()
         _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
@@ -139,7 +155,7 @@ def project_create(request):
 @login_required
 @require_http_methods(["POST"])
 def project_delete(request, pk):
-    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    project = _project_for_request(request, pk=pk, owner=request.user)
     title = project.title
     project.delete()
     messages.success(request, f"O projeto {title} foi excluído.")
@@ -147,7 +163,7 @@ def project_delete(request, pk):
 
 @login_required
 def project_context(request, pk):
-    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    project = _project_for_request(request, pk=pk, owner=request.user)
     form = ProjectContextForm(request.POST or None, instance=project)
     formset = ProjectLinkFormSet(request.POST or None, instance=project, prefix="links")
     if request.method == "POST" and form.is_valid() and formset.is_valid():
@@ -168,7 +184,7 @@ def project_context(request, pk):
 
 @login_required
 def project_edit(request, pk):
-    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    project = _project_for_request(request, pk=pk, owner=request.user)
     form = ProjectBasicsForm(request.POST or None, instance=project)
     if request.method == "POST" and form.is_valid():
         before_title, before_status = project.title, project.status
@@ -184,7 +200,7 @@ def project_edit(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def add_comment(request, pk):
-    project = get_object_or_404(Project, pk=pk)
+    project = _project_for_request(request, pk=pk)
     if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
     form = CommentForm(request.POST)
@@ -207,7 +223,12 @@ def add_comment(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def edit_comment(request, comment_id):
-    comment = get_object_or_404(ProjectComment, pk=comment_id, author=request.user)
+    comment = get_object_or_404(
+        ProjectComment,
+        pk=comment_id,
+        author=request.user,
+        project__in=_project_scope(request),
+    )
     form = CommentForm(request.POST, instance=comment)
     if form.is_valid():
         form.save()
@@ -217,7 +238,12 @@ def edit_comment(request, comment_id):
 @login_required
 @require_http_methods(["POST"])
 def delete_comment(request, comment_id):
-    comment = get_object_or_404(ProjectComment, pk=comment_id, author=request.user)
+    comment = get_object_or_404(
+        ProjectComment,
+        pk=comment_id,
+        author=request.user,
+        project__in=_project_scope(request),
+    )
     project_id = comment.project_id
     comment.delete()
     return redirect("listaEspera:project_detail", pk=project_id)
@@ -226,7 +252,7 @@ def delete_comment(request, comment_id):
 @login_required
 @require_http_methods(["POST"])
 def toggle_vote(request, pk):
-    project = get_object_or_404(Project, pk=pk)
+    project = _project_for_request(request, pk=pk)
     if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
     vote, created = ProjectVote.objects.get_or_create(project=project, user=request.user)
@@ -241,7 +267,7 @@ def toggle_vote(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def set_milestone_permission(request, pk):
-    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    project = _project_for_request(request, pk=pk, owner=request.user)
     member = get_object_or_404(ProjectMember, pk=request.POST.get("member_id"), project=project)
     member.can_manage_milestones = request.POST.get("can_manage") == "1"
     member.save(update_fields=["can_manage_milestones"])
@@ -251,7 +277,7 @@ def set_milestone_permission(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def add_milestone(request, pk):
-    project = get_object_or_404(Project, pk=pk)
+    project = _project_for_request(request, pk=pk)
     if not _can_manage_milestones(project, request.user):
         raise Http404
     form = MilestoneForm(request.POST)
@@ -265,7 +291,12 @@ def add_milestone(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def edit_milestone(request, milestone_id):
-    milestone = get_object_or_404(ProjectMilestone, pk=milestone_id, author=request.user)
+    milestone = get_object_or_404(
+        ProjectMilestone,
+        pk=milestone_id,
+        author=request.user,
+        project__in=_project_scope(request),
+    )
     form = MilestoneForm(request.POST, instance=milestone)
     if form.is_valid():
         form.save()
@@ -275,7 +306,12 @@ def edit_milestone(request, milestone_id):
 @login_required
 @require_http_methods(["POST"])
 def delete_milestone(request, milestone_id):
-    milestone = get_object_or_404(ProjectMilestone, pk=milestone_id, author=request.user)
+    milestone = get_object_or_404(
+        ProjectMilestone,
+        pk=milestone_id,
+        author=request.user,
+        project__in=_project_scope(request),
+    )
     project_id = milestone.project_id
     milestone.delete()
     return redirect("listaEspera:project_detail", pk=project_id)
@@ -284,7 +320,7 @@ def delete_milestone(request, milestone_id):
 @login_required
 @require_http_methods(["POST"])
 def request_collaboration(request, pk):
-    project = get_object_or_404(Project, pk=pk, visibility=Project.VISIBILITY_PUBLIC)
+    project = _project_for_request(request, pk=pk, visibility=Project.VISIBILITY_PUBLIC)
     if project.owner == request.user or project.memberships.filter(user=request.user).exists():
         return redirect("listaEspera:project_detail", pk=pk)
     form = CollaborationRequestForm(request.POST)
@@ -298,7 +334,12 @@ def request_collaboration(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def decide_collaboration(request, request_id):
-    collaboration = get_object_or_404(CollaborationRequest.objects.select_related("project", "requester"), pk=request_id, project__owner=request.user, status=CollaborationRequest.PENDING)
+    collaboration = get_object_or_404(
+        CollaborationRequest.objects.select_related("project", "requester"),
+        pk=request_id,
+        project__in=_project_scope(request).filter(owner=request.user),
+        status=CollaborationRequest.PENDING,
+    )
     decision = request.POST.get("decision")
     if decision not in (CollaborationRequest.ACCEPTED, CollaborationRequest.REJECTED):
         return redirect("listaEspera:project_detail", pk=collaboration.project_id)

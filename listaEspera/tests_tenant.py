@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import DominioOrganizacao, MembroOrganizacao, Organizacao
+from .models import DominioOrganizacao, MembroOrganizacao, Organizacao, Project
 
 
 User = get_user_model()
@@ -77,3 +77,63 @@ class TenantResolutionTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertNotContains(response, "CAMPPG", status_code=404)
+
+    def test_project_created_inside_tenant_is_institutional(self):
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_MEMBRO,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("listaEspera:project_create"),
+            {
+                "title": "Projeto CAMPPG",
+                "direction": "Organizar uma iniciativa institucional.",
+                "status": "ideia",
+                "visibility": "privado",
+            },
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        project = Project.objects.get(title="Projeto CAMPPG")
+        self.assertEqual(project.organizacao_id, self.organization.pk)
+
+    def test_personal_project_is_not_visible_from_an_institutional_host(self):
+        personal = Project.objects.create(
+            owner=self.user,
+            title="Projeto pessoal",
+            direction="Direção pessoal",
+            category="Pesquisa",
+        )
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_MEMBRO,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("listaEspera:project_detail", kwargs={"pk": personal.pk}),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_institutional_project_is_not_visible_from_global_space(self):
+        project = Project.objects.create(
+            owner=self.user,
+            organizacao=self.organization,
+            title="Projeto institucional",
+            direction="Direção institucional",
+            category="Educação",
+        )
+
+        response = self.client.get(
+            reverse("listaEspera:project_detail", kwargs={"pk": project.pk}),
+            HTTP_HOST="palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 404)
