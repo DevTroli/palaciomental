@@ -24,15 +24,14 @@ class WaitlistModelTests(TestCase):
 
 
 class WaitlistViewTests(TestCase):
-    """A raiz permanece exclusiva da lista de espera durante a validação."""
+    """A raiz do produto é a home MVP; a lista de espera não é mais a entrada."""
 
-    def test_get_index_returns_200_with_form(self):
-        """GET na home deve retornar 200 com formulário."""
-        response = self.client.get(reverse("listaEspera:index"))
+    def test_root_returns_mvp_home(self):
+        """GET na raiz deve retornar a home atual do MVP."""
+        response = self.client.get(reverse("core:index"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "listaEspera/index.html")
-        self.assertContains(response, "Entrar na lista")
-        self.assertContains(response, "Suas ideias merecem")
+        self.assertTemplateUsed(response, "core/index.html")
+        self.assertContains(response, "Dê continuidade às suas ideias.")
 
 
 class StatusViewTests(TestCase):

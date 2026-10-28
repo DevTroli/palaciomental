@@ -4,4 +4,7 @@ from . import views
 
 app_name = "core"
 
-urlpatterns = [path("mvp/", views.index, name="index")]
+urlpatterns = [
+    path("", views.index, name="index"),
+    path("mvp/", views.mvp_redirect, name="mvp_legacy"),
+]

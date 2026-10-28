@@ -1,6 +1,6 @@
-# 🧠 Palácio Mental
+# Palácio Mental
 
-> Plataforma de Colaboração e Memória Institucional para Projetos Sociais — um espaço gratuito e colaborativo onde iniciativas sociais ganham memória viva, transparência e continuidade.
+> Plataforma de continuidade de projetos: preserva contexto, autoria e evolução para que criações não se tornem arquivos esquecidos.
 
 **Projeto de Extensão Acadêmica**
 Fatec Praia Grande · Desenvolvimento de Software Multiplataforma · 2º Semestre de 2026
@@ -19,24 +19,28 @@ Fatec Praia Grande · Desenvolvimento de Software Multiplataforma · 2º Semestr
 
 ---
 
-## Arquitetura
+## Arquitetura atual
 
 | Camada | Tecnologia |
 |---|---|
-| **Banco de Dados** | PostgreSQL / MySQL |
-| **Backend** | Python (Django) / Java (Spring Boot) |
+| **Banco de Dados** | PostgreSQL |
+| **NoSQL operacional** | Redis (sessões, cache, eventos e projeções derivadas) |
+| **Backend principal** | Python 3.12 + Django |
 | **Frontend** | HTML5, CSS3, JavaScript — foco em acessibilidade e responsividade |
 | **Design & UX** | Figma (Modo Foco e baixa carga sensorial) |
-| **DevOps** | Docker + GitHub Actions (CI/CD) |
+| **Infraestrutura** | Docker + Railway + Cloudflare |
 
 ### Backend
-Stack ainda em avaliação entre Django e Spring Boot, expondo API para o consumo do frontend e controle de permissões por papel de usuário.
+Django é a aplicação principal do MVP: autenticação, projetos, contexto, colaboração e experiência web. A arquitetura multi-tenant do CAMPPG usa banco compartilhado com isolamento por organização.
 
 ### Frontend
 Interface responsiva construída com foco em acessibilidade cognitiva, incluindo o Modo Foco como recurso nativo de redução de estímulos visuais.
 
+### Multi-tenant institucional
+O ambiente institucional usa subdomínio, por exemplo `camppg.palaciomental.com.br`. O tenant é privado: o acesso exige autenticação e afiliação ativa, e o primeiro acesso acontece por convite autorizado. Dentro do tenant são criados apenas projetos institucionais; projetos pessoais permanecem no Meu Espaço.
+
 ### DevOps
-Aplicação conteinerizada com Docker. CI/CD via GitHub Actions.
+A aplicação é conteinerizada com Docker e pode ser executada localmente ou na Railway. O Cloudflare gerencia DNS, wildcard e TLS conforme o ambiente.
 
 ---
 
@@ -70,7 +74,7 @@ Aplicação conteinerizada com Docker. CI/CD via GitHub Actions.
 
 ---
 
-### Instalação Rápida (Docker Compose — Recomendado)
+### Instalação rápida (Docker Compose)
 
 Pré-requisitos: [Git](https://git-scm.com/) e [Docker](https://www.docker.com/) + Docker Compose.
 
@@ -89,11 +93,11 @@ docker compose up --build -d
 
 | Serviço | URL | Descrição |
 |---|---|---|
-| **Django** | http://localhost:8000 | Frontend (Lista de Espera) + API REST |
-| **Spring Boot** | http://localhost:8080/actuator/health | API de status/saúde |
+| **Django** | http://localhost:8000 | Home MVP, autenticação e projetos |
+| **Status API** | http://localhost:8080/actuator/health | API auxiliar de status/saúde |
 | **PostgreSQL** | localhost:5433 | Banco de dados (credenciais no `.env`) |
 
-> O `docker compose` sobe os 3 serviços com healthchecks: banco → Django → API Java. O Django roda migrações automaticamente no entrypoint.
+> O `docker compose` sobe banco, Django e a API auxiliar de status com healthchecks. O Django roda migrações automaticamente no entrypoint.
 
 ---
 
