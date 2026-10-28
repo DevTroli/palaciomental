@@ -1,0 +1,228 @@
+erDiagram
+    USUARIO ||--o| PERFIL_MEMBRO : possui
+    USUARIO ||--o{ MEMBRO_ORGANIZACAO : participa
+    ORGANIZACAO ||--o{ MEMBRO_ORGANIZACAO : possui
+    ORGANIZACAO ||--o{ DOMINIO_ORGANIZACAO : publica_em
+    ORGANIZACAO ||--|| IDENTIDADE_ORGANIZACAO : personaliza
+    ORGANIZACAO ||--o{ CONVITE_ORGANIZACAO : emite
+    ORGANIZACAO ||--o{ PROGRAMA_INSTITUCIONAL : oferece
+    USUARIO ||--o{ CONVITE_ORGANIZACAO : cria
+    PROGRAMA_INSTITUCIONAL ||--o{ TURMA_GRUPO : organiza
+    TURMA_GRUPO ||--o{ MEMBRO_TURMA_GRUPO : inclui
+    USUARIO ||--o{ MEMBRO_TURMA_GRUPO : participa
+
+    PLANO ||--o{ ASSINATURA_USUARIO : oferece
+    USUARIO ||--o{ ASSINATURA_USUARIO : contrata
+    PLANO ||--o{ ASSINATURA_ORGANIZACAO : oferece
+    ORGANIZACAO ||--o{ ASSINATURA_ORGANIZACAO : contrata
+
+    USUARIO ||--o{ PROJETO : autoria
+    ORGANIZACAO o|--o{ PROJETO : enquadra
+    PROJETO ||--o{ PROJETO_TURMA_GRUPO : contextualiza
+    TURMA_GRUPO ||--o{ PROJETO_TURMA_GRUPO : acompanha
+    PROJETO ||--o{ MEMBRO_PROJETO : inclui
+    USUARIO ||--o{ MEMBRO_PROJETO : colabora
+    PROJETO ||--o{ LINK_PROJETO : reune
+    PROJETO ||--o{ COMENTARIO_PROJETO : recebe
+    USUARIO ||--o{ COMENTARIO_PROJETO : escreve
+    COMENTARIO_PROJETO o|--o{ COMENTARIO_PROJETO : responde
+    PROJETO ||--o{ VOTO_PROJETO : recebe
+    USUARIO ||--o{ VOTO_PROJETO : registra
+    PROJETO ||--o{ MARCO_PROJETO : sintetiza
+    USUARIO ||--o{ MARCO_PROJETO : autoriza
+    PROJETO ||--o{ EVENTO_PROJETO : registra
+    USUARIO o|--o{ EVENTO_PROJETO : provoca
+    PROJETO ||--o{ SOLICITACAO_COLABORACAO : recebe
+    USUARIO ||--o{ SOLICITACAO_COLABORACAO : solicita
+    USUARIO ||--o{ NOTIFICACAO : recebe
+    ORGANIZACAO o|--o{ NOTIFICACAO : contextualiza
+
+    USUARIO {
+        uuid id PK
+        string nome_usuario
+        string email
+        boolean ativo
+    }
+    PERFIL_MEMBRO {
+        bigint id PK
+        uuid usuario_id FK
+        string biografia
+        string criado_em
+        string atualizado_em
+    }
+    ORGANIZACAO {
+        uuid id PK
+        string slug
+        string nome
+        string nome_legal
+        string status
+        string criado_em
+        string atualizado_em
+    }
+    IDENTIDADE_ORGANIZACAO {
+        uuid id PK
+        uuid organizacao_id FK
+        string nome_exibicao
+        string logo
+        string cor_primaria
+        string cor_destaque
+        string cor_fundo
+    }
+    DOMINIO_ORGANIZACAO {
+        uuid id PK
+        uuid organizacao_id FK
+        string hostname
+        string tipo
+        boolean principal
+        string status_verificacao
+        string verificado_em
+    }
+    MEMBRO_ORGANIZACAO {
+        uuid id PK
+        uuid organizacao_id FK
+        uuid usuario_id FK
+        string papel
+        string status
+        string entrou_em
+    }
+    CONVITE_ORGANIZACAO {
+        uuid id PK
+        uuid organizacao_id FK
+        uuid convidado_por_id FK
+        string email
+        string papel
+        string hash_token
+        string expira_em
+        string aceito_em
+    }
+    PROGRAMA_INSTITUCIONAL {
+        uuid id PK
+        uuid organizacao_id FK
+        uuid responsavel_id FK
+        string nome
+        string tipo
+        string status
+        string inicia_em
+        string termina_em
+    }
+    TURMA_GRUPO {
+        uuid id PK
+        uuid programa_id FK
+        string nome
+        string codigo
+        string status
+        string inicia_em
+        string termina_em
+    }
+    MEMBRO_TURMA_GRUPO {
+        uuid id PK
+        uuid turma_grupo_id FK
+        uuid usuario_id FK
+        string papel
+        string status
+        string entrou_em
+    }
+    PLANO {
+        uuid id PK
+        string codigo
+        string nome
+        string tipo
+        string status
+    }
+    ASSINATURA_USUARIO {
+        uuid id PK
+        uuid usuario_id FK
+        uuid plano_id FK
+        string status
+        string inicia_em
+        string termina_em
+    }
+    ASSINATURA_ORGANIZACAO {
+        uuid id PK
+        uuid organizacao_id FK
+        uuid plano_id FK
+        string status
+        string inicia_em
+        string termina_em
+    }
+    PROJETO {
+        bigint id PK
+        uuid proprietario_id FK
+        uuid organizacao_id FK
+        string titulo
+        string direcao
+        string status
+        string visibilidade
+        uuid token_acesso
+        string atualizado_em
+    }
+    PROJETO_TURMA_GRUPO {
+        uuid id PK
+        bigint projeto_id FK
+        uuid turma_grupo_id FK
+        string tipo_vinculo
+        string criado_em
+    }
+    MEMBRO_PROJETO {
+        bigint id PK
+        bigint projeto_id FK
+        uuid usuario_id FK
+        string papel
+        boolean pode_gerir_marcos
+        string status
+    }
+    LINK_PROJETO {
+        bigint id PK
+        bigint projeto_id FK
+        string rotulo
+        string url
+        string criado_em
+    }
+    COMENTARIO_PROJETO {
+        bigint id PK
+        bigint projeto_id FK
+        uuid autor_id FK
+        bigint comentario_pai_id FK
+        string conteudo
+        string criado_em
+    }
+    VOTO_PROJETO {
+        bigint id PK
+        bigint projeto_id FK
+        uuid usuario_id FK
+        string criado_em
+    }
+    MARCO_PROJETO {
+        bigint id PK
+        bigint projeto_id FK
+        uuid autor_id FK
+        string tipo
+        string titulo
+        string descricao
+        string criado_em
+    }
+    EVENTO_PROJETO {
+        uuid id PK
+        bigint projeto_id FK
+        uuid ator_id FK
+        string tipo_evento
+        string origem
+        string dados
+        string ocorrido_em
+    }
+    SOLICITACAO_COLABORACAO {
+        bigint id PK
+        bigint projeto_id FK
+        uuid solicitante_id FK
+        string mensagem
+        string status
+        string decidida_em
+    }
+    NOTIFICACAO {
+        bigint id PK
+        uuid destinatario_id FK
+        uuid organizacao_id FK
+        string tipo
+        string mensagem
+        string lida_em
+    }

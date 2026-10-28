@@ -42,6 +42,12 @@ O ambiente institucional usa subdomínio, por exemplo `camppg.palaciomental.com.
 ### DevOps
 A aplicação é conteinerizada com Docker e pode ser executada localmente ou na Railway. O Cloudflare gerencia DNS, wildcard e TLS conforme o ambiente.
 
+### Documentação da arquitetura M4
+
+- [Modelagem multi-tenant v2](docs/modelagem-multi-tenant-v2.md)
+- [DER multi-tenant em português](docs/der-multi-tenant-pt.mmd)
+- [Plano do Sprint Emergencial M4](docs/sprint-emergencial-multi-tenant-v2.md)
+
 ---
 
 ## Modelagem de Dados
