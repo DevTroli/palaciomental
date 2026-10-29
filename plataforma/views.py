@@ -1,6 +1,8 @@
 import json
 import os
-from datetime import datetime
+import hashlib
+import secrets
+from datetime import datetime, timedelta
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -8,18 +10,21 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.templatetags.static import static
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
-from .models import CollaborationRequest, MemberProfile, MembroOrganizacao, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, TurmaGrupo
+from .forms import CollaborationRequestForm, CommentForm, ConviteTurmaGrupoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
+from .models import CollaborationRequest, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, TurmaGrupo
 
 def register(request):
     if request.user.is_authenticated:
@@ -179,6 +184,78 @@ def institutional_group_create(request, programa_id):
         messages.success(request, "Turma ou grupo criado.")
         return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
     return render(request, "institutional/group_form.html", {"organizacao": organizacao, "programa": programa, "form": form})
+
+
+@login_required
+def institutional_group_members(request, group_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None:
+        raise Http404
+    grupo = get_object_or_404(TurmaGrupo, pk=group_id, programa__organizacao=organizacao)
+    pode_gerenciar = _can_manage_institutional_structure(request)
+    form = ConviteTurmaGrupoForm(request.POST or None)
+    if request.method == "POST":
+        if not pode_gerenciar:
+            return JsonResponse({"detail": "Você não pode convidar pessoas para este grupo."}, status=403)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            if MembroTurmaGrupo.objects.filter(turma_grupo=grupo, usuario__email__iexact=email, status=MembroTurmaGrupo.STATUS_ATIVO).exists():
+                form.add_error("email", "Esta pessoa já participa do grupo.")
+            else:
+                raw_token = secrets.token_urlsafe(32)
+                convite = form.save(commit=False)
+                convite.turma_grupo = grupo
+                convite.convidado_por = request.user
+                convite.hash_token = hashlib.sha256(raw_token.encode()).hexdigest()
+                convite.expira_em = timezone.now() + timedelta(days=7)
+                convite.save()
+                link = request.build_absolute_uri(reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}))
+                messages.success(request, f"Convite criado para {email}. Link para envio: {link}")
+                return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
+    membros = grupo.membros.select_related("usuario").filter(status=MembroTurmaGrupo.STATUS_ATIVO)
+    convites = grupo.convites.filter(status=ConviteTurmaGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
+    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros, "convites": convites, "form": form, "pode_gerenciar": pode_gerenciar})
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_invite_revoke(request, invite_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or not _can_manage_institutional_structure(request):
+        return JsonResponse({"detail": "Você não pode revogar convites neste ambiente."}, status=403)
+    convite = get_object_or_404(ConviteTurmaGrupo, pk=invite_id, turma_grupo__programa__organizacao=organizacao)
+    if convite.status == ConviteTurmaGrupo.STATUS_PENDENTE:
+        convite.status = ConviteTurmaGrupo.STATUS_REVOGADO
+        convite.save(update_fields=["status"])
+        messages.success(request, "Convite revogado.")
+    return redirect("plataforma:institutional_group_members", group_id=convite.turma_grupo_id)
+
+
+def institutional_invite_accept(request, token):
+    digest = hashlib.sha256(token.encode()).hexdigest()
+    convite = get_object_or_404(ConviteTurmaGrupo.objects.select_related("turma_grupo__programa__organizacao"), hash_token=digest)
+    if convite.status != ConviteTurmaGrupo.STATUS_PENDENTE or convite.expira_em <= timezone.now():
+        return HttpResponseForbidden("Este convite não está mais disponível.")
+    if not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
+    if request.user.email.lower() != convite.email.lower():
+        return HttpResponseForbidden("Este convite foi emitido para outro endereço de e-mail.")
+    organizacao = convite.turma_grupo.programa.organizacao
+    with transaction.atomic():
+        MembroOrganizacao.objects.get_or_create(
+            organizacao=organizacao,
+            usuario=request.user,
+            defaults={"papel": MembroOrganizacao.PAPEL_MEMBRO},
+        )
+        membro, _ = MembroTurmaGrupo.objects.get_or_create(turma_grupo=convite.turma_grupo, usuario=request.user, defaults={"papel": convite.papel})
+        if membro.status != MembroTurmaGrupo.STATUS_ATIVO:
+            membro.status = MembroTurmaGrupo.STATUS_ATIVO
+            membro.papel = convite.papel
+            membro.save(update_fields=["status", "papel"])
+        convite.status = ConviteTurmaGrupo.STATUS_ACEITO
+        convite.aceito_em = timezone.now()
+        convite.save(update_fields=["status", "aceito_em"])
+    return redirect("plataforma:institutional_program_detail", programa_id=convite.turma_grupo.programa_id)
 
 
 def _project_scope(request):

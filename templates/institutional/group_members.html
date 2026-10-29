@@ -1,0 +1,16 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Membros — {{ grupo.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"></head>
+<body>
+<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_program_detail' grupo.programa.pk %}"><span>{{ organizacao.nome }}</span></a><div class="tenant-context"><span>{{ grupo.programa.nome }}</span><strong>{{ grupo.nome }}</strong></div></header>
+<main class="tenant-container">
+  <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_program_detail' grupo.programa.pk %}">{{ grupo.programa.nome }}</a><span>/</span><span>{{ grupo.nome }}</span></nav>
+  <section class="tenant-hero"><p class="tenant-eyebrow">{{ grupo.get_tipo_display }}</p><h1>Membros e convites</h1><p>Convites são de uso único, expiram em sete dias e só podem ser aceitos pelo e-mail para o qual foram emitidos.</p></section>
+  <section class="tenant-flow-grid">
+    {% if pode_gerenciar %}<article class="tenant-card tenant-card--active"><p class="tenant-eyebrow">Acesso controlado</p><h2>Convidar pessoa</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="tenant-button" type="submit">Gerar convite</button></form></article>{% endif %}
+    <article class="tenant-card"><p class="tenant-eyebrow">Participantes</p><h2>{{ membros|length }} membro(s)</h2>{% for membro in membros %}<p><strong>{{ membro.usuario.get_full_name|default:membro.usuario.username }}</strong><br><span class="tenant-status">{{ membro.get_papel_display }}</span></p>{% empty %}<p>Nenhuma pessoa aceitou um convite neste grupo.</p>{% endfor %}</article>
+    <article class="tenant-card"><p class="tenant-eyebrow">Pendentes</p><h2>{{ convites|length }} convite(s)</h2>{% for convite in convites %}<p><strong>{{ convite.email }}</strong><br><span class="tenant-status">{{ convite.get_papel_display }}</span>{% if pode_gerenciar %}<form method="post" action="{% url 'plataforma:institutional_invite_revoke' convite.pk %}">{% csrf_token %}<button class="tenant-button" type="submit">Revogar</button></form>{% endif %}</p>{% empty %}<p>Nenhum convite pendente.</p>{% endfor %}</article>
+  </section>
+</main>
+</body></html>

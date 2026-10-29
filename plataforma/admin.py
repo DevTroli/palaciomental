@@ -8,6 +8,7 @@ from django import forms
 from .models import (
     CollaborationRequest,
     ConviteOrganizacao,
+    ConviteTurmaGrupo,
     DominioOrganizacao,
     IdentidadeOrganizacao,
     MemberProfile,
@@ -309,6 +310,16 @@ class MembroTurmaGrupoAdmin(admin.ModelAdmin):
     list_select_related = ("usuario", "turma_grupo", "turma_grupo__programa")
     autocomplete_fields = ("usuario", "turma_grupo")
     readonly_fields = ("id", "entrou_em")
+
+
+@admin.register(ConviteTurmaGrupo)
+class ConviteTurmaGrupoAdmin(admin.ModelAdmin):
+    list_display = ("email", "turma_grupo", "papel", "status", "expira_em", "aceito_em")
+    list_filter = ("status", "papel", "turma_grupo__programa__organizacao")
+    search_fields = ("email", "turma_grupo__nome", "turma_grupo__programa__nome")
+    list_select_related = ("turma_grupo", "turma_grupo__programa", "convidado_por")
+    autocomplete_fields = ("turma_grupo", "convidado_por")
+    readonly_fields = ("id", "hash_token", "criado_em", "aceito_em")
 
 
 @admin.register(ProjetoTurmaGrupo)

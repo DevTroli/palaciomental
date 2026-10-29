@@ -1,8 +1,13 @@
+import hashlib
+import secrets
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import DominioOrganizacao, MembroOrganizacao, Organizacao, ProgramaInstitucional, Project, TurmaGrupo
+from .models import ConviteTurmaGrupo, DominioOrganizacao, MembroOrganizacao, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, TurmaGrupo
 
 
 User = get_user_model()
@@ -69,8 +74,7 @@ class TenantResolutionTests(TestCase):
 
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Dê continuidade às suas ideias.")
+        self.assertRedirects(response, reverse("plataforma:institutional_management"), fetch_redirect_response=False)
 
     def test_manager_can_enter_institutional_management_portal(self):
         MembroOrganizacao.objects.create(
@@ -237,3 +241,69 @@ class TenantResolutionTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+    def test_group_invitation_acceptance_creates_affiliation_and_membership(self):
+        manager = self.user
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=manager,
+            papel=MembroOrganizacao.PAPEL_GESTOR,
+        )
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Programa CAMPPG",
+            slug="programa-camppg",
+            criado_por=manager,
+        )
+        grupo = TurmaGrupo.objects.create(programa=programa, nome="Turma 2026", criado_por=manager)
+        invited = User.objects.create_user(username="convidado", email="convidado@example.com", password="Senha-forte-123")
+        raw_token = secrets.token_urlsafe(24)
+        invite = ConviteTurmaGrupo.objects.create(
+            turma_grupo=grupo,
+            convidado_por=manager,
+            email=invited.email,
+            papel=MembroTurmaGrupo.PAPEL_MEMBRO,
+            hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
+            expira_em=timezone.now() + timedelta(days=7),
+        )
+
+        response = self.client.get(
+            reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertRedirects(response, f"{reverse('plataforma:login')}?next={reverse('plataforma:institutional_invite_accept', kwargs={'token': raw_token})}", fetch_redirect_response=False)
+
+        self.client.force_login(invited)
+        response = self.client.get(
+            reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertRedirects(response, reverse("plataforma:institutional_program_detail", kwargs={"programa_id": programa.pk}), fetch_redirect_response=False)
+        self.assertTrue(MembroOrganizacao.objects.filter(organizacao=self.organization, usuario=invited, papel=MembroOrganizacao.PAPEL_MEMBRO).exists())
+        self.assertTrue(MembroTurmaGrupo.objects.filter(turma_grupo=grupo, usuario=invited, status=MembroTurmaGrupo.STATUS_ATIVO).exists())
+        invite.refresh_from_db()
+        self.assertEqual(invite.status, ConviteTurmaGrupo.STATUS_ACEITO)
+
+    def test_expired_group_invitation_is_rejected(self):
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Programa expirado",
+            slug="programa-expirado",
+            criado_por=self.user,
+        )
+        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo expirado", criado_por=self.user)
+        raw_token = secrets.token_urlsafe(24)
+        ConviteTurmaGrupo.objects.create(
+            turma_grupo=grupo,
+            convidado_por=self.user,
+            email=self.user.email,
+            hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
+            expira_em=timezone.now() - timedelta(minutes=1),
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertEqual(response.status_code, 403)

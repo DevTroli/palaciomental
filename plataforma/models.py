@@ -502,6 +502,46 @@ class MembroTurmaGrupo(models.Model):
         return f"{self.usuario} — {self.turma_grupo.nome}"
 
 
+class ConviteTurmaGrupo(models.Model):
+    STATUS_PENDENTE = "pendente"
+    STATUS_ACEITO = "aceito"
+    STATUS_REVOGADO = "revogado"
+    STATUS_CHOICES = (
+        (STATUS_PENDENTE, "Pendente"),
+        (STATUS_ACEITO, "Aceito"),
+        (STATUS_REVOGADO, "Revogado"),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    turma_grupo = models.ForeignKey(
+        TurmaGrupo,
+        on_delete=models.CASCADE,
+        related_name="convites",
+        verbose_name="Turma ou grupo",
+    )
+    convidado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="convites_turma_grupo_emitidos",
+        verbose_name="Convidado por",
+    )
+    email = models.EmailField("E-mail convidado")
+    papel = models.CharField("Papel local", max_length=20, choices=MembroTurmaGrupo.PAPEL_CHOICES, default=MembroTurmaGrupo.PAPEL_MEMBRO)
+    hash_token = models.CharField("Hash do token", max_length=64, unique=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDENTE)
+    expira_em = models.DateTimeField("Expira em")
+    aceito_em = models.DateTimeField("Aceito em", null=True, blank=True)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Convite de turma ou grupo"
+        verbose_name_plural = "Convites de turmas e grupos"
+        indexes = [models.Index(fields=["turma_grupo", "status"]), models.Index(fields=["email", "status"])]
+
+    def __str__(self):
+        return f"{self.email} — {self.turma_grupo.nome}"
+
+
 class ProjetoTurmaGrupo(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     projeto = models.OneToOneField(

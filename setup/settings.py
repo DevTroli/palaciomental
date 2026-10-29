@@ -16,7 +16,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', cast=bool, default=True)
+DEBUG = config(
+    "DJANGO_DEBUG",
+    cast=bool,
+    default=config("DEBUG", cast=bool, default=True),
+)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='localhost,127.0.0.1')
 
@@ -31,6 +35,9 @@ TENANT_RESERVED_HOSTS = config(
     cast=Csv(),
     default='www,api,status,admin,app',
 )
+# Somente para desenvolvimento local/Codespaces; nunca resolve tenant por
+# query string quando DEBUG estiver desativado.
+DEV_TENANT_QUERY_PARAM = config("DEV_TENANT_QUERY_PARAM", default="tenant")
 
 # Proxy SSL header for Railway/Reverse proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

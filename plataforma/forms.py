@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, MemberProfile, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
+from .models import CollaborationRequest, ConviteTurmaGrupo, MemberProfile, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
 
 User = get_user_model()
 
@@ -166,3 +166,13 @@ class TurmaGrupoForm(forms.ModelForm):
         if len(nome) < 2:
             raise forms.ValidationError("Use um nome com pelo menos 2 caracteres.")
         return nome
+
+
+class ConviteTurmaGrupoForm(forms.ModelForm):
+    class Meta:
+        model = ConviteTurmaGrupo
+        fields = ("email", "papel")
+        labels = {"email": "E-mail da pessoa", "papel": "Papel no grupo"}
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
