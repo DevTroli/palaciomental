@@ -49,6 +49,10 @@ class IdentidadeOrganizacao(models.Model):
     cor_destaque = models.CharField("Cor de destaque", max_length=20, blank=True)
     cor_fundo = models.CharField("Cor de fundo", max_length=20, blank=True)
 
+    class Meta:
+        verbose_name = "Identidade visual da organização"
+        verbose_name_plural = "Identidades visuais das organizações"
+
     def __str__(self):
         return self.nome_exibicao or self.organizacao.nome
 
@@ -203,6 +207,8 @@ class MemberProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "Perfil de usuário"
+        verbose_name_plural = "Perfis de usuários"
         ordering = ["user__username"]
 
     def __str__(self):
@@ -247,6 +253,8 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "Projeto"
+        verbose_name_plural = "Projetos"
         ordering = ["-updated_at"]
         indexes = [models.Index(fields=["visibility", "status", "category"])]
         constraints = [models.UniqueConstraint(Lower("title"), "owner", name="unique_owner_project_title_ci")]
@@ -265,6 +273,8 @@ class ProjectLink(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Link de projeto"
+        verbose_name_plural = "Links de projetos"
         ordering = ["created_at"]
 
     def __str__(self):
@@ -279,6 +289,8 @@ class ProjectMember(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Membro de projeto"
+        verbose_name_plural = "Membros de projetos"
         constraints = [models.UniqueConstraint(fields=["project", "user"], name="unique_project_member")]
         ordering = ["joined_at"]
 
@@ -295,6 +307,8 @@ class ProjectComment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "Comentário de projeto"
+        verbose_name_plural = "Comentários de projetos"
         ordering = ["created_at"]
 
     def __str__(self):
@@ -307,6 +321,8 @@ class ProjectVote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Voto de relevância"
+        verbose_name_plural = "Votos de relevância"
         constraints = [models.UniqueConstraint(fields=["project", "user"], name="unique_project_vote")]
 
 
@@ -325,6 +341,8 @@ class ProjectMilestone(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "Marco de projeto"
+        verbose_name_plural = "Marcos de projetos"
         ordering = ["-created_at"]
 
 
@@ -341,6 +359,8 @@ class CollaborationRequest(models.Model):
     decided_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        verbose_name = "Solicitação de colaboração"
+        verbose_name_plural = "Solicitações de colaboração"
         constraints = [models.UniqueConstraint(fields=["project", "requester"], name="unique_collaboration_request")]
         ordering = ["-created_at"]
 
@@ -354,4 +374,6 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Notificação"
+        verbose_name_plural = "Notificações"
         ordering = ["-created_at"]

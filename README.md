@@ -121,12 +121,15 @@ O resultado esperado é `No changes detected`.
 
 ### 3. Validação funcional do tenant CAMPPG
 
-No admin Django, crie:
+O Django Admin foi organizado para que `Organização` seja o ponto central da configuração. No admin, crie uma organização e, na própria tela dela:
 
-1. uma `Organização` com slug `camppg`;
-2. um `Domínio da organização` com hostname `camppg.palaciomental.com.br`;
-3. uma `Afiliação organizacional` ativa para um usuário;
-4. opcionalmente, uma identidade visual para a organização.
+1. informe nome, nome legal, slug e situação do ambiente;
+2. adicione a identidade visual no bloco **Identidade exibida**;
+3. adicione o hostname no bloco **Domínios das organizações**;
+4. depois crie a afiliação do usuário em **Afiliações organizacionais**;
+5. use **Convites das organizações** quando a entrada precisar ser controlada por convite.
+
+O token técnico do convite é gerado automaticamente e o administrador que o criou é registrado. O admin também normaliza hostnames e impede que a equipe informe protocolo ou barras por engano. Campos técnicos, identificadores e datas de auditoria ficam protegidos ou recolhidos para não competir com as decisões operacionais.
 
 Depois, teste:
 
