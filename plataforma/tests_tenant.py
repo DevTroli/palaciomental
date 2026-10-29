@@ -169,7 +169,60 @@ class TenantResolutionTests(TestCase):
 
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
 
-        self.assertRedirects(response, reverse("plataforma:institutional_management"), fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ambiente institucional")
+        self.assertContains(response, "Programas ativos")
+
+    def test_tenant_home_shows_only_published_current_tenant_content(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Programa CAMPPG",
+            slug="programa-camppg-home",
+            status=ProgramaInstitucional.STATUS_PUBLICADO,
+            criado_por=self.user,
+        )
+        TurmaGrupo.objects.create(programa=programa, nome="Grupo CAMPPG", criado_por=self.user)
+        Project.objects.create(
+            owner=self.user,
+            organizacao=self.organization,
+            title="Projeto CAMPPG publicado",
+            direction="Projeto dentro do tenant",
+            category="Educação",
+            visibility=Project.VISIBILITY_PUBLIC,
+        )
+        other = Organizacao.objects.create(slug="outra", nome="Outra organização", status=Organizacao.STATUS_ATIVA)
+        Project.objects.create(
+            owner=self.user,
+            organizacao=other,
+            title="Projeto de outro tenant",
+            direction="Não deve aparecer",
+            category="Outro",
+            visibility=Project.VISIBILITY_PUBLIC,
+        )
+        self.client.force_login(self.user)
+        response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Programa CAMPPG")
+        self.assertContains(response, "Projeto CAMPPG publicado")
+        self.assertNotContains(response, "Projeto de outro tenant")
+
+    def test_member_home_limits_turmas_to_their_active_group_scope(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Programa de grupos",
+            slug="programa-grupos-home",
+            status=ProgramaInstitucional.STATUS_PUBLICADO,
+            criado_por=self.user,
+        )
+        own_group = TurmaGrupo.objects.create(programa=programa, nome="Grupo do participante", criado_por=self.user)
+        other_group = TurmaGrupo.objects.create(programa=programa, nome="Grupo de outra equipe", criado_por=self.user)
+        MembroTurmaGrupo.objects.create(turma_grupo=own_group, usuario=self.user)
+        self.client.force_login(self.user)
+        response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertContains(response, "Grupo do participante")
+        self.assertNotContains(response, "Grupo de outra equipe")
 
     def test_manager_can_enter_institutional_management_portal(self):
         MembroOrganizacao.objects.create(

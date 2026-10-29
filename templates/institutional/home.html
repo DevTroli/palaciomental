@@ -1,0 +1,46 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ identidade.nome_exibicao|default:organizacao.nome }} — início</title>
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  <style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style>
+</head>
+<body>
+  <header class="tenant-header">
+    <a class="tenant-brand" href="{% url 'core:index' %}" aria-label="Início de {{ identidade.nome_exibicao|default:organizacao.nome }}">
+      {% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="">{% endif %}
+      <span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span>
+    </a>
+    <div class="tenant-context"><span>Ambiente institucional</span><strong>{{ afiliacao.get_papel_display }}</strong></div>
+  </header>
+  <main class="tenant-container">
+    <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span><span aria-hidden="true">/</span><strong>Início</strong></nav>
+
+    <section class="tenant-overview-hero" aria-label="Apresentação do ambiente">
+      <div class="tenant-hero-slide tenant-hero-slide--active">
+        <div>{% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }}</p><h1>Um espaço para acompanhar o que está em movimento.</h1><p>Explore os programas, encontre grupos e acompanhe os projetos institucionais deste ambiente.</p></div>
+      </div>
+    </section>
+
+    <section class="tenant-overview-actions" aria-labelledby="quick-actions-title">
+      <div class="tenant-section-heading"><p class="tenant-eyebrow">Próximos passos</p><h2 id="quick-actions-title">Acesso rápido</h2></div>
+      <div class="tenant-flow-grid tenant-flow-grid--compact">
+        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:projects' %}"><p class="tenant-eyebrow">Explorar</p><h3>Projetos institucionais</h3><p>Veja os projetos publicados dentro deste ambiente.</p></a>
+        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:project_create' %}"><p class="tenant-eyebrow">Criar</p><h3>Novo projeto</h3><p>Comece um projeto institucional com contexto progressivo.</p></a>
+        {% if afiliacao.papel == 'proprietario' or afiliacao.papel == 'gestor' %}<a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_management' %}"><p class="tenant-eyebrow">Operar</p><h3>Gestão institucional</h3><p>Administre membros, convites, programas e estruturas.</p></a>{% endif %}
+        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:profile' request.user.username %}"><p class="tenant-eyebrow">Pessoal</p><h3>Meu Espaço</h3><p>Acesse seus projetos autorais fora deste tenant.</p></a>
+      </div>
+    </section>
+
+    <section aria-labelledby="programs-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Em andamento</p><h2 id="programs-title">Programas ativos</h2></div><div class="tenant-flow-grid">{% for programa in programas %}<article class="tenant-card"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h3>{{ programa.nome }}</h3><p>{{ programa.descricao|default:"Programa institucional em andamento."|truncatechars:150 }}</p><span class="tenant-status">{{ programa.turmas_grupos.count }} turma(s) ou grupo(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Ver programa</a></article>{% empty %}<article class="tenant-card tenant-placeholder"><h3>Nenhum programa ativo</h3><p>Ainda não há programas publicados neste ambiente.</p></article>{% endfor %}</div></section>
+
+    <section aria-labelledby="groups-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Participação</p><h2 id="groups-title">Turmas e grupos ativos</h2></div><div class="tenant-flow-grid">{% for grupo in turmas %}<article class="tenant-card"><p class="tenant-eyebrow">{{ grupo.get_tipo_display }} · {{ grupo.get_status_display }}</p><h3>{{ grupo.nome }}</h3><p>{{ grupo.programa.nome }}{% if grupo.professor_responsavel %} · Professor: {{ grupo.professor_responsavel.get_full_name|default:grupo.professor_responsavel.username }}{% endif %}</p><span class="tenant-status">{{ grupo.membros_count }} participante(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_group_members' grupo.pk %}">Ver grupo</a></article>{% empty %}<article class="tenant-card tenant-placeholder"><h3>Nenhuma turma disponível</h3><p>As turmas elegíveis para seu papel aparecerão aqui.</p></article>{% endfor %}</div></section>
+
+    <section aria-labelledby="projects-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Vitrine interna</p><h2 id="projects-title">Projetos publicados</h2></div><div class="tenant-flow-grid">{% for projeto in projetos %}<article class="tenant-card"><p class="tenant-eyebrow">{{ projeto.get_status_display }} · {{ projeto.category }}</p><h3>{{ projeto.title }}</h3><p>{{ projeto.direction|truncatechars:150 }}</p><span class="tenant-status">{{ projeto.relevance }} relevância</span><a class="tenant-button" href="{% url 'plataforma:project_detail' projeto.pk %}">Abrir projeto</a></article>{% empty %}<article class="tenant-card tenant-placeholder"><h3>Nenhum projeto publicado</h3><p>Quando um projeto for publicado, ele aparecerá nesta visão do tenant.</p></article>{% endfor %}</div></section>
+
+    <section class="tenant-ranking" aria-labelledby="ranking-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Descoberta</p><h2 id="ranking-title">Projetos em destaque</h2></div><p class="tenant-muted">Esta classificação inicial usa votos e atualização recente. Ela é provisória e será substituída pela projeção oficial baseada em Redis.</p></section>
+  </main>
+</body>
+</html>
