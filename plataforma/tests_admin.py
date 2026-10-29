@@ -20,7 +20,7 @@ class AdminInstitucionalTests(TestCase):
             password="Senha-forte-123",
         )
         self.client.force_login(self.admin)
-        self.organizacao = Organizacao.objects.create(slug="camppg", nome="CAMPPG")
+        self.organizacao = Organizacao.objects.create(slug="camppg", nome="CAMPPG", status=Organizacao.STATUS_ATIVA)
 
     def test_admin_home_uses_clear_platform_heading(self):
         response = self.client.get(reverse("admin:index"))

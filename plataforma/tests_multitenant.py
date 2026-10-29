@@ -29,6 +29,7 @@ class OrganizacaoModelTests(TestCase):
             slug="camppg",
             nome="CAMPPG",
             nome_legal="CAMPPG — Centro de Apoio",
+            status=Organizacao.STATUS_ATIVA,
         )
 
     def test_organization_entities_are_created_with_uuid_keys(self):
