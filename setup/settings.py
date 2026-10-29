@@ -180,6 +180,11 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Mídia enviada pelos tenants. Em produção, substituir o storage por S3/R2
+# através de STORAGES sem alterar os modelos ou os caminhos dos arquivos.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

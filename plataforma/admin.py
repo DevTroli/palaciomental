@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 from django import forms
+from django.contrib import messages
+from django.core.exceptions import ValidationError
 
 from .models import (
     CollaborationRequest,
@@ -26,6 +28,7 @@ from .models import (
     ProjectVote,
     TurmaGrupo,
 )
+from .services import ativar_organizacao
 
 
 User = get_user_model()
@@ -65,7 +68,15 @@ class DominioOrganizacaoInline(admin.TabularInline):
 
 @admin.action(description="Ativar organizações selecionadas")
 def ativar_organizacoes(modeladmin, request, queryset):
-    queryset.update(status=Organizacao.STATUS_ATIVA)
+    ativadas = 0
+    for organizacao in queryset:
+        try:
+            ativar_organizacao(organizacao, executor=request.user)
+            ativadas += 1
+        except ValidationError as exc:
+            modeladmin.message_user(request, f"{organizacao.nome}: {exc.message}", level=messages.ERROR)
+    if ativadas:
+        modeladmin.message_user(request, f"{ativadas} organização(ões) ativada(s).", level=messages.SUCCESS)
 
 
 @admin.action(description="Suspender organizações selecionadas")

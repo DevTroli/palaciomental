@@ -3,14 +3,18 @@ from django.db import models
 from django.db.models.functions import Lower
 import uuid
 
+from .validators import CORES_SEMANTICAS, caminho_logo, validar_logo
+
 
 class Organizacao(models.Model):
     """Tenant institucional do Palácio Mental."""
 
+    STATUS_CONFIGURANDO = "configurando"
     STATUS_ATIVA = "ativa"
     STATUS_SUSPENSA = "suspensa"
     STATUS_ARQUIVADA = "arquivada"
     STATUS_CHOICES = (
+        (STATUS_CONFIGURANDO, "Em configuração"),
         (STATUS_ATIVA, "Ativa"),
         (STATUS_SUSPENSA, "Suspensa"),
         (STATUS_ARQUIVADA, "Arquivada"),
@@ -20,7 +24,7 @@ class Organizacao(models.Model):
     slug = models.SlugField("Identificador", max_length=80, unique=True)
     nome = models.CharField("Nome", max_length=160)
     nome_legal = models.CharField("Nome legal", max_length=200, blank=True)
-    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVA)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_CONFIGURANDO)
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
     atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
@@ -44,10 +48,14 @@ class IdentidadeOrganizacao(models.Model):
         verbose_name="Organização",
     )
     nome_exibicao = models.CharField("Nome de exibição", max_length=160, blank=True)
-    logo = models.URLField("Logo", max_length=500, blank=True)
-    cor_primaria = models.CharField("Cor primária", max_length=20, blank=True)
-    cor_destaque = models.CharField("Cor de destaque", max_length=20, blank=True)
-    cor_fundo = models.CharField("Cor de fundo", max_length=20, blank=True)
+    logo = models.ImageField("Logo", upload_to=caminho_logo, validators=[validar_logo], blank=True)
+    cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple(CORES_SEMANTICAS.items()), blank=True)
+    cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple(CORES_SEMANTICAS.items()), blank=True)
+    cor_fundo = models.CharField("Cor de fundo", max_length=40, choices=tuple(CORES_SEMANTICAS.items()), blank=True)
+
+    @property
+    def completa(self):
+        return bool(self.logo and self.cor_primaria and self.cor_destaque and self.cor_fundo)
 
     class Meta:
         verbose_name = "Identidade visual da organização"
