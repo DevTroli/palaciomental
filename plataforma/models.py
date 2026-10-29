@@ -377,3 +377,156 @@ class Notification(models.Model):
         verbose_name = "Notificação"
         verbose_name_plural = "Notificações"
         ordering = ["-created_at"]
+
+
+class ProgramaInstitucional(models.Model):
+    STATUS_RASCUNHO = "rascunho"
+    STATUS_PUBLICADO = "publicado"
+    STATUS_ARQUIVADO = "arquivado"
+    STATUS_CHOICES = (
+        (STATUS_RASCUNHO, "Rascunho"),
+        (STATUS_PUBLICADO, "Publicado"),
+        (STATUS_ARQUIVADO, "Arquivado"),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organizacao = models.ForeignKey(
+        Organizacao,
+        on_delete=models.CASCADE,
+        related_name="programas",
+        verbose_name="Organização",
+    )
+    nome = models.CharField("Nome", max_length=160)
+    slug = models.SlugField("Identificador", max_length=80)
+    descricao = models.TextField("Descrição", max_length=1000, blank=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_RASCUNHO)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="programas_criados",
+        verbose_name="Criado por",
+    )
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "Programa institucional"
+        verbose_name_plural = "Programas institucionais"
+        ordering = ["nome"]
+        constraints = [
+            models.UniqueConstraint(fields=["organizacao", "slug"], name="unique_program_slug_per_org")
+        ]
+
+    def __str__(self):
+        return self.nome
+
+
+class TurmaGrupo(models.Model):
+    TIPO_TURMA = "turma"
+    TIPO_GRUPO = "grupo"
+    TIPO_CHOICES = ((TIPO_TURMA, "Turma"), (TIPO_GRUPO, "Grupo"))
+    STATUS_ATIVO = "ativo"
+    STATUS_ENCERRADO = "encerrado"
+    STATUS_CHOICES = ((STATUS_ATIVO, "Ativo"), (STATUS_ENCERRADO, "Encerrado"))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    programa = models.ForeignKey(
+        ProgramaInstitucional,
+        on_delete=models.CASCADE,
+        related_name="turmas_grupos",
+        verbose_name="Programa",
+    )
+    nome = models.CharField("Nome", max_length=160)
+    tipo = models.CharField("Tipo", max_length=20, choices=TIPO_CHOICES, default=TIPO_TURMA)
+    descricao = models.TextField("Descrição", max_length=1000, blank=True)
+    professor_responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="turmas_grupos_orientados",
+        verbose_name="Professor responsável",
+        null=True,
+        blank=True,
+    )
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="turmas_grupos_criados",
+        verbose_name="Criado por",
+    )
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "Turma ou grupo"
+        verbose_name_plural = "Turmas e grupos"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return f"{self.nome} — {self.programa.nome}"
+
+
+class MembroTurmaGrupo(models.Model):
+    PAPEL_PROFESSOR = "professor"
+    PAPEL_MEMBRO = "membro"
+    PAPEL_CHOICES = ((PAPEL_PROFESSOR, "Professor"), (PAPEL_MEMBRO, "Membro"))
+    STATUS_ATIVO = "ativo"
+    STATUS_SUSPENSO = "suspenso"
+    STATUS_CHOICES = ((STATUS_ATIVO, "Ativo"), (STATUS_SUSPENSO, "Suspenso"))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    turma_grupo = models.ForeignKey(
+        TurmaGrupo,
+        on_delete=models.CASCADE,
+        related_name="membros",
+        verbose_name="Turma ou grupo",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="membros_turma_grupo",
+        verbose_name="Usuário",
+    )
+    papel = models.CharField("Papel local", max_length=20, choices=PAPEL_CHOICES, default=PAPEL_MEMBRO)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    entrou_em = models.DateTimeField("Entrou em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Membro de turma ou grupo"
+        verbose_name_plural = "Membros de turmas e grupos"
+        constraints = [
+            models.UniqueConstraint(fields=["turma_grupo", "usuario"], name="unique_member_per_group")
+        ]
+
+    def __str__(self):
+        return f"{self.usuario} — {self.turma_grupo.nome}"
+
+
+class ProjetoTurmaGrupo(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projeto = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="vinculo_turma_grupo",
+        verbose_name="Projeto",
+    )
+    turma_grupo = models.ForeignKey(
+        TurmaGrupo,
+        on_delete=models.CASCADE,
+        related_name="projetos_vinculados",
+        verbose_name="Turma ou grupo",
+    )
+    vinculado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="projetos_turma_grupo_vinculados",
+        verbose_name="Vinculado por",
+    )
+    vinculado_em = models.DateTimeField("Vinculado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Vínculo de projeto a turma ou grupo"
+        verbose_name_plural = "Vínculos de projetos a turmas e grupos"
+
+    def __str__(self):
+        return f"{self.projeto.title} — {self.turma_grupo.nome}"

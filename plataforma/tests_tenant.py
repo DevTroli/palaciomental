@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import DominioOrganizacao, MembroOrganizacao, Organizacao, Project
+from .models import DominioOrganizacao, MembroOrganizacao, Organizacao, ProgramaInstitucional, Project, TurmaGrupo
 
 
 User = get_user_model()
@@ -104,6 +104,73 @@ class TenantResolutionTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_manager_can_create_program_and_group_in_current_tenant(self):
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_GESTOR,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("plataforma:institutional_programs"),
+            {"nome": "Programa de Inovação", "descricao": "Projetos acompanhados.", "status": "rascunho"},
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        programa = ProgramaInstitucional.objects.get(organizacao=self.organization)
+        self.assertEqual(programa.criado_por_id, self.user.pk)
+
+        response = self.client.post(
+            reverse("plataforma:institutional_group_create", kwargs={"programa_id": programa.pk}),
+            {"nome": "Turma 2026", "tipo": "turma", "descricao": "Grupo inicial.", "status": "ativo"},
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(TurmaGrupo.objects.filter(programa=programa, nome="Turma 2026").exists())
+
+    def test_regular_member_cannot_create_program(self):
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_MEMBRO,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("plataforma:institutional_programs"),
+            {"nome": "Programa indevido", "descricao": "", "status": "rascunho"},
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(ProgramaInstitucional.objects.filter(nome="Programa indevido").exists())
+
+    def test_program_detail_cannot_cross_tenant_boundary(self):
+        outro = Organizacao.objects.create(slug="outra", nome="Outra organização")
+        ProgramaInstitucional.objects.create(
+            organizacao=outro,
+            nome="Programa privado",
+            slug="programa-privado",
+            criado_por=self.user,
+        )
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_GESTOR,
+        )
+        self.client.force_login(self.user)
+        programa = ProgramaInstitucional.objects.get(organizacao=outro)
+
+        response = self.client.get(
+            reverse("plataforma:institutional_program_detail", kwargs={"programa_id": programa.pk}),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 404)
 
     def test_unknown_subdomain_does_not_fall_back_to_another_tenant(self):
         response = self.client.get("/", HTTP_HOST="outra.palaciomental.com.br")

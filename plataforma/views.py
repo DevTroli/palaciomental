@@ -14,11 +14,12 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet
-from .models import CollaborationRequest, MemberProfile, MembroOrganizacao, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote
+from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
+from .models import CollaborationRequest, MemberProfile, MembroOrganizacao, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, TurmaGrupo
 
 def register(request):
     if request.user.is_authenticated:
@@ -111,6 +112,73 @@ def institutional_management(request):
         "institutional/management.html",
         {"organizacao": organizacao, "afiliacao": afiliacao, "identidade": getattr(organizacao, "identidade", None)},
     )
+
+
+def _can_manage_institutional_structure(request):
+    afiliacao = getattr(request, "membro_organizacao", None)
+    return afiliacao and afiliacao.papel in {
+        MembroOrganizacao.PAPEL_PROPRIETARIO,
+        MembroOrganizacao.PAPEL_GESTOR,
+        MembroOrganizacao.PAPEL_PROFESSOR,
+    }
+
+
+@login_required
+def institutional_programs(request):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or getattr(request, "membro_organizacao", None) is None:
+        raise Http404
+    form = ProgramaInstitucionalForm(request.POST or None)
+    if request.method == "POST":
+        if not _can_manage_institutional_structure(request):
+            return JsonResponse({"detail": "Seu papel não pode criar programas."}, status=403)
+        if form.is_valid():
+            programa = form.save(commit=False)
+            programa.organizacao = organizacao
+            programa.criado_por = request.user
+            programa.slug = slugify(programa.nome)
+            if ProgramaInstitucional.objects.filter(organizacao=organizacao, slug=programa.slug).exists():
+                form.add_error("nome", "Já existe um programa com este nome nesta organização.")
+            else:
+                programa.save()
+                messages.success(request, "Programa criado. Agora você pode adicionar uma turma ou grupo.")
+                return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
+    programas = ProgramaInstitucional.objects.filter(organizacao=organizacao).prefetch_related("turmas_grupos")
+    return render(
+        request,
+        "institutional/programs.html",
+        {"organizacao": organizacao, "programas": programas, "form": form, "pode_gerenciar": _can_manage_institutional_structure(request)},
+    )
+
+
+@login_required
+def institutional_program_detail(request, programa_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None:
+        raise Http404
+    programa = get_object_or_404(ProgramaInstitucional, pk=programa_id, organizacao=organizacao)
+    return render(
+        request,
+        "institutional/program_detail.html",
+        {"organizacao": organizacao, "programa": programa, "pode_gerenciar": _can_manage_institutional_structure(request)},
+    )
+
+
+@login_required
+def institutional_group_create(request, programa_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or not _can_manage_institutional_structure(request):
+        return JsonResponse({"detail": "Você não pode criar uma turma ou grupo neste ambiente."}, status=403)
+    programa = get_object_or_404(ProgramaInstitucional, pk=programa_id, organizacao=organizacao)
+    form = TurmaGrupoForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        turma_grupo = form.save(commit=False)
+        turma_grupo.programa = programa
+        turma_grupo.criado_por = request.user
+        turma_grupo.save()
+        messages.success(request, "Turma ou grupo criado.")
+        return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
+    return render(request, "institutional/group_form.html", {"organizacao": organizacao, "programa": programa, "form": form})
 
 
 def _project_scope(request):

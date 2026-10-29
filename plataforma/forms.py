@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, MemberProfile, Project, ProjectComment, ProjectLink, ProjectMilestone
+from .models import CollaborationRequest, MemberProfile, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
 
 User = get_user_model()
 
@@ -136,3 +136,33 @@ class ProjectLinkForm(forms.ModelForm):
         return self.cleaned_data["label"].strip()
 
 ProjectLinkFormSet = inlineformset_factory(Project, ProjectLink, form=ProjectLinkForm, extra=1, can_delete=True, max_num=12, validate_max=True)
+
+
+class ProgramaInstitucionalForm(forms.ModelForm):
+    class Meta:
+        model = ProgramaInstitucional
+        fields = ("nome", "descricao", "status")
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o propósito deste programa?"}),
+        }
+
+    def clean_nome(self):
+        nome = self.cleaned_data["nome"].strip()
+        if len(nome) < 3:
+            raise forms.ValidationError("Use um nome com pelo menos 3 caracteres.")
+        return nome
+
+
+class TurmaGrupoForm(forms.ModelForm):
+    class Meta:
+        model = TurmaGrupo
+        fields = ("nome", "tipo", "descricao", "status")
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o contexto desta turma ou grupo?"}),
+        }
+
+    def clean_nome(self):
+        nome = self.cleaned_data["nome"].strip()
+        if len(nome) < 2:
+            raise forms.ValidationError("Use um nome com pelo menos 2 caracteres.")
+        return nome

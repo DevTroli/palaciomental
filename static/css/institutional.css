@@ -158,6 +158,23 @@ body {
 
 .tenant-status--safe { background: #def5e8; color: #11643c; }
 
+.tenant-card form { width: 100%; }
+.tenant-card form p { display: grid; gap: 6px; margin: 0 0 14px; }
+.tenant-card form label { color: var(--tenant-primary); font-size: 13px; font-weight: 750; }
+.tenant-card form input,
+.tenant-card form textarea,
+.tenant-card form select {
+  width: 100%;
+  border: 1px solid var(--tenant-border);
+  border-radius: 6px;
+  padding: 10px 11px;
+  background: #fff;
+  color: var(--tenant-ink);
+  font: inherit;
+}
+.tenant-card form textarea { resize: vertical; }
+.tenant-card form .helptext { color: var(--tenant-muted); font-size: 12px; }
+
 @media (max-width: 640px) {
   .tenant-header { align-items: flex-start; flex-direction: column; gap: 10px; }
   .tenant-context { text-align: left; }

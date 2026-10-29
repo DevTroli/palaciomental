@@ -28,10 +28,10 @@ class AdminInstitucionalTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Palácio Mental — Operação da Plataforma")
         self.assertContains(response, "O que você precisa fazer?")
-        self.assertContains(response, "Preparar um ambiente institucional")
-        self.assertContains(response, "Controlar quem entra")
-        self.assertContains(response, "Operar projetos")
-        self.assertContains(response, "Revisar e corrigir")
+        self.assertContains(response, "Provisionar um tenant")
+        self.assertContains(response, "Preparar acessos institucionais")
+        self.assertContains(response, "Manter a plataforma")
+        self.assertContains(response, "Auditar e dar suporte")
         self.assertContains(response, "Ver todos os modelos técnicos")
 
     def test_staff_without_internal_group_cannot_access_django_admin(self):

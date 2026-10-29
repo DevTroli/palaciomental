@@ -146,6 +146,14 @@ O `/admin/` é exclusivo da equipe interna do Palácio Mental. Usuários institu
 
 Gestores, proprietários e professores acessam a gestão pelo subdomínio da própria organização, em `/gestao/`. Esse portal mostra o tenant atual, aplica a afiliação e o papel institucional e será ampliado pela M4 para programas, turmas, grupos e permissões. O grupo interno padrão do Django Admin é `Equipe PM`, configurável por `PM_INTERNAL_ADMIN_GROUPS`.
 
+O primeiro fluxo da Issue #78 já está disponível no portal:
+
+- `/gestao/programas/` lista e cria programas da organização atual;
+- `/gestao/programas/<id>/` mostra a estrutura de um programa;
+- `/gestao/programas/<id>/grupos/novo/` cria uma turma ou grupo;
+- projetos autônomos continuam possíveis sem programa;
+- todas as consultas filtram a organização resolvida pelo subdomínio.
+
 Depois, teste:
 
 - usuário não autenticado no subdomínio: deve ser direcionado para login;

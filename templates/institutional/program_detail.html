@@ -1,0 +1,12 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ programa.nome }} — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"></head>
+<body>
+<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_management' %}"><span>{{ organizacao.nome }}</span></a><div class="tenant-context"><span>Programa institucional</span><strong>{{ programa.get_status_display }}</strong></div></header>
+<main class="tenant-container">
+  <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas</a><span>/</span><span>{{ programa.nome }}</span></nav>
+  <section class="tenant-hero"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h1>{{ programa.nome }}</h1><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p></section>
+  <section class="tenant-flow-grid"><article class="tenant-card tenant-card--active"><p class="tenant-eyebrow">Estrutura</p><h2>Turmas e grupos</h2><p>Use uma turma ou grupo quando houver orientação ou organização coletiva. Um projeto autônomo não precisa ser vinculado.</p>{% if pode_gerenciar %}<a class="tenant-button" href="{% url 'plataforma:institutional_group_create' programa.pk %}">Criar turma ou grupo</a>{% endif %}</article>{% for grupo in programa.turmas_grupos.all %}<article class="tenant-card"><p class="tenant-eyebrow">{{ grupo.get_tipo_display }} · {{ grupo.get_status_display }}</p><h2>{{ grupo.nome }}</h2><p>{{ grupo.descricao|default:"Sem descrição cadastrada." }}</p><span class="tenant-status">{{ grupo.membros.count }} membro(s)</span></article>{% empty %}<article class="tenant-card"><p class="tenant-eyebrow">Ainda vazio</p><h2>Nenhuma turma ou grupo</h2><p>O programa pode continuar sem agrupamento até que a organização precise dessa estrutura.</p></article>{% endfor %}</section>
+</main>
+</body></html>

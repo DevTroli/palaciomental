@@ -53,7 +53,7 @@
   padding: 24px;
   border: 1px solid #d9d2c9;
   border-radius: 10px;
-  background: #fff;
+  background: #f7f4ee;
   box-shadow: 0 2px 8px rgba(50, 25, 67, 0.06);
 }
 
@@ -169,31 +169,55 @@
 
 /* O admin do Django pode alternar para o tema escuro. Os cards continuam
    pertencendo à identidade PM, mas preservam contraste e leitura. */
-[data-theme="dark"] .palacio-flow-card,
+html[data-theme="dark"] .palacio-flow-card,
 body.dark .palacio-flow-card {
   border-color: #62536b;
   background: #21152a;
   box-shadow: none;
 }
 
-[data-theme="dark"] .palacio-flow-card h2,
+html[data-theme="dark"] .palacio-flow-card h2,
 body.dark .palacio-flow-card h2,
-[data-theme="dark"] .palacio-flow-number,
+html[data-theme="dark"] .palacio-flow-number,
 body.dark .palacio-flow-number,
-[data-theme="dark"] .palacio-flow-actions a:not(.button),
+html[data-theme="dark"] .palacio-flow-actions a:not(.button),
 body.dark .palacio-flow-actions a:not(.button) {
   color: #f7f4ee;
 }
 
-[data-theme="dark"] .palacio-flow-card p:not(.palacio-admin-eyebrow),
+html[data-theme="dark"] .palacio-flow-card p:not(.palacio-admin-eyebrow),
 body.dark .palacio-flow-card p:not(.palacio-admin-eyebrow),
-[data-theme="dark"] .palacio-flow-card ol,
+html[data-theme="dark"] .palacio-flow-card ol,
 body.dark .palacio-flow-card ol {
   color: #e5dfe8;
 }
 
-[data-theme="dark"] .palacio-admin-guidance,
+html[data-theme="dark"] .palacio-admin-guidance,
 body.dark .palacio-admin-guidance {
   background: #21152a;
   color: #f7f4ee;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] .palacio-flow-card {
+    border-color: #62536b;
+    background: #21152a;
+    box-shadow: none;
+  }
+
+  html[data-theme="auto"] .palacio-flow-card h2,
+  html[data-theme="auto"] .palacio-flow-number,
+  html[data-theme="auto"] .palacio-flow-actions a:not(.button) {
+    color: #f7f4ee;
+  }
+
+  html[data-theme="auto"] .palacio-flow-card p:not(.palacio-admin-eyebrow),
+  html[data-theme="auto"] .palacio-flow-card ol {
+    color: #e5dfe8;
+  }
+
+  html[data-theme="auto"] .palacio-admin-guidance {
+    background: #21152a;
+    color: #f7f4ee;
+  }
 }

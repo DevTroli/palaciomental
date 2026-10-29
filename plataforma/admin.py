@@ -14,12 +14,16 @@ from .models import (
     MembroOrganizacao,
     Notification,
     Organizacao,
+    MembroTurmaGrupo,
+    ProgramaInstitucional,
+    ProjetoTurmaGrupo,
     Project,
     ProjectComment,
     ProjectLink,
     ProjectMember,
     ProjectMilestone,
     ProjectVote,
+    TurmaGrupo,
 )
 
 
@@ -275,6 +279,46 @@ class NotificationAdmin(admin.ModelAdmin):
     list_select_related = ("recipient",)
     autocomplete_fields = ("recipient",)
     readonly_fields = ("id", "created_at")
+
+
+@admin.register(ProgramaInstitucional)
+class ProgramaInstitucionalAdmin(admin.ModelAdmin):
+    list_display = ("nome", "organizacao", "status", "criado_por", "atualizado_em")
+    list_filter = ("status", "organizacao__status")
+    search_fields = ("nome", "slug", "organizacao__nome", "criado_por__username")
+    list_select_related = ("organizacao", "criado_por")
+    autocomplete_fields = ("organizacao", "criado_por")
+    readonly_fields = ("id", "criado_em", "atualizado_em")
+
+
+@admin.register(TurmaGrupo)
+class TurmaGrupoAdmin(admin.ModelAdmin):
+    list_display = ("nome", "tipo", "programa", "professor_responsavel", "status", "atualizado_em")
+    list_filter = ("tipo", "status", "programa__organizacao")
+    search_fields = ("nome", "programa__nome", "programa__organizacao__nome", "professor_responsavel__username")
+    list_select_related = ("programa", "programa__organizacao", "professor_responsavel")
+    autocomplete_fields = ("programa", "professor_responsavel", "criado_por")
+    readonly_fields = ("id", "criado_em", "atualizado_em")
+
+
+@admin.register(MembroTurmaGrupo)
+class MembroTurmaGrupoAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "turma_grupo", "papel", "status", "entrou_em")
+    list_filter = ("papel", "status", "turma_grupo__programa__organizacao")
+    search_fields = ("usuario__username", "usuario__email", "turma_grupo__nome", "turma_grupo__programa__nome")
+    list_select_related = ("usuario", "turma_grupo", "turma_grupo__programa")
+    autocomplete_fields = ("usuario", "turma_grupo")
+    readonly_fields = ("id", "entrou_em")
+
+
+@admin.register(ProjetoTurmaGrupo)
+class ProjetoTurmaGrupoAdmin(admin.ModelAdmin):
+    list_display = ("projeto", "turma_grupo", "vinculado_por", "vinculado_em")
+    list_filter = ("turma_grupo__programa__organizacao",)
+    search_fields = ("projeto__title", "turma_grupo__nome", "turma_grupo__programa__nome")
+    list_select_related = ("projeto", "turma_grupo", "turma_grupo__programa", "vinculado_por")
+    autocomplete_fields = ("projeto", "turma_grupo", "vinculado_por")
+    readonly_fields = ("id", "vinculado_em")
 
 
 @admin.register(MemberProfile)
