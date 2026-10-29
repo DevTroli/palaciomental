@@ -2,7 +2,7 @@
 | ------------------ | ----------------------------------------------------------------------------------- |
 | `assets/`          | Arquivos **estáticos** do projeto, como CSS, JS e imagens.                          |
 | `img/`             | Imagens usadas pelo projeto.                                                        |
-| `listaEspera/`     | **Aplicação Django** que contém a lógica do sistema.                                |
+| `plataforma/`     | **Aplicação Django** que contém a lógica do sistema.                                |
 | `setup/`           | Configurações principais do projeto Django, como `settings.py` e `urls.py`.         |
 | `static/`          | Arquivos estáticos (CSS, JS, imagens) usados nas páginas.                           |
 | `status_api/`      | Aplicação responsável pela **API de status** do sistema.                            |

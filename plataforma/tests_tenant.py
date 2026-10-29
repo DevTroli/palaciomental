@@ -38,13 +38,13 @@ class TenantResolutionTests(TestCase):
 
         self.assertRedirects(
             response,
-            f"{reverse('listaEspera:login')}?next=/",
+            f"{reverse('plataforma:login')}?next=/",
             fetch_redirect_response=False,
         )
 
     def test_tenant_auth_page_is_available_before_affiliation(self):
         response = self.client.get(
-            reverse("listaEspera:login"),
+            reverse("plataforma:login"),
             HTTP_HOST="camppg.palaciomental.com.br",
         )
 
@@ -87,7 +87,7 @@ class TenantResolutionTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.post(
-            reverse("listaEspera:project_create"),
+            reverse("plataforma:project_create"),
             {
                 "title": "Projeto CAMPPG",
                 "direction": "Organizar uma iniciativa institucional.",
@@ -116,7 +116,7 @@ class TenantResolutionTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.get(
-            reverse("listaEspera:project_detail", kwargs={"pk": personal.pk}),
+            reverse("plataforma:project_detail", kwargs={"pk": personal.pk}),
             HTTP_HOST="camppg.palaciomental.com.br",
         )
 
@@ -132,7 +132,7 @@ class TenantResolutionTests(TestCase):
         )
 
         response = self.client.get(
-            reverse("listaEspera:project_detail", kwargs={"pk": project.pk}),
+            reverse("plataforma:project_detail", kwargs={"pk": project.pk}),
             HTTP_HOST="palaciomental.com.br",
         )
 

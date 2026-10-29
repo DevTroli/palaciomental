@@ -1,8 +1,8 @@
 # Palácio Mental — Modelagem Multi-tenant v2
 
-**Status:** revisão conceitual e lógica antes das migrations  
-**Repositório analisado:** `DevTroli/palaciomental`  
-**Referência da branch:** `main` em `5ec6a9e`  
+**Status:** revisão conceitual e lógica antes das migrations
+**Repositório analisado:** `DevTroli/palaciomental`
+**Referência da branch:** `main` em `5ec6a9e`
 **Objetivo:** suportar CAMPPG e futuras instituições privadas sem perder os projetos autorais pessoais.
 
 ## 1. Decisões fechadas nesta revisão
@@ -499,7 +499,6 @@ Redis é um servidor de estruturas de dados, com hashes, sets, sorted sets e str
 
 | Model atual | Nome conceitual em português | Observação |
 |---|---|---|
-| `WaitlistEntry` | `EntradaListaEspera` | Legado; fora do tenant institucional. |
 | `MemberProfile` | `PerfilMembro` | Perfil público do usuário. |
 | `Project` | `Projeto` | Adicionar `organizacao_id` opcional. |
 | `ProjectLink` | `LinkProjeto` | Hub de referências. |

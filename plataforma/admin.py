@@ -10,7 +10,6 @@ from .models import (
     ProjectComment,
     ProjectMilestone,
     ProjectVote,
-    WaitlistEntry,
 )
 
 
@@ -47,15 +46,6 @@ class ConviteOrganizacaoAdmin(admin.ModelAdmin):
     list_filter = ("papel", "status")
     search_fields = ("email", "organizacao__nome")
     readonly_fields = ("hash_token", "criado_em", "aceito_em")
-
-
-@admin.register(WaitlistEntry)
-class WaitlistEntryAdmin(admin.ModelAdmin):
-    list_display = ("nome", "email", "telefone", "consent", "created_at")
-    list_filter = ("consent", "created_at")
-    search_fields = ("nome", "email", "telefone")
-    readonly_fields = ("created_at",)
-    ordering = ("-created_at",)
 
 
 @admin.register(ProjectComment)

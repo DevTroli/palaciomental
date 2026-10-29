@@ -6,5 +6,4 @@ app_name = "core"
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("mvp/", views.mvp_redirect, name="mvp_legacy"),
 ]

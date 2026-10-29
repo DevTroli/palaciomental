@@ -4,7 +4,7 @@
 
 ## 0–07s — Entrada
 
-**Ação:** abrir `/mvp/` e clicar em **Cadastre-se**.
+**Ação:** abrir `/` e clicar em **Cadastre-se**.
 
 **Narração:** “O Palácio Mental transforma uma iniciativa em um projeto vivo, com contexto e evolução visíveis.”
 

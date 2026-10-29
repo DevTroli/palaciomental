@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views as v
 
-app_name = "listaEspera"
+app_name = "plataforma"
 
 urlpatterns = [
     path("entrar/", v.login_view, name="login"),
@@ -18,7 +18,6 @@ urlpatterns = [
     path("status", v.status_page, name="status"),
     path("status/", v.status_page, name="status-slash"),
     path("saude", v.saude, name="saude"),
-    path("lista-espera/", v.waitlist_submit, name="waitlist_submit"),
     path("projetos/<int:pk>/comentarios/", v.add_comment, name="add_comment"),
     path("comentarios/<int:comment_id>/editar/", v.edit_comment, name="edit_comment"),
     path("comentarios/<int:comment_id>/remover/", v.delete_comment, name="delete_comment"),

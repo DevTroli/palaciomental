@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -9,9 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db import DatabaseError
 from django.db.models import Count, Exists, OuterRef, Q
-from django.db.models.functions import TruncDate
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
@@ -20,23 +18,18 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet
-from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, WaitlistEntry
-
-def index(request):
-    """Página pública exclusiva da lista de espera durante a validação."""
-    return render(request, "listaEspera/index.html")
-
+from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote
 
 def register(request):
     if request.user.is_authenticated:
-        return redirect("listaEspera:profile", username=request.user.username)
+        return redirect("plataforma:profile", username=request.user.username)
     form = MemberCreationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
         MemberProfile.objects.create(user=user)
         login(request, user)
         messages.success(request, "Conta criada. Agora você pode dar forma ao seu primeiro projeto.")
-        return redirect("listaEspera:profile", username=user.username)
+        return redirect("plataforma:profile", username=user.username)
     return render(request, "auth/register.html", {"form": form})
 
 
@@ -45,7 +38,7 @@ def login_view(request):
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         login(request, form.get_user())
-        return redirect(request.GET.get("next") or "listaEspera:projects")
+        return redirect(request.GET.get("next") or "plataforma:projects")
     return render(request, "auth/login.html", {"form": form})
 
 
@@ -73,7 +66,7 @@ def profile_edit(request):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Seu perfil foi atualizado.")
-        return redirect("listaEspera:profile", username=request.user.username)
+        return redirect("plataforma:profile", username=request.user.username)
     return render(request, "members/profile_edit.html", {"form": form})
 
 
@@ -149,7 +142,7 @@ def project_create(request):
         project.save()
         _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
-        return redirect("listaEspera:project_context", pk=project.pk)
+        return redirect("plataforma:project_context", pk=project.pk)
     return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto", "submit_label": "Continuar", "form_phase": "basics"})
 
 @login_required
@@ -159,7 +152,7 @@ def project_delete(request, pk):
     title = project.title
     project.delete()
     messages.success(request, f"O projeto {title} foi excluído.")
-    return redirect("listaEspera:profile", username=request.user.username)
+    return redirect("plataforma:profile", username=request.user.username)
 
 @login_required
 def project_context(request, pk):
@@ -179,7 +172,7 @@ def project_context(request, pk):
             messages.info(request, "O projeto continua privado até você decidir compartilhá-lo.")
         else:
             messages.success(request, "Contexto salvo. Seu projeto está pronto para continuar.")
-        return redirect("listaEspera:project_detail", pk=project.pk)
+        return redirect("plataforma:project_detail", pk=project.pk)
     return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto" if (project.category or project.tags or project.links.exists()) else "Adicionar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project})
 
 @login_required
@@ -194,7 +187,7 @@ def project_edit(request, pk):
         if before_status != project.status: changes.append("status")
         if changes: _auto_milestone(project, request.user, "Projeto atualizado", "Alterações em: " + ", ".join(changes) + ".")
         messages.success(request, "Projeto atualizado.")
-        return redirect("listaEspera:project_detail", pk=project.pk)
+        return redirect("plataforma:project_detail", pk=project.pk)
     return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto", "submit_label": "Salvar alterações", "form_phase": "basics", "project": project})
 
 @login_required
@@ -232,7 +225,7 @@ def edit_comment(request, comment_id):
     form = CommentForm(request.POST, instance=comment)
     if form.is_valid():
         form.save()
-    return redirect("listaEspera:project_detail", pk=comment.project_id)
+    return redirect("plataforma:project_detail", pk=comment.project_id)
 
 
 @login_required
@@ -246,7 +239,7 @@ def delete_comment(request, comment_id):
     )
     project_id = comment.project_id
     comment.delete()
-    return redirect("listaEspera:project_detail", pk=project_id)
+    return redirect("plataforma:project_detail", pk=project_id)
 
 
 @login_required
@@ -272,7 +265,7 @@ def set_milestone_permission(request, pk):
     member.can_manage_milestones = request.POST.get("can_manage") == "1"
     member.save(update_fields=["can_manage_milestones"])
     messages.success(request, "Permissão de marcos atualizada.")
-    return redirect("listaEspera:project_detail", pk=pk)
+    return redirect("plataforma:project_detail", pk=pk)
 
 @login_required
 @require_http_methods(["POST"])
@@ -285,7 +278,7 @@ def add_milestone(request, pk):
         milestone = form.save(commit=False)
         milestone.project, milestone.author = project, request.user
         milestone.save()
-    return redirect("listaEspera:project_detail", pk=pk)
+    return redirect("plataforma:project_detail", pk=pk)
 
 
 @login_required
@@ -300,7 +293,7 @@ def edit_milestone(request, milestone_id):
     form = MilestoneForm(request.POST, instance=milestone)
     if form.is_valid():
         form.save()
-    return redirect("listaEspera:project_detail", pk=milestone.project_id)
+    return redirect("plataforma:project_detail", pk=milestone.project_id)
 
 
 @login_required
@@ -314,7 +307,7 @@ def delete_milestone(request, milestone_id):
     )
     project_id = milestone.project_id
     milestone.delete()
-    return redirect("listaEspera:project_detail", pk=project_id)
+    return redirect("plataforma:project_detail", pk=project_id)
 
 
 @login_required
@@ -322,13 +315,13 @@ def delete_milestone(request, milestone_id):
 def request_collaboration(request, pk):
     project = _project_for_request(request, pk=pk, visibility=Project.VISIBILITY_PUBLIC)
     if project.owner == request.user or project.memberships.filter(user=request.user).exists():
-        return redirect("listaEspera:project_detail", pk=pk)
+        return redirect("plataforma:project_detail", pk=pk)
     form = CollaborationRequestForm(request.POST)
     if form.is_valid():
         collaboration, created = CollaborationRequest.objects.get_or_create(project=project, requester=request.user, defaults={"message": form.cleaned_data["message"]})
         if created:
             Notification.objects.create(recipient=project.owner, kind="collaboration_request", message=f"{request.user.get_username()} quer colaborar em {project.title}.", url=f"/projetos/{project.pk}/")
-    return redirect("listaEspera:project_detail", pk=pk)
+    return redirect("plataforma:project_detail", pk=pk)
 
 
 @login_required
@@ -342,14 +335,14 @@ def decide_collaboration(request, request_id):
     )
     decision = request.POST.get("decision")
     if decision not in (CollaborationRequest.ACCEPTED, CollaborationRequest.REJECTED):
-        return redirect("listaEspera:project_detail", pk=collaboration.project_id)
+        return redirect("plataforma:project_detail", pk=collaboration.project_id)
     project_title, project_pk, requester = collaboration.project.title, collaboration.project.pk, collaboration.requester
     status_label = "aceito" if decision == CollaborationRequest.ACCEPTED else "recusado"
     if decision == CollaborationRequest.ACCEPTED:
         ProjectMember.objects.get_or_create(project=collaboration.project, user=collaboration.requester, defaults={"role": "Colaborador"})
     Notification.objects.create(recipient=requester, kind="collaboration_decision", message=f"Seu pedido para {project_title} foi {status_label}.", url=f"/projetos/{project_pk}/")
     collaboration.delete()
-    return redirect("listaEspera:project_detail", pk=collaboration.project_id)
+    return redirect("plataforma:project_detail", pk=collaboration.project_id)
 
 
 @login_required
@@ -451,60 +444,9 @@ def _deployment_metrics(deployment):
     ]
 
 
-def _waitlist_analytics():
-    """Prepara apenas dados agregados e públicos para a seção de tração."""
-    try:
-        now = datetime.now().astimezone()
-        first_signup = WaitlistEntry.objects.order_by("created_at").values_list("created_at", flat=True).first()
-        total = WaitlistEntry.objects.count()
-        if not first_signup:
-            return {"total": 0, "first_signup": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
-        first_date = first_signup.astimezone().date()
-        daily_rows = list(
-            WaitlistEntry.objects.filter(created_at__date__gte=first_date)
-            .annotate(day=TruncDate("created_at"))
-            .values("day")
-            .annotate(total=Count("id"))
-            .order_by("day")
-        )
-        daily_totals = {row["day"]: row["total"] for row in daily_rows}
-    except DatabaseError:
-        return {"total": None, "first_signup": None, "points": [], "polyline": "", "chart_max": 1, "has_data": False}
-    cumulative = 0
-    points = []
-    width, height = 720, 220
-    left, right, top, bottom = 42, 12, 18, 34
-    chart_width = width - left - right
-    chart_height = height - top - bottom
-    dates = []
-    cursor = first_date
-    while cursor <= now.date():
-        dates.append(cursor)
-        cursor += timedelta(days=1)
-    chart_max = max(total, 1)
-    for index, current_date in enumerate(dates):
-        cumulative += daily_totals.get(current_date, 0)
-        x = left if len(dates) == 1 else left + (chart_width * index / (len(dates) - 1))
-        y = top + chart_height - (chart_height * cumulative / chart_max)
-        points.append({
-            "x": round(x, 2),
-            "y": round(y, 2),
-            "value": cumulative,
-            "label": current_date.strftime("%d/%m"),
-        })
-    return {
-        "total": total,
-        "first_signup": first_signup.astimezone().strftime("%d/%m/%Y"),
-        "points": points,
-        "polyline": " ".join(f"{point['x']},{point['y']}" for point in points),
-        "chart_max": chart_max,
-        "has_data": bool(points),
-    }
-
-
 def status_page(request):
     """Exibe o estado resumido dos serviços sem depender da disponibilidade da API."""
-    context = {"status_available": False, "services": [], "analytics": _waitlist_analytics()}
+    context = {"status_available": False, "services": []}
     try:
         payload = _fetch_status_api()
     except (OSError, URLError, TimeoutError, ValueError, json.JSONDecodeError):
@@ -554,41 +496,3 @@ def status_page(request):
         ]
 
     return render(request, "status.html", context)
-
-
-@require_http_methods(["POST"])
-def waitlist_submit(request):
-    """Recebe submissão do formulário de lista de espera e salva no banco."""
-    nome = request.POST.get("nome", "").strip()
-    telefone = request.POST.get("telefone", "").strip()
-    email = request.POST.get("email", "").strip().lower()
-    consent = request.POST.get("consent") == "on"
-
-    # Validação básica
-    if not all([nome, telefone, email]):
-        return JsonResponse(
-            {"success": False, "error": "Todos os campos são obrigatórios"},
-            status=400
-        )
-
-    if not consent:
-        return JsonResponse(
-            {"success": False, "error": "Consentimento LGPD é obrigatório"},
-            status=400
-        )
-
-    # Evita duplicata por email
-    if WaitlistEntry.objects.filter(email=email).exists():
-        return JsonResponse(
-            {"success": False, "error": "Este e-mail já está cadastrado"},
-            status=400
-        )
-
-    WaitlistEntry.objects.create(
-        nome=nome,
-        telefone=telefone,
-        email=email,
-        consent=consent
-    )
-
-    return JsonResponse({"success": True})

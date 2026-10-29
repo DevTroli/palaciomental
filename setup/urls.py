@@ -1,17 +1,14 @@
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import path, include
-from listaEspera.sitemaps import StaticViewSitemap, WaitlistSitemap
+from plataforma.sitemaps import StaticViewSitemap
 
-sitemaps = {
-    "static": StaticViewSitemap,
-    "waitlist": WaitlistSitemap,
-}
+sitemaps = {"static": StaticViewSitemap}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
-    path("", include("listaEspera.urls")),
+    path("", include("plataforma.urls")),
     path(
         "sitemap.xml",
         sitemap,

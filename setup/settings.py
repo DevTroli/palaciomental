@@ -47,13 +47,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    "listaEspera.apps.ListaesperaConfig"
+    "plataforma.apps.PlataformaConfig"
 ]
 
 SITE_ID = 1
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
-LOGIN_URL = "listaEspera:login"
-LOGIN_REDIRECT_URL = "listaEspera:projects"
+LOGIN_URL = "plataforma:login"
+LOGIN_REDIRECT_URL = "plataforma:projects"
 LOGOUT_REDIRECT_URL = "core:index"
 
 # Endpoint externo usado somente pela página pública de status. O timeout curto
@@ -70,7 +70,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "listaEspera.middleware.TenantResolutionMiddleware",
+    "plataforma.middleware.TenantResolutionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -87,7 +87,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "listaEspera.context_processors.inbox_unread_count",
+                "plataforma.context_processors.inbox_unread_count",
             ],
         },
     },

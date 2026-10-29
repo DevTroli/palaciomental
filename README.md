@@ -1,148 +1,198 @@
 # Palácio Mental
 
-> Plataforma de continuidade de projetos: preserva contexto, autoria e evolução para que criações não se tornem arquivos esquecidos.
+> **Ideias para além do rascunho.**
 
-**Projeto de Extensão Acadêmica**
-Fatec Praia Grande · Desenvolvimento de Software Multiplataforma · 2º Semestre de 2026
+O Palácio Mental é uma plataforma de contexto, evolução e conexão para projetos. Ela ajuda pessoas e organizações a preservar o sentido de uma iniciativa, organizar sua trajetória e criar condições para que um projeto seja compreendido, encontrado, continuado ou retomado.
 
----
+A plataforma combina um espaço autoral individual com ambientes institucionais privados. O produto não substitui ferramentas como GitHub, Drive, Docs, Figma, Trello ou WhatsApp: ele reúne contexto, autoria, decisões, links e continuidade em torno do projeto.
 
-## Equipe
+## Estado atual
 
-| Membro | Papel |
-|---|---|
-| Pablo Troli | Product Owner |
-| Yohan Ruiz | Scrum Master |
-| Felipe Figueiredo | Dev Team |
-| Iago Sampaio | Dev Team |
-| Matheus Fernandes | Dev Team |
+O repositório está na fase de implementação da arquitetura multi-tenant, começando pelo ambiente institucional do CAMPPG. A estratégia atual é **banco compartilhado com isolamento por linhas**:
 
----
+- PostgreSQL é a fonte oficial de identidade, permissões, organizações e projetos;
+- Redis é uma camada NoSQL derivada para sessões, cache, relevância e eventos;
+- subdomínios resolvem organizações, como `camppg.palaciomental.com.br`;
+- projetos pessoais permanecem no espaço global do autor;
+- projetos institucionais ficam restritos ao tenant da organização;
+- o domínio principal não expõe conteúdo institucional.
 
-## Arquitetura atual
+## Experiência do produto
 
-| Camada | Tecnologia |
-|---|---|
-| **Banco de Dados** | PostgreSQL |
-| **NoSQL operacional** | Redis (sessões, cache, eventos e projeções derivadas) |
-| **Backend principal** | Python 3.12 + Django |
-| **Frontend** | HTML5, CSS3, JavaScript — foco em acessibilidade e responsividade |
-| **Design & UX** | Figma (Modo Foco e baixa carga sensorial) |
-| **Infraestrutura** | Docker + Railway + Cloudflare |
+### Espaço autoral
 
-### Backend
-Django é a aplicação principal do MVP: autenticação, projetos, contexto, colaboração e experiência web. A arquitetura multi-tenant do CAMPPG usa banco compartilhado com isolamento por organização.
+A pessoa pode criar projetos pessoais, adicionar contexto progressivamente, organizar links, registrar marcos, receber colaboração e publicar projetos públicos na vitrine global.
 
-### Frontend
-Interface responsiva construída com foco em acessibilidade cognitiva, incluindo o Modo Foco como recurso nativo de redução de estímulos visuais.
+### Ambiente institucional
 
-### Multi-tenant institucional
-O ambiente institucional usa subdomínio, por exemplo `camppg.palaciomental.com.br`. O tenant é privado: o acesso exige autenticação e afiliação ativa, e o primeiro acesso acontece por convite autorizado. Dentro do tenant são criados apenas projetos institucionais; projetos pessoais permanecem no Meu Espaço.
+A organização possui um ambiente próprio, acessível por convite e afiliação ativa. No MVP, os papéis são:
 
-### DevOps
-A aplicação é conteinerizada com Docker e pode ser executada localmente ou na Railway. O Cloudflare gerencia DNS, wildcard e TLS conforme o ambiente.
+- proprietário;
+- gestor;
+- professor;
+- membro.
 
-### Documentação da arquitetura M4
+Os projetos institucionais podem ser orientados por um professor ou desenvolvidos autonomamente pelos membros, mas não se misturam ao espaço autoral nem à vitrine global.
 
-- [Modelagem multi-tenant v2](docs/modelagem-multi-tenant-v2.md)
-- [DER multi-tenant em português](docs/der-multi-tenant-pt.mmd)
-- [Plano do Sprint Emergencial M4](docs/sprint-emergencial-multi-tenant-v2.md)
+## Stack
 
----
+| Camada | Tecnologia | Responsabilidade |
+|---|---|---|
+| Aplicação | Django 5.2 / Python 3.12 | autenticação, projetos, permissões e interface |
+| Relacional | PostgreSQL | fonte de verdade e integridade dos dados |
+| NoSQL | Redis | sessões, cache, relevância, contadores e eventos derivados |
+| Interface | Django Templates, HTML, CSS e JavaScript | experiência acessível e responsiva |
+| Infraestrutura | Docker, Railway e Cloudflare | execução, deploy, DNS, TLS e subdomínios |
+| API de status | Spring Boot | observabilidade pública do ambiente |
 
-## Modelagem de Dados
+## Execução local
 
-**Entidades:** `USUARIO` (papéis: administrador, coordenador, colaborador, participante, voluntário, visitante) · `ORGANIZACAO` · `INICIATIVA` (central) · `HISTORICO`/`ATUALIZACAO` · `CATEGORIA` & `TAG` · `COMENTARIO` (classificado) · `PERMISSAO`/`VISIBILIDADE`
+### Dependências
 
-- Modelo Conceitual: `database/docs/modelo_conceitual_palaciomental.png`
-- Modelo Lógico: `database/docs/modelo_logico_palaciomental.png`
-- Dicionário de Dados: `database/docs/dicionario_dados.md`
-- Scripts DDL: `database/scripts/`
+- Python 3.12 ou compatível;
+- Docker e Docker Compose;
+- PostgreSQL local ou o serviço `database` do Compose;
+- Redis conforme a configuração do ambiente.
 
----
-
-## Regras e Princípios de Governança
-
-- **Finalidade social:** sem monetização sobre dados ou cobrança de funcionalidades essenciais
-- **Proteção e consentimento:** publicação de conteúdos e mídias de participantes exige autorização expressa da organização
-- **Modo Foco acessível:** funcionalidade nativa e gratuita, disponível a todos os usuários
-- **Portabilidade:** exportação de dados e relatórios da iniciativa em formatos legíveis
-
----
-
-## Como Contribuir
-
-1. Leia `Docs/GUIA_GITHUB_GESTAO.md` antes de qualquer coisa
-2. Pegue uma issue do board (GitHub Projects)
-3. Crie uma branch a partir de `develop`: `feature/nome-da-feature` ou `fix/nome-do-bug`
-4. Abra Pull Request para `develop` solicitando revisão do time
-5. Commits diretos em `main` ou `develop` são bloqueados
-
----
-
-### Instalação rápida (Docker Compose)
-
-Pré-requisitos: [Git](https://git-scm.com/) e [Docker](https://www.docker.com/) + Docker Compose.
+### Configuração
 
 ```bash
-# 1. Clone o repositório
-git clone https://github.com/DevTroli/palaciomental.git
-cd palaciomental
-
-# 2. Configure variáveis de ambiente
 cp .env.example .env
-# (as defaults já funcionam para desenvolvimento)
-
-# 3. Suba tudo de uma vez
-docker compose up --build -d
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-| Serviço | URL | Descrição |
-|---|---|---|
-| **Django** | http://localhost:8000 | Home MVP, autenticação e projetos |
-| **Status API** | http://localhost:8080/actuator/health | API auxiliar de status/saúde |
-| **PostgreSQL** | localhost:5433 | Banco de dados (credenciais no `.env`) |
+Defina pelo menos `DJANGO_SECRET_KEY` e `DATABASE_URL` no `.env`. Para testar tenants localmente, use também:
 
-> O `docker compose` sobe banco, Django e a API auxiliar de status com healthchecks. O Django roda migrações automaticamente no entrypoint.
+```env
+PALACIO_BASE_DOMAIN=palaciomental.com.br
+TENANT_RESERVED_HOSTS=www,api,status,admin,app
+```
 
----
-
-### Desenvolvimento com Hot-Reload (Opcional)
-
-Se quiser editar código Django e ver mudanças instantâneas sem rebuild:
+### Banco e servidor
 
 ```bash
-# 1. Suba apenas o banco
-docker compose up -d database
-
-# 2. Ambiente virtual local
-python -m venv venv && source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate  # Windows
-
-# 3. Dependências e migrações
-pip install -r requirements.txt
 python manage.py migrate
-
-# 4. Runserver com hot-reload
 python manage.py runserver
 ```
 
-> A API Java (`status_api`) continua no Docker se quiser — basta não derrubar o container dela (`docker compose up -d status_api`).
+A aplicação estará disponível em [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 
----
+## Como validar como Product Owner
 
-**Comandos Docker do dia a dia:**
+A validação pode ser feita em três níveis.
 
-| Comando | O que faz |
-|---|---|
-| `docker compose up --build -d` | Sobe **tudo** (DB + Django + API Java) |
-| `docker compose up -d database` | Sobe só o PostgreSQL |
-| `docker compose down` | Para tudo (dados persistem no volume `pgdata`) |
-| `docker compose down -v` | Para e **apaga** dados do banco |
-| `docker compose logs -f django` | Logs do Django em tempo real |
-| `docker compose logs -f status_api` | Logs da API Java |
-| `docker compose ps` | Status de todos os containers |
+### 1. Validação automática
 
----
+Execute:
 
-**Feito com 💚 pela equipe Palácio Mental · Fatec Praia Grande · 2026**
+```bash
+DJANGO_SECRET_KEY=test-secret-key \
+DATABASE_URL=sqlite:////tmp/palaciomental-test.sqlite3 \
+python manage.py check
+
+DJANGO_SECRET_KEY=test-secret-key \
+DATABASE_URL=sqlite:////tmp/palaciomental-test.sqlite3 \
+python manage.py test
+```
+
+O resultado esperado é `System check identified no issues` e todos os testes concluídos com `OK`.
+
+Também confirme que não há migration esquecida:
+
+```bash
+DJANGO_SECRET_KEY=test-secret-key \
+DATABASE_URL=sqlite:////tmp/palaciomental-test.sqlite3 \
+python manage.py makemigrations --check --dry-run
+```
+
+O resultado esperado é `No changes detected`.
+
+### 2. Validação funcional do espaço global
+
+1. Abra `/` e confirme que a home do Palácio Mental aparece.
+2. Crie uma conta em `/cadastrar/`.
+3. Entre em **Meu espaço**.
+4. Crie um projeto pessoal.
+5. Adicione contexto, links e altere a visibilidade.
+6. Verifique que o projeto pessoal aparece apenas no espaço autoral e, quando público, na vitrine global.
+7. Abra `/status/` e confirme que a página funciona mesmo se a API externa estiver indisponível.
+
+### 3. Validação funcional do tenant CAMPPG
+
+No admin Django, crie:
+
+1. uma `Organização` com slug `camppg`;
+2. um `Domínio da organização` com hostname `camppg.palaciomental.com.br`;
+3. uma `Afiliação organizacional` ativa para um usuário;
+4. opcionalmente, uma identidade visual para a organização.
+
+Depois, teste:
+
+- usuário não autenticado no subdomínio: deve ser direcionado para login;
+- usuário autenticado sem afiliação: deve receber `403`;
+- usuário com afiliação ativa: deve acessar o ambiente;
+- criação de projeto no subdomínio: deve gravar `Projeto.organizacao` automaticamente;
+- projeto pessoal acessado pelo subdomínio: deve retornar `404`;
+- projeto institucional acessado pelo domínio principal: deve retornar `404`;
+- subdomínio desconhecido: deve retornar `404`, sem mostrar dados de outro tenant.
+
+> Para testar localmente um hostname, adicione uma entrada ao arquivo `hosts`, por exemplo `127.0.0.1 camppg.palaciomental.com.br`, e inclua o domínio em `ALLOWED_HOSTS`.
+
+## Documentação
+
+Toda a documentação do projeto fica em [`docs/`](docs/):
+
+- [Modelagem multi-tenant v2](docs/modelagem-multi-tenant-v2.md)
+- [DER multi-tenant em português](docs/der-multi-tenant-pt.mmd)
+- [Sprint emergencial multi-tenant](docs/sprint-emergencial-multi-tenant-v2.md)
+- [Integração Redis no produto](docs/redis-django-mvp.md)
+- [Relatório de acessibilidade e IHC](docs/relatorio-acessibilidade-ihc.docx)
+- [Roteiro de demonstração](docs/roteiro-demo-produto-1-minuto.md)
+
+Os documentos de estratégia e contexto mestre também ficam nessa pasta, separados do código executável.
+
+## Organização do código
+
+```text
+core/                 Home pública e navegação institucional
+plataforma/           Identidade, projetos, colaboração, tenants e status
+setup/                Configuração Django, URLs e WSGI
+status_api/           Serviço separado de status
+templates/            Templates HTML da interface
+static/               CSS, JavaScript e imagens
+assets/               Materiais visuais de apoio
+docs/                 Documentação técnica, produto e operação
+compose.yaml          Ambiente local conteinerizado
+```
+
+O pacote `plataforma` substituiu a antiga app de lista de espera. O identificador histórico presente nas migrations existe apenas para preservar bancos já migrados; a funcionalidade de lista de espera, suas rotas e sua interface foram removidas.
+
+## Desenvolvimento
+
+Antes de abrir um Pull Request:
+
+```bash
+git diff --check
+python manage.py check
+python manage.py test
+python manage.py makemigrations --check --dry-run
+```
+
+Commits deste repositório devem usar a identidade de desenvolvimento definida pelo projeto:
+
+```bash
+git config user.name "DevTroli & git"
+git config user.email "brawlixo123@gmail.com"
+```
+
+## Princípios do produto
+
+- contexto antes de complexidade;
+- entrada simples e profundidade progressiva;
+- privacidade institucional por padrão;
+- PostgreSQL como verdade, Redis como camada derivada;
+- não misturar propriedade intelectual do Palácio Mental com o conteúdo do cliente;
+- acesso inclusivo, compreensível e orientado por boas práticas de IHC;
+- crescimento sustentável, sem métricas predatórias ou dependência de customizações frágeis.
