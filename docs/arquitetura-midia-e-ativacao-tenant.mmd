@@ -1,0 +1,44 @@
+flowchart LR
+    subgraph Criacao[Criação e ativação do tenant]
+        PM[Equipe do P.M.] --> ORG[Organização criada\nstatus: configurando]
+        ORG --> OWNER[Proprietário inicial criado]
+        OWNER --> IDENT[Configuração da identidade]
+        IDENT --> LOGO[Upload da logo]
+        IDENT --> CORES[Seleção de cores semânticas]
+        LOGO --> VALID[Validação técnica e visual]
+        CORES --> VALID
+        VALID --> CHECK{Pronto para ativar?}
+        CHECK -- Não --> AJUSTE[Corrigir identidade\nou dados obrigatórios]
+        AJUSTE --> IDENT
+        CHECK -- Sim --> ACT[Serviço de ativação\ntransação atômica]
+        ACT --> ATIVA[Organização ativa]
+        ACT -- falha --> ROLLBACK[Rollback e registro do erro]
+        ROLLBACK --> IDENT
+        ATIVA --> CONV[Proprietário pode convidar gestores]
+        ATIVA --> TENANT[Tenant disponível para afiliados convidados]
+        ATIVA --> SUSP[Suspensa ou arquivada\npor ação autorizada]
+    end
+
+    subgraph Midia[Arquitetura de armazenamento de mídia]
+        FORM[Formulário multipart/form-data] --> UPLOAD[Upload controlado]
+        UPLOAD --> DJANGO[Django ImageField]
+        DJANGO --> PILLOW[Pillow\nMIME real, dimensões, orientação\nremoção de EXIF e otimização]
+        PILLOW --> PATH["Caminho isolado\ntenants/organizacao_id/branding/uuid"]
+        PATH --> LOCAL[FileSystemStorage\nDocker/local]
+        PATH --> OBJECT[Object Storage S3/R2\nprodução]
+        LOCAL --> URL[URL de mídia controlada]
+        OBJECT --> URL
+        URL --> PREVIEW[Preview e shell institucional]
+        URL --> CDN[CDN opcional]
+    end
+
+    LOGO -. usa .-> FORM
+    PREVIEW -. valida .-> CHECK
+    ATIVA -. libera .-> PREVIEW
+
+    classDef state fill:#f3ecdf,stroke:#6e4aa3,color:#30243f;
+    classDef security fill:#e8f3e9,stroke:#4d8d58,color:#203b25;
+    classDef media fill:#eee8f8,stroke:#6e4aa3,color:#30243f;
+    class ORG,ATIVA,SUSP state;
+    class VALID,CHECK,ACT,ROLLBACK security;
+    class FORM,UPLOAD,DJANGO,PILLOW,PATH,LOCAL,OBJECT,URL,PREVIEW,CDN media;
