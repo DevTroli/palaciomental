@@ -1,0 +1,166 @@
+#content.palacio-admin-content {
+  max-width: 1180px;
+}
+
+.palacio-admin-intro {
+  margin: 0 0 24px;
+  padding: 28px 32px;
+  border-radius: 12px;
+  background: #321943;
+  color: #fff;
+}
+
+.palacio-admin-intro h1 {
+  margin: 4px 0 8px;
+  color: #fff;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+
+.palacio-admin-intro p:last-child {
+  max-width: 760px;
+  margin: 0;
+  color: #f7f4ee;
+  font-size: 15px;
+}
+
+.palacio-admin-eyebrow {
+  margin: 0;
+  color: #1fae6d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.palacio-admin-intro .palacio-admin-eyebrow {
+  color: #8ee0b5;
+}
+
+.palacio-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.palacio-flow-card {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 16px;
+  min-height: 290px;
+  padding: 24px;
+  border: 1px solid #d9d2c9;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(50, 25, 67, 0.06);
+}
+
+.palacio-flow-card--primary {
+  border-color: #321943;
+  box-shadow: 0 4px 14px rgba(50, 25, 67, 0.12);
+}
+
+.palacio-flow-number {
+  color: #321943;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.palacio-flow-card h2 {
+  margin: 4px 0 8px;
+  color: #321943;
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.palacio-flow-card p:not(.palacio-admin-eyebrow) {
+  min-height: 44px;
+  margin: 0 0 12px;
+  color: #4d4650;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.palacio-flow-card ol {
+  min-height: 78px;
+  margin: 0 0 18px;
+  padding-left: 20px;
+  color: #4d4650;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.palacio-flow-card li::marker {
+  color: #1fae6d;
+  font-weight: 700;
+}
+
+.palacio-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.palacio-flow-actions a:not(.button) {
+  color: #321943;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.palacio-flow-actions .button {
+  border-radius: 5px;
+  background: #1fae6d;
+  color: #fff;
+  font-weight: 700;
+}
+
+.palacio-flow-actions .button:hover,
+.palacio-flow-actions .button:focus {
+  background: #168653;
+}
+
+.palacio-admin-guidance {
+  margin: 22px 0;
+  padding: 14px 18px;
+  border-left: 4px solid #1fae6d;
+  background: #f7f4ee;
+  color: #321943;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.palacio-advanced-models {
+  margin-top: 24px;
+  border-top: 1px solid #d9d2c9;
+}
+
+.palacio-advanced-models summary {
+  padding: 18px 0 8px;
+  color: #321943;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.palacio-advanced-models > p {
+  color: #5f5961;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .palacio-flow-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .palacio-admin-intro,
+  .palacio-flow-card {
+    padding: 20px;
+  }
+
+  .palacio-flow-card {
+    grid-template-columns: 1fr;
+  }
+}

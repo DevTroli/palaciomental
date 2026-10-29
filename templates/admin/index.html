@@ -1,0 +1,135 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/palacio-admin.css' %}">
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard palacio-admin-home{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+<div id="content-main" class="palacio-admin-content">
+  <header class="palacio-admin-intro">
+    <p class="palacio-admin-eyebrow">Operação orientada</p>
+    <h1>O que você precisa fazer?</h1>
+    <p>Escolha um fluxo pelo objetivo. A sequência abaixo indica o caminho recomendado para configurar e operar cada ambiente.</p>
+  </header>
+
+  <section class="palacio-flow-grid" aria-label="Fluxos principais da plataforma">
+    <article class="palacio-flow-card palacio-flow-card--primary">
+      <div class="palacio-flow-number">01</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Primeira configuração</p>
+        <h2>Preparar um ambiente institucional</h2>
+        <p>Use este fluxo ao cadastrar uma nova organização, como o CAMPPG, e publicar seu primeiro endereço.</p>
+        <ol>
+          <li>Crie a organização e defina a situação do ambiente.</li>
+          <li>Na própria organização, adicione identidade visual e domínio.</li>
+          <li>Depois, afilie ou convide as primeiras pessoas.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button default" href="{% url 'admin:listaEspera_organizacao_add' %}">Criar organização</a>
+          <a href="{% url 'admin:listaEspera_organizacao_changelist' %}">Ver organizações</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="palacio-flow-card">
+      <div class="palacio-flow-number">02</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Acesso e pessoas</p>
+        <h2>Controlar quem entra</h2>
+        <p>Use este fluxo para dar acesso ao tenant sem abrir o ambiente para visitantes não afiliados.</p>
+        <ol>
+          <li>Use <strong>Afiliações</strong> para vínculos já confirmados.</li>
+          <li>Use <strong>Convites</strong> para entradas pendentes.</li>
+          <li>Revise papel e situação antes de liberar o acesso.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button" href="{% url 'admin:listaEspera_membroorganizacao_changelist' %}">Afiliações</a>
+          <a href="{% url 'admin:listaEspera_conviteorganizacao_changelist' %}">Convites</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="palacio-flow-card">
+      <div class="palacio-flow-number">03</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Acompanhamento</p>
+        <h2>Operar projetos</h2>
+        <p>Use este fluxo para acompanhar o conteúdo sem confundir projetos autorais com projetos institucionais.</p>
+        <ol>
+          <li>Filtre projetos por organização, status e visibilidade.</li>
+          <li>Consulte links, membros e marcos quando necessário.</li>
+          <li>Use comentários e solicitações apenas para suporte operacional.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button" href="{% url 'admin:listaEspera_project_changelist' %}">Ver projetos</a>
+          <a href="{% url 'admin:listaEspera_projectmilestone_changelist' %}">Ver marcos</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="palacio-flow-card">
+      <div class="palacio-flow-number">04</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Manutenção</p>
+        <h2>Revisar e corrigir</h2>
+        <p>Use este fluxo quando houver uma inconsistência, troca de responsável ou necessidade de auditoria.</p>
+        <ol>
+          <li>Confira o status da organização e do domínio.</li>
+          <li>Revise afiliações, convites e permissões.</li>
+          <li>Consulte o histórico do objeto antes de alterar dados.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button" href="{% url 'admin:listaEspera_dominioorganizacao_changelist' %}">Revisar domínios</a>
+          <a href="{% url 'admin:auth_user_changelist' %}">Ver usuários</a>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="palacio-admin-guidance" aria-label="Regra de segurança">
+    <strong>Regra de segurança:</strong> configure a organização antes das afiliações e nunca use o domínio global para validar conteúdo institucional.
+  </section>
+
+  <details class="palacio-advanced-models">
+    <summary>Ver todos os modelos técnicos</summary>
+    <p>Use esta lista somente quando o fluxo guiado acima não atender à tarefa. Os modelos continuam disponíveis para manutenção avançada.</p>
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+  </details>
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+  <div class="module" id="recent-actions-module">
+    <h2>Atividade recente</h2>
+    <h3>Suas ações</h3>
+    {% load log %}
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+      <p>Nenhuma ação registrada ainda.</p>
+    {% else %}
+      <ul class="actionlist">
+        {% for entry in admin_log %}
+          <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+            <span class="visually-hidden">{% if entry.is_addition %}Adicionado:{% elif entry.is_change %}Alterado:{% elif entry.is_deletion %}Removido:{% endif %}</span>
+            {% if entry.is_deletion or not entry.get_admin_url %}
+              {{ entry.object_repr }}
+            {% else %}
+              <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+            {% endif %}
+            <br><span class="mini quiet">{{ entry.content_type.name|capfirst }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

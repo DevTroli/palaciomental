@@ -131,6 +131,15 @@ O Django Admin foi organizado para que `Organização` seja o ponto central da c
 
 O token técnico do convite é gerado automaticamente e o administrador que o criou é registrado. O admin também normaliza hostnames e impede que a equipe informe protocolo ou barras por engano. Campos técnicos, identificadores e datas de auditoria ficam protegidos ou recolhidos para não competir com as decisões operacionais.
 
+Ao abrir o índice do admin, a equipe encontra quatro fluxos guiados, em vez de uma lista solta de tabelas:
+
+1. **Preparar um ambiente institucional** — criar a organização, completar identidade e domínio.
+2. **Controlar quem entra** — criar afiliações ou convites e revisar papel e situação.
+3. **Operar projetos** — consultar projetos, links, membros, marcos e colaboração.
+4. **Revisar e corrigir** — investigar domínios, acessos e histórico antes de alterar dados.
+
+A lista completa de modelos técnicos continua disponível em uma seção avançada, para manutenção especializada sem competir com os fluxos cotidianos.
+
 Depois, teste:
 
 - usuário não autenticado no subdomínio: deve ser direcionado para login;

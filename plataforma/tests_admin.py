@@ -26,8 +26,12 @@ class AdminInstitucionalTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Palácio Mental — Operação da Plataforma")
-        self.assertContains(response, "Gestão da plataforma")
-        self.assertContains(response, "Organizações")
+        self.assertContains(response, "O que você precisa fazer?")
+        self.assertContains(response, "Preparar um ambiente institucional")
+        self.assertContains(response, "Controlar quem entra")
+        self.assertContains(response, "Operar projetos")
+        self.assertContains(response, "Revisar e corrigir")
+        self.assertContains(response, "Ver todos os modelos técnicos")
 
     def test_organization_changelist_shows_operational_columns(self):
         response = self.client.get(reverse("admin:listaEspera_organizacao_changelist"))
