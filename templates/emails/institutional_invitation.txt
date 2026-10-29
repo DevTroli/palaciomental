@@ -1,0 +1,13 @@
+CONVITE INSTITUCIONAL — {{ identidade.nome_exibicao|default:organizacao.nome }}
+
+Você foi convidado para participar de {{ grupo.nome }}, no programa {{ programa.nome }}.
+
+Seu papel inicial será: {{ convite.get_papel_display }}.
+O acesso fica limitado ao ambiente e aos vínculos autorizados da organização.
+
+Aceite o convite:
+{{ invite_url }}
+
+Este convite expira em {{ convite.expira_em|date:"d/m/Y H:i" }} e só pode ser aceito pelo e-mail destinatário.
+
+Se você não reconhece este convite, ignore esta mensagem.

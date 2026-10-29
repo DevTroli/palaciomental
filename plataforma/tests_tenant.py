@@ -3,6 +3,7 @@ import secrets
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -356,3 +357,48 @@ class TenantResolutionTests(TestCase):
             HTTP_HOST="camppg.palaciomental.com.br",
         )
         self.assertEqual(response.status_code, 403)
+
+    def test_regular_member_cannot_manage_affiliations_or_invite(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(reverse("plataforma:institutional_members"), HTTP_HOST="camppg.palaciomental.com.br").status_code, 403)
+        response = self.client.get(reverse("plataforma:institutional_management"), HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 403)
+
+    def test_professor_can_invite_only_when_assigned_to_group(self):
+        professor = User.objects.create_user(username="professor", email="professor@example.com", password="Senha-forte-123")
+        target = User.objects.create_user(username="aluno", email="aluno@example.com", password="Senha-forte-123")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=professor, papel=MembroOrganizacao.PAPEL_PROFESSOR)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa professores", slug="programa-professores", criado_por=professor)
+        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo orientado", professor_responsavel=professor, criado_por=professor)
+        self.client.force_login(professor)
+        response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": target.email, "papel": MembroTurmaGrupo.PAPEL_MEMBRO}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ConviteTurmaGrupo.objects.filter(turma_grupo=grupo, email=target.email).exists())
+
+    def test_last_owner_cannot_be_suspended_or_demoted(self):
+        owner = self.user
+        manager = User.objects.create_user(username="gestor", email="gestor@example.com", password="Senha-forte-123")
+        owner_affiliation = MembroOrganizacao.objects.create(organizacao=self.organization, usuario=owner, papel=MembroOrganizacao.PAPEL_PROPRIETARIO)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel=MembroOrganizacao.PAPEL_GESTOR)
+        self.client.force_login(manager)
+        response = self.client.post(reverse("plataforma:institutional_members"), {"membro_id": owner_affiliation.pk, "acao": "suspender"}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 403)
+        self.client.force_login(owner)
+        response = self.client.post(reverse("plataforma:institutional_members"), {"membro_id": owner_affiliation.pk, "acao": "papel", "papel": MembroOrganizacao.PAPEL_MEMBRO}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 400)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_group_invite_sends_html_and_text_email_after_commit(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de e-mail", slug="programa-email", criado_por=self.user)
+        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo de convite", criado_por=self.user)
+        self.client.force_login(self.user)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": "email@example.com", "papel": MembroTurmaGrupo.PAPEL_MEMBRO}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to[0], "email@example.com")
+        self.assertEqual(mail.outbox[0].alternatives[0][1], "text/html")
+        self.assertIn("Grupo de convite", mail.outbox[0].body)
+        self.assertIn("camppg.palaciomental.com.br", mail.outbox[0].alternatives[0][0])

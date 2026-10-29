@@ -77,6 +77,20 @@ STATUS_API_URL = config(
 )
 STATUS_API_TIMEOUT = config("STATUS_API_TIMEOUT", cast=float, default=3.0)
 
+# E-mail transacional de convites. Em desenvolvimento, o conteúdo aparece no
+# terminal; em produção, as credenciais SMTP/provedor são obrigatórias.
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Palácio Mental <convites@palaciomental.com.br>")
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", cast=int, default=587)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool, default=True)
+PUBLIC_APP_URL = config("PUBLIC_APP_URL", default="")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

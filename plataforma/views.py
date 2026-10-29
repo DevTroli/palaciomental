@@ -12,10 +12,12 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.models import User
+from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
 from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.templatetags.static import static
 from django.utils import timezone
@@ -117,7 +119,6 @@ def institutional_management(request):
     if afiliacao.papel not in {
         MembroOrganizacao.PAPEL_PROPRIETARIO,
         MembroOrganizacao.PAPEL_GESTOR,
-        MembroOrganizacao.PAPEL_PROFESSOR,
     }:
         return JsonResponse({"detail": "Seu papel não possui acesso à gestão institucional."}, status=403)
     return render(
@@ -127,13 +128,102 @@ def institutional_management(request):
     )
 
 
+@login_required
+def institutional_members(request):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or not _can_manage_affiliations(request):
+        return JsonResponse({"detail": "Você não pode administrar afiliações neste ambiente."}, status=403)
+    if request.method == "POST":
+        membro = get_object_or_404(MembroOrganizacao, pk=request.POST.get("membro_id"), organizacao=organizacao)
+        acao = request.POST.get("acao")
+        if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.user != membro.usuario:
+            return JsonResponse({"detail": "Apenas o proprietário pode alterar outro proprietário."}, status=403)
+        if acao in {"suspender", "remover"}:
+            if membro.usuario_id == request.user.pk:
+                return JsonResponse({"detail": "Você não pode remover ou suspender sua própria afiliação."}, status=400)
+            if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and organizacao.afiliacoes.filter(papel=MembroOrganizacao.PAPEL_PROPRIETARIO, status=MembroOrganizacao.STATUS_ATIVA).count() <= 1:
+                return JsonResponse({"detail": "A organização precisa manter pelo menos um proprietário ativo."}, status=400)
+            membro.status = MembroOrganizacao.STATUS_SUSPENSA
+            membro.save(update_fields=["status"])
+            messages.success(request, "Afiliação suspensa.")
+        elif acao == "ativar":
+            membro.status = MembroOrganizacao.STATUS_ATIVA
+            membro.save(update_fields=["status"])
+            messages.success(request, "Afiliação reativada.")
+        elif acao == "papel":
+            novo_papel = request.POST.get("papel")
+            if novo_papel not in dict(MembroOrganizacao.PAPEL_CHOICES):
+                return JsonResponse({"detail": "Papel institucional inválido."}, status=400)
+            if novo_papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.membro_organizacao.papel != MembroOrganizacao.PAPEL_PROPRIETARIO:
+                return JsonResponse({"detail": "Somente o proprietário pode conceder o papel de proprietário."}, status=403)
+            if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and novo_papel != MembroOrganizacao.PAPEL_PROPRIETARIO and organizacao.afiliacoes.filter(papel=MembroOrganizacao.PAPEL_PROPRIETARIO, status=MembroOrganizacao.STATUS_ATIVA).count() <= 1:
+                return JsonResponse({"detail": "A organização precisa manter pelo menos um proprietário ativo."}, status=400)
+            membro.papel = novo_papel
+            membro.save(update_fields=["papel"])
+            messages.success(request, "Papel institucional atualizado.")
+        return redirect("plataforma:institutional_members")
+    membros = organizacao.afiliacoes.select_related("usuario").order_by("papel", "usuario__username")
+    return render(request, "institutional/members.html", {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "membros": membros, "papeis": MembroOrganizacao.PAPEL_CHOICES})
+
+
 def _can_manage_institutional_structure(request):
     afiliacao = getattr(request, "membro_organizacao", None)
     return afiliacao and afiliacao.papel in {
         MembroOrganizacao.PAPEL_PROPRIETARIO,
         MembroOrganizacao.PAPEL_GESTOR,
-        MembroOrganizacao.PAPEL_PROFESSOR,
     }
+
+
+def _can_manage_affiliations(request):
+    return _can_manage_institutional_structure(request)
+
+
+def _can_invite_to_group(request, group):
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if afiliacao is None:
+        return False
+    if afiliacao.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+        return True
+    if afiliacao.papel != MembroOrganizacao.PAPEL_PROFESSOR:
+        return False
+    return group.professor_responsavel_id == request.user.pk or group.membros.filter(
+        usuario=request.user,
+        papel=MembroTurmaGrupo.PAPEL_PROFESSOR,
+        status=MembroTurmaGrupo.STATUS_ATIVO,
+    ).exists()
+
+
+def _can_view_group(request, group):
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if afiliacao is None:
+        return False
+    if afiliacao.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+        return True
+    if group.professor_responsavel_id == request.user.pk:
+        return True
+    return group.membros.filter(usuario=request.user, status=MembroTurmaGrupo.STATUS_ATIVO).exists()
+
+
+def _send_group_invitation_email(request, convite, raw_token):
+    invite_url = request.build_absolute_uri(reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}))
+    grupo = convite.turma_grupo
+    contexto = {
+        "convite": convite,
+        "grupo": grupo,
+        "programa": grupo.programa,
+        "organizacao": grupo.programa.organizacao,
+        "identidade": getattr(grupo.programa.organizacao, "identidade", None),
+        "convidado_por": convite.convidado_por,
+        "invite_url": invite_url,
+    }
+    email = EmailMultiAlternatives(
+        subject=f"Convite para participar de {grupo.nome}",
+        body=render_to_string("emails/institutional_invitation.txt", contexto),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[convite.email],
+    )
+    email.attach_alternative(render_to_string("emails/institutional_invitation.html", contexto), "text/html")
+    email.send(fail_silently=False)
 
 
 @login_required
@@ -200,7 +290,9 @@ def institutional_group_members(request, group_id):
     if organizacao is None:
         raise Http404
     grupo = get_object_or_404(TurmaGrupo, pk=group_id, programa__organizacao=organizacao)
-    pode_gerenciar = _can_manage_institutional_structure(request)
+    if not _can_view_group(request, grupo):
+        raise Http404
+    pode_gerenciar = _can_invite_to_group(request, grupo)
     form = ConviteTurmaGrupoForm(request.POST or None)
     if request.method == "POST":
         if not pode_gerenciar:
@@ -218,6 +310,7 @@ def institutional_group_members(request, group_id):
                 convite.expira_em = timezone.now() + timedelta(days=7)
                 convite.save()
                 link = request.build_absolute_uri(reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}))
+                transaction.on_commit(lambda: _send_group_invitation_email(request, convite, raw_token))
                 messages.success(request, f"Convite criado para {email}. Link para envio: {link}")
                 return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
     membros = grupo.membros.select_related("usuario").filter(status=MembroTurmaGrupo.STATUS_ATIVO)
