@@ -1,0 +1,99 @@
+%% Diagrama alvo da experiência institucional — Palácio Mental
+classDiagram
+    class Organizacao {
+        +UUID id
+        +string slug
+        +string nome
+        +status
+    }
+
+    class Usuario {
+        +int id
+        +string email
+    }
+
+    class AfiliacaoOrganizacao {
+        +UUID id
+        +papel: proprietario|gestor|professor|membro
+        +status: ativa|suspensa
+    }
+
+    class ProgramaInstitucional {
+        +UUID id
+        +string nome
+        +status: rascunho|publicado|arquivado
+        +criar_turma()
+        +publicar()
+    }
+
+    class TurmaInstitucional {
+        +UUID id
+        +string nome
+        +string ciclo
+        +politica_entrada: convite|aprovacao|aberta|encerrada
+        +status: ativa|encerrada
+        +definir_professor()
+        +aprovar_participante()
+    }
+
+    class GrupoInstitucional {
+        +UUID id
+        +string nome
+        +tipo: aberto|fechado
+        +status: ativo|encerrado
+        +criado_por
+        +representante
+        +convidar_membro()
+        +solicitar_entrada()
+    }
+
+    class ParticipacaoTurma {
+        +UUID id
+        +papel: professor|membro
+        +status: pendente|ativa|suspensa
+        +origem: convite|aprovacao
+    }
+
+    class MembroGrupo {
+        +UUID id
+        +papel: representante|membro
+        +status: ativo|suspenso
+    }
+
+    class Projeto {
+        +int id
+        +string titulo
+        +string direcao
+        +status
+        +visibilidade
+        +tipo: autonomo|programa
+        +criar_contexto()
+        +publicar()
+    }
+
+    class OrientacaoProjeto {
+        +UUID id
+        +status: ativa|encerrada
+    }
+
+    Organizacao "1" --> "*" AfiliacaoOrganizacao : possui
+    Usuario "1" --> "*" AfiliacaoOrganizacao : mantém
+    Organizacao "1" --> "*" ProgramaInstitucional : organiza
+    ProgramaInstitucional "1" --> "*" TurmaInstitucional : oferece
+    Usuario "1" --> "*" ParticipacaoTurma : participa
+    TurmaInstitucional "1" --> "*" ParticipacaoTurma : controla
+    TurmaInstitucional "1" --> "*" GrupoInstitucional : contém
+    Usuario "1" --> "*" MembroGrupo : integra
+    GrupoInstitucional "1" --> "*" MembroGrupo : reúne
+    GrupoInstitucional "0..1" --> "1" Usuario : representante
+    Usuario "1" --> "*" Projeto : autor
+    ProgramaInstitucional "0..1" --> "*" Projeto : contextualiza
+    TurmaInstitucional "0..1" --> "*" Projeto : recebe
+    GrupoInstitucional "0..1" --> "*" Projeto : desenvolve
+    Usuario "1" --> "*" OrientacaoProjeto : orienta
+    Projeto "1" --> "0..1" OrientacaoProjeto : possui
+
+    note for ProgramaInstitucional "Gestor cria e publica. Professor acompanha, não cria por padrão."
+    note for TurmaInstitucional "Gestor define elegibilidade e política de entrada. Professor gerencia a turma atribuída."
+    note for GrupoInstitucional "Membro pode criar se a turma permitir. Representante administra apenas o grupo."
+    note for Projeto "Autônomo: sem programa/turma/grupo e professor opcional. De programa: programa e turma obrigatórios; professor obrigatório."
