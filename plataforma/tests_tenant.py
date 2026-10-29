@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import ConviteTurmaGrupo, DominioOrganizacao, MembroOrganizacao, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, TurmaGrupo
+from .models import ConviteTurmaGrupo, DominioOrganizacao, MembroOrganizacao, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, ProjetoTurmaGrupo, TurmaGrupo
 
 
 User = get_user_model()
@@ -204,6 +204,55 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         project = Project.objects.get(title="Projeto CAMPPG")
         self.assertEqual(project.organizacao_id, self.organization.pk)
+
+    def test_tenant_creation_cannot_accept_a_forged_organization_and_can_link_group(self):
+        outro = Organizacao.objects.create(slug="outra", nome="Outra organização")
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Programa CAMPPG",
+            slug="programa-camppg",
+            criado_por=self.user,
+        )
+        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo principal", criado_por=self.user)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("plataforma:project_create"),
+            {
+                "title": "Projeto vinculado",
+                "direction": "Projeto interno da CAMPPG.",
+                "status": "ideia",
+                "visibility": "privado",
+                "turma_grupo": str(grupo.pk),
+                "organizacao": str(outro.pk),
+            },
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        project = Project.objects.get(title="Projeto vinculado")
+        self.assertEqual(project.organizacao_id, self.organization.pk)
+        self.assertTrue(ProjetoTurmaGrupo.objects.filter(projeto=project, turma_grupo=grupo).exists())
+
+    def test_global_catalog_and_tenant_catalog_do_not_mix_projects(self):
+        global_project = Project.objects.create(owner=self.user, title="Projeto global", direction="Referência pública", category="Pesquisa", visibility=Project.VISIBILITY_PUBLIC)
+        tenant_project = Project.objects.create(owner=self.user, organizacao=self.organization, title="Projeto CAMPPG público", direction="Catálogo interno", category="Educação", visibility=Project.VISIBILITY_PUBLIC)
+        outro = Organizacao.objects.create(slug="outra", nome="Outra organização")
+        other_project = Project.objects.create(owner=self.user, organizacao=outro, title="Projeto de outra organização", direction="Não deve aparecer", category="Pesquisa", visibility=Project.VISIBILITY_PUBLIC)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        self.client.force_login(self.user)
+
+        global_response = self.client.get(reverse("plataforma:projects"), HTTP_HOST="palaciomental.com.br")
+        self.assertContains(global_response, global_project.title)
+        self.assertNotContains(global_response, tenant_project.title)
+        self.assertNotContains(global_response, other_project.title)
+
+        tenant_response = self.client.get(reverse("plataforma:projects"), HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertContains(tenant_response, tenant_project.title)
+        self.assertNotContains(tenant_response, global_project.title)
+        self.assertNotContains(tenant_response, other_project.title)
+        self.assertContains(tenant_response, "Projetos da CAMPPG")
 
     def test_personal_project_is_not_visible_from_an_institutional_host(self):
         personal = Project.objects.create(

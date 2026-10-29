@@ -80,9 +80,23 @@ class CollaborationRequestForm(forms.ModelForm):
         widgets = {"message": forms.Textarea(attrs={"rows": 3, "maxlength": 500, "placeholder": "Conte brevemente seu interesse e como pode ajudar."})}
 
 class ProjectBasicsForm(forms.ModelForm):
-    def __init__(self, *args, owner=None, **kwargs):
+    def __init__(self, *args, owner=None, organizacao=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.project_owner = owner or getattr(self.instance, "owner", None)
+        if organizacao is not None:
+            self.fields["turma_grupo"] = forms.ModelChoiceField(
+                label="Turma ou grupo (opcional)",
+                required=False,
+                queryset=TurmaGrupo.objects.filter(
+                    programa__organizacao=organizacao,
+                    status=TurmaGrupo.STATUS_ATIVO,
+                ).select_related("programa").order_by("nome"),
+                empty_label="Projeto autônomo, sem turma ou grupo",
+                help_text="Escolha um vínculo principal apenas se este projeto fizer parte de uma turma ou grupo.",
+            )
+            vinculo = getattr(self.instance, "vinculo_turma_grupo", None)
+            if vinculo is not None:
+                self.initial["turma_grupo"] = vinculo.turma_grupo_id
 
     class Meta:
         model = Project

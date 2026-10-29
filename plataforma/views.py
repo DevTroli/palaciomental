@@ -24,7 +24,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 from .forms import CollaborationRequestForm, CommentForm, ConviteTurmaGrupoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
-from .models import CollaborationRequest, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, TurmaGrupo
+from .models import CollaborationRequest, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
 
 def register(request):
     if request.user.is_authenticated:
@@ -95,7 +95,15 @@ def projects(request):
     if ordering == "relevance":
         queryset = queryset.order_by("-relevance", "-updated_at")
     categories = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
-    context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag, "ordering": ordering}}
+    organizacao = getattr(request, "organizacao", None)
+    context = {
+        "projects": queryset,
+        "categories": categories,
+        "statuses": Project.STATUS_CHOICES,
+        "filters": {"q": query, "category": category, "status": status, "tag": tag, "ordering": ordering},
+        "catalog_context": "institutional" if organizacao else "global",
+        "catalog_name": organizacao.nome if organizacao else "Palácio Mental",
+    }
     return render(request, "projects/list.html", context)
 
 
@@ -296,19 +304,23 @@ def project_detail(request, pk):
     voted = request.user.is_authenticated and project.votes.filter(user=request.user).exists()
     can_manage = _can_manage_milestones(project, request.user)
     collaboration_request = project.collaboration_requests.filter(requester=request.user).first() if request.user.is_authenticated else None
-    return render(request, "projects/detail.html", {"project": project, "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
+    return render(request, "projects/detail.html", {"project": project, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
-    form = ProjectBasicsForm(request.POST or None, owner=request.user)
+    organizacao = getattr(request, "organizacao", None)
+    form = ProjectBasicsForm(request.POST or None, owner=request.user, organizacao=organizacao)
     if request.method == "POST" and form.is_valid():
         project = form.save(commit=False)
         project.owner = request.user
-        project.organizacao = getattr(request, "organizacao", None)
+        project.organizacao = organizacao
         project.save()
+        turma_grupo = form.cleaned_data.get("turma_grupo")
+        if turma_grupo is not None:
+            ProjetoTurmaGrupo.objects.create(projeto=project, turma_grupo=turma_grupo, vinculado_por=request.user)
         _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
         return redirect("plataforma:project_context", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto", "submit_label": "Continuar", "form_phase": "basics"})
+    return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto institucional" if organizacao else "Criar projeto", "submit_label": "Continuar", "form_phase": "basics", "organizacao": organizacao})
 
 @login_required
 @require_http_methods(["POST"])
@@ -338,22 +350,33 @@ def project_context(request, pk):
         else:
             messages.success(request, "Contexto salvo. Seu projeto está pronto para continuar.")
         return redirect("plataforma:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto" if (project.category or project.tags or project.links.exists()) else "Adicionar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project})
+    return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project, "organizacao": getattr(request, "organizacao", None)})
 
 @login_required
 def project_edit(request, pk):
     project = _project_for_request(request, pk=pk, owner=request.user)
-    form = ProjectBasicsForm(request.POST or None, instance=project)
+    organizacao = getattr(request, "organizacao", None)
+    form = ProjectBasicsForm(request.POST or None, instance=project, organizacao=organizacao)
     if request.method == "POST" and form.is_valid():
         before_title, before_status = project.title, project.status
         project = form.save()
+        if organizacao is not None:
+            turma_grupo = form.cleaned_data.get("turma_grupo")
+            vinculo, _ = ProjetoTurmaGrupo.objects.get_or_create(projeto=project, defaults={"turma_grupo": turma_grupo, "vinculado_por": request.user}) if turma_grupo else (None, False)
+            if turma_grupo is not None:
+                if vinculo.turma_grupo_id != turma_grupo.pk or vinculo.vinculado_por_id != request.user.pk:
+                    vinculo.turma_grupo = turma_grupo
+                    vinculo.vinculado_por = request.user
+                    vinculo.save(update_fields=["turma_grupo", "vinculado_por"])
+            else:
+                ProjetoTurmaGrupo.objects.filter(projeto=project).delete()
         changes = []
         if before_title != project.title: changes.append("nome")
         if before_status != project.status: changes.append("status")
         if changes: _auto_milestone(project, request.user, "Projeto atualizado", "Alterações em: " + ", ".join(changes) + ".")
         messages.success(request, "Projeto atualizado.")
         return redirect("plataforma:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto", "submit_label": "Salvar alterações", "form_phase": "basics", "project": project})
+    return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto institucional" if organizacao else "Editar projeto", "submit_label": "Salvar alterações", "form_phase": "basics", "project": project, "organizacao": organizacao})
 
 @login_required
 @require_http_methods(["POST"])
