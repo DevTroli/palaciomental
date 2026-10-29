@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, ConviteTurmaGrupo, MemberProfile, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
+from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
 
 User = get_user_model()
 
@@ -187,6 +187,22 @@ class ConviteTurmaGrupoForm(forms.ModelForm):
         model = ConviteTurmaGrupo
         fields = ("email", "papel")
         labels = {"email": "E-mail da pessoa", "papel": "Papel no grupo"}
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+
+class ConviteOrganizacaoForm(forms.ModelForm):
+    class Meta:
+        model = ConviteOrganizacao
+        fields = ("email", "papel")
+        labels = {"email": "E-mail da pessoa", "papel": "Papel inicial"}
+        help_texts = {"email": "A pessoa receberá um link de uso único para entrar no ambiente."}
+
+    def __init__(self, *args, papeis_permitidos=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        permitidos = papeis_permitidos or []
+        self.fields["papel"].choices = [choice for choice in MembroOrganizacao.PAPEL_CHOICES if choice[0] in permitidos]
 
     def clean_email(self):
         return self.cleaned_data["email"].strip().lower()

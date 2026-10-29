@@ -85,4 +85,4 @@ class TenantResolutionMiddleware:
 
     @staticmethod
     def _is_public_auth_path(path):
-        return path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/"))
+        return path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/"))

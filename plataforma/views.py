@@ -12,6 +12,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
@@ -25,8 +26,9 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, ConviteTurmaGrupoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
-from .models import CollaborationRequest, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
+from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
+from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
+from .services import emitir_convite_organizacao, papeis_convidaveis
 
 def register(request):
     if request.user.is_authenticated:
@@ -131,9 +133,24 @@ def institutional_management(request):
 @login_required
 def institutional_members(request):
     organizacao = getattr(request, "organizacao", None)
-    if organizacao is None or not _can_manage_affiliations(request):
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if organizacao is None or afiliacao is None or not _can_manage_affiliations(request):
         return JsonResponse({"detail": "Você não pode administrar afiliações neste ambiente."}, status=403)
-    if request.method == "POST":
+    papeis = papeis_convidaveis(afiliacao.papel)
+    if request.method == "POST" and request.POST.get("acao") == "convidar":
+        form = ConviteOrganizacaoForm(request.POST, papeis_permitidos=papeis)
+        if form.is_valid():
+            try:
+                convite, raw_token = emitir_convite_organizacao(
+                    organizacao, afiliacao, form.cleaned_data["email"], form.cleaned_data["papel"]
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.message)
+            else:
+                transaction.on_commit(lambda: _send_organization_invitation_email(request, convite, raw_token))
+                messages.success(request, f"Convite criado para {convite.email}.")
+                return redirect("plataforma:institutional_members")
+    elif request.method == "POST":
         membro = get_object_or_404(MembroOrganizacao, pk=request.POST.get("membro_id"), organizacao=organizacao)
         acao = request.POST.get("acao")
         if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.user != membro.usuario:
@@ -163,7 +180,9 @@ def institutional_members(request):
             messages.success(request, "Papel institucional atualizado.")
         return redirect("plataforma:institutional_members")
     membros = organizacao.afiliacoes.select_related("usuario").order_by("papel", "usuario__username")
-    return render(request, "institutional/members.html", {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "membros": membros, "papeis": MembroOrganizacao.PAPEL_CHOICES})
+    convite_form = locals().get("form") if request.method == "POST" and request.POST.get("acao") == "convidar" else ConviteOrganizacaoForm(papeis_permitidos=papeis)
+    convites = organizacao.convites.filter(status=ConviteOrganizacao.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por").order_by("expira_em")
+    return render(request, "institutional/members.html", {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "membros": membros, "papeis": MembroOrganizacao.PAPEL_CHOICES, "convite_form": convite_form, "convites": convites, "papeis_convidaveis": papeis})
 
 
 def _can_manage_institutional_structure(request):
@@ -176,6 +195,25 @@ def _can_manage_institutional_structure(request):
 
 def _can_manage_affiliations(request):
     return _can_manage_institutional_structure(request)
+
+
+def _send_organization_invitation_email(request, convite, raw_token):
+    invite_url = request.build_absolute_uri(reverse("plataforma:institutional_organization_invite_accept", kwargs={"token": raw_token}))
+    contexto = {
+        "convite": convite,
+        "organizacao": convite.organizacao,
+        "identidade": getattr(convite.organizacao, "identidade", None),
+        "convidado_por": convite.convidado_por,
+        "invite_url": invite_url,
+    }
+    email = EmailMultiAlternatives(
+        subject=f"Convite para entrar em {convite.organizacao.nome}",
+        body=render_to_string("emails/organization_invitation.txt", contexto),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[convite.email],
+    )
+    email.attach_alternative(render_to_string("emails/organization_invitation.html", contexto), "text/html")
+    email.send(fail_silently=False)
 
 
 def _can_invite_to_group(request, group):
@@ -332,6 +370,20 @@ def institutional_invite_revoke(request, invite_id):
     return redirect("plataforma:institutional_group_members", group_id=convite.turma_grupo_id)
 
 
+@login_required
+@require_http_methods(["POST"])
+def institutional_organization_invite_revoke(request, invite_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or not _can_manage_institutional_structure(request):
+        return JsonResponse({"detail": "Você não pode revogar convites neste ambiente."}, status=403)
+    convite = get_object_or_404(ConviteOrganizacao, pk=invite_id, organizacao=organizacao)
+    if convite.status == ConviteOrganizacao.STATUS_PENDENTE:
+        convite.status = ConviteOrganizacao.STATUS_REVOGADO
+        convite.save(update_fields=["status"])
+        messages.success(request, "Convite institucional revogado.")
+    return redirect("plataforma:institutional_members")
+
+
 def institutional_invite_accept(request, token):
     digest = hashlib.sha256(token.encode()).hexdigest()
     convite = get_object_or_404(ConviteTurmaGrupo.objects.select_related("turma_grupo__programa__organizacao"), hash_token=digest)
@@ -357,6 +409,34 @@ def institutional_invite_accept(request, token):
         convite.aceito_em = timezone.now()
         convite.save(update_fields=["status", "aceito_em"])
     return redirect("plataforma:institutional_program_detail", programa_id=convite.turma_grupo.programa_id)
+
+
+def institutional_organization_invite_accept(request, token):
+    digest = hashlib.sha256(token.encode()).hexdigest()
+    convite = get_object_or_404(ConviteOrganizacao.objects.select_related("organizacao"), hash_token=digest)
+    if convite.status != ConviteOrganizacao.STATUS_PENDENTE or convite.expira_em <= timezone.now():
+        return HttpResponseForbidden("Este convite não está mais disponível.")
+    if not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
+    if request.user.email.lower() != convite.email.lower():
+        return HttpResponseForbidden("Este convite foi emitido para outro endereço de e-mail.")
+    with transaction.atomic():
+        afiliacao, criada = MembroOrganizacao.objects.get_or_create(
+            organizacao=convite.organizacao,
+            usuario=request.user,
+            defaults={"papel": convite.papel},
+        )
+        if not criada:
+            if afiliacao.status != MembroOrganizacao.STATUS_ATIVA:
+                afiliacao.status = MembroOrganizacao.STATUS_ATIVA
+                afiliacao.papel = convite.papel
+                afiliacao.save(update_fields=["status", "papel"])
+            elif afiliacao.papel != convite.papel:
+                return HttpResponseForbidden("Sua conta já possui outro papel neste ambiente.")
+        convite.status = ConviteOrganizacao.STATUS_ACEITO
+        convite.aceito_em = timezone.now()
+        convite.save(update_fields=["status", "aceito_em"])
+    return redirect("plataforma:projects")
 
 
 def _project_scope(request):

@@ -1,0 +1,10 @@
+Convite institucional — {{ organizacao.nome }}
+
+{{ convidado_por.get_full_name|default:convidado_por.username }} convidou você para entrar em {{ organizacao.nome }} como {{ convite.get_papel_display }}.
+
+Aceite o convite neste link:
+{{ invite_url }}
+
+O link expira em {{ convite.expira_em|date:"d/m/Y H:i" }} e é válido somente para {{ convite.email }}.
+
+Se você não esperava este convite, ignore esta mensagem.
