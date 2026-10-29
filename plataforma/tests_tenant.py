@@ -150,6 +150,17 @@ class TenantResolutionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Entrar")
+        self.assertContains(response, "Ambiente institucional privado")
+        self.assertNotContains(response, "Cadastre-se")
+
+    def test_tenant_registration_is_closed_and_contextualized(self):
+        response = self.client.get(
+            reverse("plataforma:register"),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "Cadastro fechado", status_code=403)
+        self.assertContains(response, "somente por convite", status_code=403)
 
     def test_authenticated_user_without_affiliation_is_forbidden(self):
         self.client.force_login(self.user)
@@ -243,6 +254,26 @@ class TenantResolutionTests(TestCase):
         self.assertContains(response, "Programas, turmas e grupos")
         self.assertContains(response, "Membros ativos")
         self.assertNotContains(response, "Responsabilidade do proprietário")
+
+    def test_login_redirects_manager_to_management_and_member_to_tenant_home(self):
+        manager = User.objects.create_user(username="login-gestor", password="Senha-forte-123")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel=MembroOrganizacao.PAPEL_GESTOR)
+        response = self.client.post(
+            reverse("plataforma:login"),
+            {"username": "login-gestor", "password": "Senha-forte-123"},
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertRedirects(response, reverse("plataforma:institutional_management"), fetch_redirect_response=False)
+
+        self.client.logout()
+        member = User.objects.create_user(username="login-membro", password="Senha-forte-123")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=member, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        response = self.client.post(
+            reverse("plataforma:login"),
+            {"username": "login-membro", "password": "Senha-forte-123"},
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
 
     def test_owner_dashboard_shows_owner_governance_action_and_tenant_metrics(self):
         MembroOrganizacao.objects.create(

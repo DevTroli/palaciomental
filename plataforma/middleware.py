@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseForbidden, HttpResponseNotFound
+from django.shortcuts import render
 
 from .models import MembroOrganizacao, Organizacao, DominioOrganizacao
 
@@ -41,7 +42,21 @@ class TenantResolutionMiddleware:
             status=MembroOrganizacao.STATUS_ATIVA,
         ).first()
         if affiliation is None:
-            return self._finish(request, HttpResponseForbidden("Sua conta não possui afiliação ativa neste ambiente institucional."), is_dev_tenant)
+            return self._finish(
+                request,
+                render(
+                    request,
+                    "institutional/access_denied.html",
+                    {
+                        "organizacao": organizacao,
+                        "identidade": getattr(organizacao, "identidade", None),
+                        "titulo": "Acesso restrito",
+                        "mensagem": "Sua conta não possui afiliação ativa neste ambiente institucional.",
+                    },
+                    status=403,
+                ),
+                is_dev_tenant,
+            )
 
         request.membro_organizacao = affiliation
         return self._finish(request, self.get_response(request), is_dev_tenant)

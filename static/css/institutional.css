@@ -154,6 +154,10 @@ body {
 .tenant-list a { color: var(--tenant-primary); font-weight: 700; }
 .tenant-admin-note { margin-top: 34px; padding: 14px 16px; border-left: 4px solid var(--tenant-accent); background: #fff; color: var(--tenant-muted); font-size: 14px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.tenant-centered-message { display: grid; min-height: 100vh; align-items: center; }
+.tenant-centered-message .tenant-card { width: min(100%, 620px); min-height: 0; margin: 0 auto; }
+.tenant-message-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.tenant-button--secondary { background: var(--tenant-primary); }
 
 .tenant-card h2 {
   margin: 0 0 9px;

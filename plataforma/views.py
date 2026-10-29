@@ -20,6 +20,7 @@ from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.templatetags.static import static
 from django.utils import timezone
 from django.utils.text import slugify
@@ -32,6 +33,13 @@ from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 
 def register(request):
+    if getattr(request, "organizacao", None) is not None:
+        return render(
+            request,
+            "institutional/access_denied.html",
+            {"organizacao": request.organizacao, "identidade": getattr(request.organizacao, "identidade", None), "titulo": "Cadastro fechado", "mensagem": "Este ambiente institucional é privado e funciona somente por convite."},
+            status=403,
+        )
     if request.user.is_authenticated:
         return redirect("plataforma:profile", username=request.user.username)
     form = MemberCreationForm(request.POST or None)
@@ -48,9 +56,28 @@ def login_view(request):
     from django.contrib.auth.forms import AuthenticationForm
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
-        login(request, form.get_user())
+        user = form.get_user()
+        login(request, user)
+        organizacao = getattr(request, "organizacao", None)
+        if organizacao is not None:
+            afiliacao = MembroOrganizacao.objects.filter(organizacao=organizacao, usuario=user, status=MembroOrganizacao.STATUS_ATIVA).first()
+            if afiliacao is None:
+                return render(
+                    request,
+                    "institutional/access_denied.html",
+                    {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "titulo": "Acesso pendente", "mensagem": "Sua conta foi autenticada, mas ainda não possui um convite ou afiliação ativa neste ambiente."},
+                    status=403,
+                )
+            next_url = request.GET.get("next", "")
+            if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                if next_url.startswith("/gestao/") and afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+                    return redirect("core:index")
+                return redirect(next_url)
+            if afiliacao.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+                return redirect("plataforma:institutional_management")
+            return redirect("core:index")
         return redirect(request.GET.get("next") or "plataforma:projects")
-    return render(request, "auth/login.html", {"form": form})
+    return render(request, "auth/login.html", {"form": form, "organizacao": getattr(request, "organizacao", None), "identidade": getattr(getattr(request, "organizacao", None), "identidade", None)})
 
 
 @require_http_methods(["POST"])

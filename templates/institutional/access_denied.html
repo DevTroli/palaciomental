@@ -1,0 +1,20 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ titulo }} — {{ identidade.nome_exibicao|default:organizacao.nome }}</title>
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+</head>
+<body>
+  <main class="tenant-container tenant-centered-message">
+    <section class="tenant-card tenant-card--active" role="alert" aria-labelledby="access-title">
+      {% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
+      <p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }} · ambiente privado</p>
+      <h1 id="access-title">{{ titulo }}</h1>
+      <p>{{ mensagem }}</p>
+      <div class="tenant-message-actions"><a class="tenant-button" href="{% url 'plataforma:login' %}?next={{ request.path|urlencode }}">Entrar com outra conta</a><a class="tenant-button tenant-button--secondary" href="{% url 'core:index' %}">Voltar ao início</a></div>
+    </section>
+  </main>
+</body>
+</html>

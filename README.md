@@ -97,6 +97,70 @@ python manage.py runserver
 
 A aplicação estará disponível em [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 
+### Fluxo recomendado no Codespace com Docker
+
+Este é o caminho mais simples para homologar as features institucionais sem DNS de produção, Railway ou Cloudflare:
+
+1. Abra o repositório em um Codespace com Docker disponível.
+2. Crie o ambiente local:
+   ```bash
+   cp .env.example .env
+   sed -i 's/^DJANGO_SECRET_KEY=.*/DJANGO_SECRET_KEY=local-codespace-key/' .env
+   sed -i 's/^R2_ENABLED=.*/R2_ENABLED=False/' .env
+   docker compose up --build -d
+   ```
+3. Confira os serviços:
+   ```bash
+   docker compose ps
+   docker compose logs -f django
+   ```
+   O serviço `django` deve ficar saudável e responder em `http://localhost:8000/`.
+4. Crie os dados iniciais pelo Django Admin em `http://localhost:8000/admin/`. Para o CAMPPG, a organização precisa estar `Ativa` e o usuário precisa ter uma afiliação ativa.
+5. No Codespace, não é necessário criar DNS local. Use o fallback de desenvolvimento:
+   ```text
+   https://SEU-CODESPACE-8000.app.github.dev/?tenant=camppg
+   ```
+   Esse recurso só funciona com `DJANGO_DEBUG=True`. O middleware grava o tenant em um cookie de desenvolvimento para as páginas seguintes.
+6. Entre com um usuário afiliado. Proprietário e gestor devem abrir `/gestao/`; professor e membro devem chegar à home institucional. Uma conta sem afiliação deve receber a tela contextual de acesso restrito.
+7. Para testar outro ambiente, use `?tenant=outro-slug`. Para limpar o tenant selecionado, remova o cookie `pm_dev_tenant` ou abra uma janela anônima.
+8. Ao terminar:
+   ```bash
+   docker compose down
+   ```
+   Use `docker compose down -v` somente se quiser apagar também o banco PostgreSQL local.
+
+#### Teste rápido sem Docker
+
+Para validar regras e regressões sem subir PostgreSQL, use SQLite temporário:
+
+```bash
+export DJANGO_SECRET_KEY=local-test-key
+export DJANGO_DEBUG=True
+export R2_ENABLED=False
+export DATABASE_URL=sqlite:////tmp/palaciomental-check.sqlite3
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+```
+
+Esse modo valida o código automaticamente, mas não substitui a homologação manual do fluxo de tenant no Docker.
+
+#### Checklist manual mínimo do tenant
+
+| Cenário | Resultado esperado |
+|---|---|
+| Acesso sem login por `?tenant=camppg` | Login contextualizado do CAMPPG |
+| Cadastro dentro do tenant | Bloqueado; entrada somente por convite |
+| Usuário autenticado sem afiliação | Tela de acesso restrito, sem conteúdo parcial |
+| Membro ou professor | Home institucional do tenant |
+| Gestor ou proprietário | Dashboard `/gestao/` |
+| Projeto institucional | Visível apenas no tenant correto |
+| Projeto pessoal | Continua no Meu Espaço |
+| Outro slug de tenant | Dados completamente isolados |
+| `R2_ENABLED=False` | Upload salvo no `MEDIA_ROOT` local |
+
+O teste local não utiliza subdomínio real. Hostnames como `camppg.palaciomental.com.br` ficam para homologação e produção, quando DNS e domínio da aplicação estiverem configurados.
+
 ## Como validar como Product Owner
 
 A validação pode ser feita em três níveis.
@@ -162,7 +226,7 @@ A lista completa de modelos técnicos continua disponível em uma seção avanç
 
 O `/admin/` é exclusivo da equipe interna do Palácio Mental. Usuários institucionais não devem receber `is_staff` para operar essa área, porque ela dá acesso à estrutura técnica completa da plataforma.
 
-Gestores, proprietários e professores acessam a gestão pelo subdomínio da própria organização, em `/gestao/`. Esse portal mostra o tenant atual, aplica a afiliação e o papel institucional e será ampliado pela M4 para programas, turmas, grupos e permissões. O grupo interno padrão do Django Admin é `Equipe PM`, configurável por `PM_INTERNAL_ADMIN_GROUPS`.
+Gestores e proprietários acessam o dashboard operacional pelo subdomínio da própria organização, em `/gestao/`. O painel mostra métricas, convites, membros, programas, grupos sem professor responsável e atalhos de governança. Professores e membros permanecem na home de overview do tenant. O grupo interno padrão do Django Admin é `Equipe PM`, configurável por `PM_INTERNAL_ADMIN_GROUPS`.
 
 O primeiro fluxo da Issue #78 já está disponível no portal:
 
