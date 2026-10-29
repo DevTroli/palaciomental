@@ -1,5 +1,7 @@
 #content.palacio-admin-content {
+  width: 100%;
   max-width: 1180px;
+  box-sizing: border-box;
 }
 
 .palacio-admin-intro {
@@ -39,7 +41,7 @@
 
 .palacio-flow-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 18px;
 }
 
@@ -148,7 +150,7 @@
   font-size: 13px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .palacio-flow-grid {
     grid-template-columns: 1fr;
   }
@@ -163,4 +165,35 @@
   .palacio-flow-card {
     grid-template-columns: 1fr;
   }
+}
+
+/* O admin do Django pode alternar para o tema escuro. Os cards continuam
+   pertencendo à identidade PM, mas preservam contraste e leitura. */
+[data-theme="dark"] .palacio-flow-card,
+body.dark .palacio-flow-card {
+  border-color: #62536b;
+  background: #21152a;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .palacio-flow-card h2,
+body.dark .palacio-flow-card h2,
+[data-theme="dark"] .palacio-flow-number,
+body.dark .palacio-flow-number,
+[data-theme="dark"] .palacio-flow-actions a:not(.button),
+body.dark .palacio-flow-actions a:not(.button) {
+  color: #f7f4ee;
+}
+
+[data-theme="dark"] .palacio-flow-card p:not(.palacio-admin-eyebrow),
+body.dark .palacio-flow-card p:not(.palacio-admin-eyebrow),
+[data-theme="dark"] .palacio-flow-card ol,
+body.dark .palacio-flow-card ol {
+  color: #e5dfe8;
+}
+
+[data-theme="dark"] .palacio-admin-guidance,
+body.dark .palacio-admin-guidance {
+  background: #21152a;
+  color: #f7f4ee;
 }

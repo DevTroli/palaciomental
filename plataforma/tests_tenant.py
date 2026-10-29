@@ -72,6 +72,39 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Dê continuidade às suas ideias.")
 
+    def test_manager_can_enter_institutional_management_portal(self):
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_GESTOR,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("plataforma:institutional_management"),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Espaço de gestão")
+        self.assertContains(response, "CAMPPG")
+        self.assertContains(response, "Programas, turmas e grupos")
+
+    def test_regular_member_cannot_enter_institutional_management_portal(self):
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_MEMBRO,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("plataforma:institutional_management"),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+
+        self.assertEqual(response.status_code, 403)
+
     def test_unknown_subdomain_does_not_fall_back_to_another_tenant(self):
         response = self.client.get("/", HTTP_HOST="outra.palaciomental.com.br")
 

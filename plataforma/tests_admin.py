@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -32,6 +33,35 @@ class AdminInstitucionalTests(TestCase):
         self.assertContains(response, "Operar projetos")
         self.assertContains(response, "Revisar e corrigir")
         self.assertContains(response, "Ver todos os modelos técnicos")
+
+    def test_staff_without_internal_group_cannot_access_django_admin(self):
+        gestor = User.objects.create_user(
+            username="gestor-camppg",
+            email="gestor@camppg.example",
+            password="Senha-forte-123",
+            is_staff=True,
+        )
+        self.client.force_login(gestor)
+
+        response = self.client.get(reverse("admin:index"))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "exclusiva da equipe interna", status_code=403)
+
+    def test_internal_group_can_access_django_admin(self):
+        equipe = Group.objects.create(name="Equipe PM")
+        membro_pm = User.objects.create_user(
+            username="operador-pm",
+            email="operador@palaciomental.example",
+            password="Senha-forte-123",
+            is_staff=True,
+        )
+        membro_pm.groups.add(equipe)
+        self.client.force_login(membro_pm)
+
+        response = self.client.get(reverse("admin:index"))
+
+        self.assertEqual(response.status_code, 200)
 
     def test_organization_changelist_shows_operational_columns(self):
         response = self.client.get(reverse("admin:listaEspera_organizacao_changelist"))

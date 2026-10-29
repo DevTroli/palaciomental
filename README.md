@@ -140,6 +140,12 @@ Ao abrir o índice do admin, a equipe encontra quatro fluxos guiados, em vez de 
 
 A lista completa de modelos técnicos continua disponível em uma seção avançada, para manutenção especializada sem competir com os fluxos cotidianos.
 
+### Separação de administração
+
+O `/admin/` é exclusivo da equipe interna do Palácio Mental. Usuários institucionais não devem receber `is_staff` para operar essa área, porque ela dá acesso à estrutura técnica completa da plataforma.
+
+Gestores, proprietários e professores acessam a gestão pelo subdomínio da própria organização, em `/gestao/`. Esse portal mostra o tenant atual, aplica a afiliação e o papel institucional e será ampliado pela M4 para programas, turmas, grupos e permissões. O grupo interno padrão do Django Admin é `Equipe PM`, configurável por `PM_INTERNAL_ADMIN_GROUPS`.
+
 Depois, teste:
 
 - usuário não autenticado no subdomínio: deve ser direcionado para login;

@@ -1,0 +1,60 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestão — {{ identidade.nome_exibicao|default:organizacao.nome }}</title>
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  {% if identidade and identidade.cor_primaria %}<style>:root{--tenant-primary:{{ identidade.cor_primaria }};}</style>{% endif %}
+  {% if identidade and identidade.cor_destaque %}<style>:root{--tenant-accent:{{ identidade.cor_destaque }};}</style>{% endif %}
+  {% if identidade and identidade.cor_fundo %}<style>:root{--tenant-background:{{ identidade.cor_fundo }};}</style>{% endif %}
+</head>
+<body>
+  <header class="tenant-header">
+    <a class="tenant-brand" href="{% url 'plataforma:projects' %}">
+      {% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="">{% endif %}
+      <span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span>
+    </a>
+    <div class="tenant-context">
+      <span>Ambiente institucional</span>
+      <strong>{{ afiliacao.get_papel_display }}</strong>
+    </div>
+  </header>
+
+  <main class="tenant-container">
+    <nav class="tenant-breadcrumbs" aria-label="Você está aqui">
+      <a href="{% url 'plataforma:projects' %}">{{ identidade.nome_exibicao|default:organizacao.nome }}</a>
+      <span aria-hidden="true">/</span>
+      <span>Gestão</span>
+    </nav>
+
+    <section class="tenant-hero">
+      <p class="tenant-eyebrow">Espaço de gestão</p>
+      <h1>Organize o trabalho de {{ identidade.nome_exibicao|default:organizacao.nome }}.</h1>
+      <p>Esta é a área institucional da organização. Ela é separada do Django Admin interno do Palácio Mental e será o ponto de gestão de programas, turmas, grupos e projetos.</p>
+    </section>
+
+    <section class="tenant-flow-grid" aria-label="Próximos fluxos institucionais">
+      <article class="tenant-card tenant-card--active">
+        <p class="tenant-eyebrow">Agora</p>
+        <h2>Projetos institucionais</h2>
+        <p>Consulte os projetos pertencentes a este ambiente, sem misturá-los ao Meu Espaço ou à vitrine global.</p>
+        <a class="tenant-button" href="{% url 'plataforma:projects' %}">Ver projetos</a>
+      </article>
+      <article class="tenant-card">
+        <p class="tenant-eyebrow">Próximo fluxo</p>
+        <h2>Programas, turmas e grupos</h2>
+        <p>A estrutura de acompanhamento institucional será disponibilizada aqui conforme a Issue #78.</p>
+        <span class="tenant-status">Em implantação</span>
+      </article>
+      <article class="tenant-card">
+        <p class="tenant-eyebrow">Limite de acesso</p>
+        <h2>Ambiente privado</h2>
+        <p>Somente pessoas autenticadas e afiliadas à organização conseguem acessar este conteúdo.</p>
+        <span class="tenant-status tenant-status--safe">Acesso protegido</span>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

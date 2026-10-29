@@ -18,7 +18,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet
-from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote
+from .models import CollaborationRequest, MemberProfile, MembroOrganizacao, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote
 
 def register(request):
     if request.user.is_authenticated:
@@ -91,6 +91,26 @@ def projects(request):
     categories = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
     context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag, "ordering": ordering}}
     return render(request, "projects/list.html", context)
+
+
+@login_required
+def institutional_management(request):
+    """Portal de gestão do tenant; nunca expõe o Django Admin interno do PM."""
+    organizacao = getattr(request, "organizacao", None)
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if organizacao is None or afiliacao is None:
+        raise Http404
+    if afiliacao.papel not in {
+        MembroOrganizacao.PAPEL_PROPRIETARIO,
+        MembroOrganizacao.PAPEL_GESTOR,
+        MembroOrganizacao.PAPEL_PROFESSOR,
+    }:
+        return JsonResponse({"detail": "Seu papel não possui acesso à gestão institucional."}, status=403)
+    return render(
+        request,
+        "institutional/management.html",
+        {"organizacao": organizacao, "afiliacao": afiliacao, "identidade": getattr(organizacao, "identidade", None)},
+    )
 
 
 def _project_scope(request):

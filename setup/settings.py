@@ -56,6 +56,12 @@ LOGIN_URL = "plataforma:login"
 LOGIN_REDIRECT_URL = "plataforma:projects"
 LOGOUT_REDIRECT_URL = "core:index"
 
+# O Django Admin é uma superfície técnica interna do PM. Gestores de tenants
+# usam o portal institucional, não recebem acesso ao catálogo administrativo.
+PM_INTERNAL_ADMIN_GROUPS = tuple(
+    group.strip() for group in config("PM_INTERNAL_ADMIN_GROUPS", default="Equipe PM").split(",") if group.strip()
+)
+
 # Endpoint externo usado somente pela página pública de status. O timeout curto
 # garante que uma indisponibilidade da API não afete as demais páginas.
 STATUS_API_URL = config(
@@ -71,6 +77,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "plataforma.middleware.TenantResolutionMiddleware",
+    "plataforma.admin_access.InternalAdminAccessMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
