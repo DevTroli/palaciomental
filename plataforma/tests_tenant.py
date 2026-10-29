@@ -241,6 +241,31 @@ class TenantResolutionTests(TestCase):
         self.assertContains(response, "Espaço de gestão")
         self.assertContains(response, "CAMPPG")
         self.assertContains(response, "Programas, turmas e grupos")
+        self.assertContains(response, "Membros ativos")
+        self.assertNotContains(response, "Responsabilidade do proprietário")
+
+    def test_owner_dashboard_shows_owner_governance_action_and_tenant_metrics(self):
+        MembroOrganizacao.objects.create(
+            organizacao=self.organization,
+            usuario=self.user,
+            papel=MembroOrganizacao.PAPEL_PROPRIETARIO,
+        )
+        ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Programa no painel",
+            slug="programa-no-painel",
+            status=ProgramaInstitucional.STATUS_PUBLICADO,
+            criado_por=self.user,
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("plataforma:institutional_management"),
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Responsabilidade do proprietário")
+        self.assertContains(response, "Programas publicados")
+        self.assertContains(response, "1", html=False)
 
     def test_regular_member_cannot_enter_institutional_management_portal(self):
         MembroOrganizacao.objects.create(

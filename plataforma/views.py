@@ -29,6 +29,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
 from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
 from .services import emitir_convite_organizacao, papeis_convidaveis
+from .validators import CORES_SEMANTICAS
 
 def register(request):
     if request.user.is_authenticated:
@@ -123,10 +124,32 @@ def institutional_management(request):
         MembroOrganizacao.PAPEL_GESTOR,
     }:
         return JsonResponse({"detail": "Seu papel não possui acesso à gestão institucional."}, status=403)
+    identidade = getattr(organizacao, "identidade", None)
+    context = {
+        "organizacao": organizacao,
+        "afiliacao": afiliacao,
+        "identidade": identidade,
+        "tenant_primary_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_primaria", ""), CORES_SEMANTICAS["roxo-institucional"]),
+        "tenant_accent_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"]),
+        "tenant_background_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]),
+        "metricas": {
+            "membros": organizacao.afiliacoes.filter(status=MembroOrganizacao.STATUS_ATIVA).count(),
+            "convites": organizacao.convites.filter(status=ConviteOrganizacao.STATUS_PENDENTE, expira_em__gt=timezone.now()).count(),
+            "programas": organizacao.programas.filter(status=ProgramaInstitucional.STATUS_PUBLICADO).count(),
+            "projetos": organizacao.projetos.count(),
+        },
+        "programas_rascunho": organizacao.programas.filter(status=ProgramaInstitucional.STATUS_RASCUNHO).order_by("-atualizado_em")[:5],
+    }
+    context["grupos_sem_professor"] = TurmaGrupo.objects.filter(
+        programa__organizacao=organizacao,
+        programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+        status=TurmaGrupo.STATUS_ATIVO,
+        professor_responsavel__isnull=True,
+    ).select_related("programa")[:5]
     return render(
         request,
         "institutional/management.html",
-        {"organizacao": organizacao, "afiliacao": afiliacao, "identidade": getattr(organizacao, "identidade", None)},
+        context,
     )
 
 
