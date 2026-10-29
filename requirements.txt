@@ -6,3 +6,5 @@ python-decouple==3.8
 sqlparse==0.6.0
 dj-database-url==2.3.0
 Pillow==12.3.0
+boto3==1.40.61
+django-storages==1.14.6

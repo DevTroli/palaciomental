@@ -43,7 +43,25 @@ Os projetos institucionais podem ser orientados por um professor ou desenvolvido
 | NoSQL | Redis | sessões, cache, relevância, contadores e eventos derivados |
 | Interface | Django Templates, HTML, CSS e JavaScript | experiência acessível e responsiva |
 | Infraestrutura | Docker, Railway e Cloudflare | execução, deploy, DNS, TLS e subdomínios |
+| Mídia | FileSystemStorage local / Cloudflare R2 em produção | logos e arquivos persistentes dos tenants |
 | API de status | Spring Boot | observabilidade pública do ambiente |
+
+### Mídia e uploads
+
+O ambiente local usa `FileSystemStorage` e grava os arquivos em `MEDIA_ROOT`, persistido pelo Docker durante o desenvolvimento. Railway e homologação devem usar o Cloudflare R2, compatível com a API S3, para que as mídias não desapareçam quando um container for recriado.
+
+Para habilitar o R2, configure no ambiente de produção:
+
+```env
+R2_ENABLED=True
+R2_ACCOUNT_ID=...
+R2_BUCKET_NAME=palacio-mental-media
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_PUBLIC_URL=https://media.palaciomental.com.br
+```
+
+Com `R2_ENABLED=True`, a aplicação exige todas as credenciais e não faz fallback silencioso para o disco local. Com `R2_ENABLED=False`, o Docker continua usando a mídia local. As chaves devem ser configuradas como secrets na Railway, nunca versionadas no repositório.
 
 ## Execução local
 

@@ -1,6 +1,7 @@
 from pathlib import Path
 from decouple import config, Csv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 import os
 
@@ -184,6 +185,44 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # através de STORAGES sem alterar os modelos ou os caminhos dos arquivos.
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Mídia persistente: Docker/local usa o filesystem; Railway/homologação pode
+# habilitar R2 sem mudar modelos ou views. Nunca faça fallback silencioso para
+# MEDIA_ROOT quando R2_ENABLED estiver ativo.
+R2_ENABLED = config("R2_ENABLED", cast=bool, default=False)
+if R2_ENABLED:
+    R2_ACCOUNT_ID = config("R2_ACCOUNT_ID", default="").strip()
+    R2_BUCKET_NAME = config("R2_BUCKET_NAME", default="").strip()
+    R2_ACCESS_KEY_ID = config("R2_ACCESS_KEY_ID", default="").strip()
+    R2_SECRET_ACCESS_KEY = config("R2_SECRET_ACCESS_KEY", default="").strip()
+    R2_PUBLIC_URL = config("R2_PUBLIC_URL", default="").strip().rstrip("/")
+    if not all((R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_URL)):
+        raise ImproperlyConfigured(
+            "R2_ENABLED=True exige R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, "
+            "R2_SECRET_ACCESS_KEY e R2_PUBLIC_URL."
+        )
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": R2_BUCKET_NAME,
+                "endpoint_url": f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+                "access_key": R2_ACCESS_KEY_ID,
+                "secret_key": R2_SECRET_ACCESS_KEY,
+                "region_name": "auto",
+                "location": "media",
+                "querystring_auth": False,
+                "custom_domain": R2_PUBLIC_URL.removeprefix("https://").removeprefix("http://"),
+                "object_parameters": {"CacheControl": "public, max-age=31536000, immutable"},
+            },
+        },
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+else:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
 
 
 # Email
