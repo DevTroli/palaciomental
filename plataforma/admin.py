@@ -379,11 +379,11 @@ class ConviteGrupoAdmin(admin.ModelAdmin):
 
 @admin.register(VinculoProjetoInstitucional)
 class VinculoProjetoInstitucionalAdmin(admin.ModelAdmin):
-    list_display = ("projeto", "turma", "grupo", "vinculado_por", "vinculado_em")
+    list_display = ("projeto", "turma", "grupo", "orientador", "vinculado_por", "vinculado_em")
     list_filter = ("turma__programa__organizacao",)
     search_fields = ("projeto__title", "turma__nome", "grupo__nome", "turma__programa__nome")
-    list_select_related = ("projeto", "turma", "grupo", "vinculado_por")
-    autocomplete_fields = ("projeto", "turma", "grupo", "vinculado_por")
+    list_select_related = ("projeto", "turma", "grupo", "orientador", "vinculado_por")
+    autocomplete_fields = ("projeto", "turma", "grupo", "orientador", "vinculado_por")
     readonly_fields = ("id", "vinculado_em")
 
 

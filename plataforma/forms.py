@@ -2,8 +2,9 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
+from django.db.models import Q
 
-from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
 
 User = get_user_model()
 
@@ -98,24 +99,48 @@ class ProjectBasicsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.project_owner = owner or getattr(self.instance, "owner", None)
         if organizacao is not None:
-            self.fields["grupo"] = forms.ModelChoiceField(
-                label="Grupo (opcional)",
-                required=False,
-                queryset=Grupo.objects.filter(
-                    turma__programa__organizacao=organizacao,
-                    status=Grupo.STATUS_ATIVO,
-                ).select_related("turma__programa").order_by("turma__nome", "nome"),
-                empty_label="Projeto autônomo, sem grupo",
-                help_text="Escolha um grupo apenas se este projeto fizer parte de uma turma.",
-            )
+            self.fields["tipo_projeto"] = forms.ChoiceField(label="Tipo de projeto", choices=(("autonomo", "Projeto autônomo"), ("programa", "Projeto vinculado a programa")), help_text="Projeto autônomo não exige turma. Projeto de programa exige turma e professor orientador.")
+            self.fields["turma"] = forms.ModelChoiceField(label="Turma", required=False, queryset=Turma.objects.none())
+            self.fields["grupo"] = forms.ModelChoiceField(label="Grupo (opcional)", required=False, queryset=Grupo.objects.none())
+            self.fields["orientador"] = forms.ModelChoiceField(label="Professor orientador", required=False, queryset=User.objects.none())
+            afiliacao = MembroOrganizacao.objects.filter(organizacao=organizacao, usuario=owner).first() if owner else None
+            turmas = Turma.objects.filter(programa__organizacao=organizacao, status=Turma.STATUS_ATIVO)
+            if afiliacao and afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+                turmas = turmas.filter(Q(membros__usuario=owner, membros__status=MembroTurma.STATUS_ATIVO) | Q(professor_responsavel=owner)).distinct()
+            self.fields["turma"].queryset = turmas.select_related("programa", "professor_responsavel")
+            self.fields["grupo"].queryset = Grupo.objects.filter(turma__in=turmas, status=Grupo.STATUS_ATIVO).select_related("turma")
+            self.fields["orientador"].queryset = User.objects.filter(
+                turmas_orientadas__programa__organizacao=organizacao,
+                afiliacoes_organizacionais__organizacao=organizacao,
+                afiliacoes_organizacionais__papel=MembroOrganizacao.PAPEL_PROFESSOR,
+                afiliacoes_organizacionais__status=MembroOrganizacao.STATUS_ATIVA,
+            ).distinct()
             vinculo = getattr(self.instance, "vinculo_institucional", None)
             if vinculo is not None:
-                self.initial["grupo"] = vinculo.grupo_id
+                self.initial.update(tipo_projeto="programa", turma=vinculo.turma_id, grupo=vinculo.grupo_id, orientador=vinculo.orientador_id)
+            else:
+                self.initial.setdefault("tipo_projeto", "autonomo")
 
     class Meta:
         model = Project
         fields = ("title", "direction", "status", "visibility")
         widgets = {"direction": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o rumo deste projeto? Comece com uma frase clara."})}
+
+    def clean(self):
+        cleaned = super().clean()
+        if "tipo_projeto" not in self.fields or cleaned.get("tipo_projeto") == "autonomo":
+            cleaned["turma"], cleaned["grupo"], cleaned["orientador"] = None, None, None
+            return cleaned
+        turma, grupo, orientador = cleaned.get("turma"), cleaned.get("grupo"), cleaned.get("orientador")
+        if turma is None:
+            self.add_error("turma", "Escolha a turma do projeto de programa.")
+        if orientador is None:
+            self.add_error("orientador", "Escolha o professor orientador.")
+        elif turma and turma.professor_responsavel_id != orientador.pk:
+            self.add_error("orientador", "O professor precisa ser o responsável pela turma selecionada.")
+        if grupo is not None and turma is not None and grupo.turma_id != turma.pk:
+            self.add_error("grupo", "O grupo precisa pertencer à turma selecionada.")
+        return cleaned
     def clean_title(self):
         title = self.cleaned_data["title"].strip()
         if len(title) < 3:

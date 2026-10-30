@@ -577,6 +577,7 @@ class VinculoProjetoInstitucional(models.Model):
     projeto = models.OneToOneField(Project, on_delete=models.CASCADE, related_name="vinculo_institucional", verbose_name="Projeto")
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="projetos_institucionais", verbose_name="Turma")
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name="projetos_institucionais", verbose_name="Grupo", null=True, blank=True)
+    orientador = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="projetos_orientados", verbose_name="Professor orientador", null=True, blank=True)
     vinculado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="projetos_institucionais_vinculados", verbose_name="Vinculado por")
     legado_id = models.UUIDField("ID legado", null=True, blank=True, unique=True, editable=False)
     vinculado_em = models.DateTimeField("Vinculado em", auto_now_add=True)
@@ -590,6 +591,10 @@ class VinculoProjetoInstitucional(models.Model):
             turma_id = Grupo.objects.filter(pk=self.grupo_id).values_list("turma_id", flat=True).first()
             if turma_id and turma_id != self.turma_id:
                 raise ValidationError({"grupo": "O grupo precisa pertencer à turma selecionada."})
+        if self.orientador_id and self.turma_id:
+            professor_id = Turma.objects.filter(pk=self.turma_id).values_list("professor_responsavel_id", flat=True).first()
+            if professor_id != self.orientador_id:
+                raise ValidationError({"orientador": "O orientador precisa ser o professor responsável pela turma."})
 
     def __str__(self):
         return f"{self.projeto.title} — {self.grupo or self.turma}"

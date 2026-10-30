@@ -559,6 +559,7 @@ class TenantResolutionTests(TestCase):
                 "direction": "Organizar uma iniciativa institucional.",
                 "status": "ideia",
                 "visibility": "privado",
+                "tipo_projeto": "autonomo",
             },
             HTTP_HOST="camppg.palaciomental.com.br",
         )
@@ -566,6 +567,30 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         project = Project.objects.get(title="Projeto CAMPPG")
         self.assertEqual(project.organizacao_id, self.organization.pk)
+        self.assertFalse(VinculoProjetoInstitucional.objects.filter(projeto=project).exists())
+
+    def test_program_project_requires_an_eligible_orienting_professor(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa obrigatório", slug="programa-obrigatorio", criado_por=self.user)
+        turma = Turma.objects.create(programa=programa, nome="Turma orientada", criado_por=self.user)
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("plataforma:project_create"), {"title": "Projeto sem orientador", "direction": "Teste", "status": "ideia", "visibility": "privado", "tipo_projeto": "programa", "turma": str(turma.pk)}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Project.objects.filter(title="Projeto sem orientador").exists())
+
+    def test_individual_oriented_project_can_exist_without_group(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_PROFESSOR)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa individual", slug="programa-individual", criado_por=self.user)
+        turma = Turma.objects.create(programa=programa, nome="Turma individual", criado_por=self.user, professor_responsavel=self.user)
+        MembroTurma.objects.create(turma=turma, usuario=self.user)
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("plataforma:project_create"), {"title": "Projeto individual orientado", "direction": "Pesquisa solo", "status": "ideia", "visibility": "privado", "tipo_projeto": "programa", "turma": str(turma.pk), "orientador": str(self.user.pk)}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 302)
+        project = Project.objects.get(title="Projeto individual orientado")
+        vinculo = VinculoProjetoInstitucional.objects.get(projeto=project)
+        self.assertEqual(vinculo.turma_id, turma.pk)
+        self.assertIsNone(vinculo.grupo_id)
+        self.assertEqual(vinculo.orientador_id, self.user.pk)
 
     def test_tenant_creation_cannot_accept_a_forged_organization_and_can_link_group(self):
         outro = Organizacao.objects.create(slug="outra", nome="Outra organização")
@@ -575,8 +600,9 @@ class TenantResolutionTests(TestCase):
             slug="programa-camppg",
             criado_por=self.user,
         )
-        grupo = self.make_group(programa, "Grupo principal")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        grupo = self.make_group(programa, "Grupo principal", professor=self.user)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_PROFESSOR)
+        MembroTurma.objects.create(turma=grupo.turma, usuario=self.user)
         self.client.force_login(self.user)
 
         response = self.client.post(
@@ -586,7 +612,10 @@ class TenantResolutionTests(TestCase):
                 "direction": "Projeto interno da CAMPPG.",
                 "status": "ideia",
                 "visibility": "privado",
+                "tipo_projeto": "programa",
+                "turma": str(grupo.turma.pk),
                 "grupo": str(grupo.pk),
+                "orientador": str(self.user.pk),
                 "organizacao": str(outro.pk),
             },
             HTTP_HOST="camppg.palaciomental.com.br",

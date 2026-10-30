@@ -709,8 +709,26 @@ def _can_manage_milestones(project, user):
 def _auto_milestone(project, actor, title, description, milestone_type=ProjectMilestone.TYPE_PROGRESS):
     ProjectMilestone.objects.create(project=project, author=actor, title=title, description=description, milestone_type=milestone_type)
 
+
+def _save_institutional_project_link(project, form, actor):
+    if "tipo_projeto" not in form.fields:
+        return
+    grupo = form.cleaned_data.get("grupo")
+    if form.cleaned_data.get("tipo_projeto") == "autonomo":
+        VinculoProjetoInstitucional.objects.filter(projeto=project).delete()
+        return
+    turma = form.cleaned_data["turma"]
+    vinculo, _ = VinculoProjetoInstitucional.objects.get_or_create(projeto=project, defaults={"turma": turma, "grupo": grupo, "orientador": form.cleaned_data["orientador"], "vinculado_por": actor})
+    if vinculo.turma_id != turma.pk or vinculo.grupo_id != getattr(grupo, "pk", None) or vinculo.orientador_id != form.cleaned_data["orientador"].pk or vinculo.vinculado_por_id != actor.pk:
+        vinculo.turma = turma
+        vinculo.grupo = grupo
+        vinculo.orientador = form.cleaned_data["orientador"]
+        vinculo.vinculado_por = actor
+        vinculo.save(update_fields=["turma", "grupo", "orientador", "vinculado_por"])
+
+
 def project_detail(request, pk):
-    project = get_object_or_404(_project_scope(request).select_related("owner"), pk=pk)
+    project = get_object_or_404(_project_scope(request).select_related("owner", "vinculo_institucional__turma__programa__organizacao", "vinculo_institucional__grupo", "vinculo_institucional__orientador"), pk=pk)
     access_token = request.GET.get("access", "")
     if not _project_accessible(project, request.user, access_token):
         raise Http404
@@ -728,9 +746,7 @@ def project_create(request):
         project.owner = request.user
         project.organizacao = organizacao
         project.save()
-        grupo = form.cleaned_data.get("grupo")
-        if grupo is not None:
-            VinculoProjetoInstitucional.objects.create(projeto=project, turma=grupo.turma, grupo=grupo, vinculado_por=request.user)
+        _save_institutional_project_link(project, form, request.user)
         _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
         return redirect("plataforma:project_context", pk=project.pk)
@@ -775,18 +791,7 @@ def project_edit(request, pk):
         before_title, before_status = project.title, project.status
         project = form.save()
         if organizacao is not None:
-            grupo = form.cleaned_data.get("grupo")
-            vinculo = getattr(project, "vinculo_institucional", None)
-            if grupo is not None:
-                if vinculo is None:
-                    VinculoProjetoInstitucional.objects.create(projeto=project, turma=grupo.turma, grupo=grupo, vinculado_por=request.user)
-                else:
-                    vinculo.turma = grupo.turma
-                    vinculo.grupo = grupo
-                    vinculo.vinculado_por = request.user
-                    vinculo.save(update_fields=["turma", "grupo", "vinculado_por"])
-            else:
-                VinculoProjetoInstitucional.objects.filter(projeto=project).delete()
+            _save_institutional_project_link(project, form, request.user)
         changes = []
         if before_title != project.title: changes.append("nome")
         if before_status != project.status: changes.append("status")

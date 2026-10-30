@@ -112,6 +112,10 @@ Nesse modo, o e-mail aparece no terminal do serviço Django. Em produção, conf
 | Convite por e-mail HTML | Implementado no backend | templates multipart e `EmailMultiAlternatives` |
 | Separação pessoal/institucional | Implementado | `organizacao_id NULL` versus tenant resolvido |
 | Vitrines separadas | Implementado | `_project_scope()` e catálogo contextual |
+| Projeto autônomo institucional | Implementado | pertence ao tenant, sem programa, turma, grupo ou orientador |
+| Projeto individual de programa | Implementado | exige turma e professor responsável, sem grupo |
+| Projeto de grupo de programa | Implementado | exige turma, grupo da mesma turma e professor responsável |
+| Orientador elegível | Implementado | professor afiliado e responsável pela turma |
 | Papéis e limites de afiliação | Implementado no MVP | views de afiliação e convite |
 | RLS no PostgreSQL | Futuro | não bloquear o MVP atual |
 | Redis/NoSQL | Sprint M4.1 | não é fonte de autorização |

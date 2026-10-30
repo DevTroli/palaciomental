@@ -239,13 +239,13 @@ Papéis iniciais:
 
 `Projeto` possui `proprietario_id` obrigatório e `organizacao_id` opcional. Essa combinação preserva autoria e separa escopo. O mesmo usuário pode ter projetos pessoais e institucionais sem misturar vitrines.
 
-Um projeto institucional pode ser associado opcionalmente a uma `Turma e Grupo`. Assim, o modelo suporta três situações sem criar exceções artificiais:
+Um projeto institucional pode ser autônomo ou vinculado a uma `Turma` e, opcionalmente, a um `Grupo`. Assim, o modelo suporta três situações sem criar exceções artificiais:
 
 - projeto autoral pessoal, sem organização;
 - projeto institucional autônomo, dentro da organização, mas sem turma;
 - projeto orientado, associado a uma turma ou grupo de um programa.
 
-`ProgramaInstitucional` representa uma disciplina, programa, edital, laboratório ou iniciativa interna. `Turma e Grupo` representa uma coorte, grupo de trabalho ou equipe dentro desse programa. A orientação do professor é uma relação de participação com papel, não uma propriedade obrigatória do projeto.
+`ProgramaInstitucional` representa uma disciplina, programa, edital, laboratório ou iniciativa interna. `Turma` representa a unidade de orientação dentro do programa e `Grupo` representa a equipe formada nessa turma. Projetos de programa exigem um professor responsável pela turma como orientador; o grupo continua opcional para projetos individuais.
 
 ### Comentários
 
@@ -489,9 +489,10 @@ Redis é um servidor de estruturas de dados, com hashes, sets, sorted sets e str
 | `AssinaturaUsuario` | usuário, plano, status, período | Plano individual | PostgreSQL |
 | `AssinaturaOrganizacao` | organização, plano, status, período | Plano institucional | PostgreSQL |
 | `ProgramaInstitucional` | organização, nome, tipo, período, responsável | Disciplina, programa, edital, laboratório ou iniciativa interna | PostgreSQL |
-| `Turma e Grupo` | programa, nome, código, período, status | Turma, grupo de pesquisa, equipe ou coorte | PostgreSQL |
-| `MembroTurma e Grupo` | turma/grupo, usuário, papel, status | Professor, gestão ou participante; a orientação voluntária fica no papel de professor | PostgreSQL |
-| `ProjetoTurma e Grupo` | projeto, turma/grupo, tipo de vínculo | Liga projeto orientado ou autônomo a um contexto institucional | PostgreSQL |
+| `Turma` | programa, nome, política, professor responsável, status | Unidade de elegibilidade e orientação | PostgreSQL |
+| `Grupo` | turma, nome, abertura, status | Equipe formada dentro de uma turma | PostgreSQL |
+| `MembroTurma` / `MembroGrupo` | turma ou grupo, usuário, status | Participação local sem alterar o papel institucional | PostgreSQL |
+| `VinculoProjetoInstitucional` | projeto, turma, grupo opcional, orientador | Liga projeto de programa ao contexto institucional | PostgreSQL |
 | `EventoProjeto` | projeto, ator, tipo, origem, dados, data | Auditoria e entrada do PM Flow/VCS | PostgreSQL; distribuição por Redis Streams |
 | `Notificacao` | destinatário, organização, tipo, mensagem, leitura | Comunicação persistente do produto | PostgreSQL; badge pode ser cache Redis |
 
