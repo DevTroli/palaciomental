@@ -19,6 +19,15 @@ CORES_SEMANTICAS = {
     "neutro-claro": "#F5F5F2",
 }
 
+ROTULOS_CORES = {
+    "roxo-institucional": "Roxo institucional",
+    "verde-institucional": "Verde institucional",
+    "bege-claro": "Bege claro",
+    "azul-sobrio": "Azul sóbrio",
+    "terracota": "Terracota",
+    "neutro-claro": "Neutro claro",
+}
+
 
 def validar_logo(arquivo):
     if not arquivo:

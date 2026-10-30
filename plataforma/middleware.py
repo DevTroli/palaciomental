@@ -2,8 +2,8 @@ from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import render
-
 from .models import MembroOrganizacao, Organizacao, DominioOrganizacao
+from .validators import CORES_SEMANTICAS
 
 
 class TenantResolutionMiddleware:
@@ -52,6 +52,10 @@ class TenantResolutionMiddleware:
                         "identidade": getattr(organizacao, "identidade", None),
                         "titulo": "Acesso restrito",
                         "mensagem": "Sua conta não possui afiliação ativa neste ambiente institucional.",
+                        "tenant_primary_color": CORES_SEMANTICAS.get(getattr(getattr(organizacao, "identidade", None), "cor_primaria", ""), CORES_SEMANTICAS["roxo-institucional"]),
+                        "tenant_accent_color": CORES_SEMANTICAS.get(getattr(getattr(organizacao, "identidade", None), "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"]),
+                        "tenant_background_color": CORES_SEMANTICAS.get(getattr(getattr(organizacao, "identidade", None), "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]),
+                        "global_home_url": self._global_home_url(request),
                     },
                     status=403,
                 ),
@@ -60,6 +64,15 @@ class TenantResolutionMiddleware:
 
         request.membro_organizacao = affiliation
         return self._finish(request, self.get_response(request), is_dev_tenant)
+
+    def _global_home_url(self, request):
+        hostname = self._hostname(request)
+        if hostname.endswith(".app.github.dev"):
+            return f"{request.scheme}://{hostname}/"
+        public_url = getattr(settings, "PUBLIC_APP_URL", "").strip().rstrip("/")
+        if public_url and "localhost" not in public_url:
+            return f"{public_url}/"
+        return f"{request.scheme}://{settings.PALACIO_BASE_DOMAIN}/"
 
     def _hostname(self, request):
         return request.get_host().split(":", 1)[0].lower().rstrip(".")

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{ titulo }} — {{ identidade.nome_exibicao|default:organizacao.nome }}</title>
-  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}"><style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style>
 </head>
 <body>
   <main class="tenant-container tenant-centered-message">
@@ -13,7 +13,7 @@
       <p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }} · ambiente privado</p>
       <h1 id="access-title">{{ titulo }}</h1>
       <p>{{ mensagem }}</p>
-      <div class="tenant-message-actions"><a class="tenant-button" href="{% url 'plataforma:login' %}?next={{ request.path|urlencode }}">Entrar com outra conta</a><a class="tenant-button tenant-button--secondary" href="{% url 'core:index' %}">Voltar ao início</a></div>
+      <div class="tenant-message-actions"><a class="tenant-button" href="{% url 'plataforma:login' %}?next={{ request.path|urlencode }}">Entrar com outra conta</a><a class="tenant-button tenant-button--secondary" href="{{ global_home_url }}">Voltar ao início do Palácio Mental</a></div>
     </section>
   </main>
 </body>

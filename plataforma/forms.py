@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
+from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
 
 User = get_user_model()
 
@@ -29,6 +29,20 @@ class ProfileForm(forms.ModelForm):
         model = MemberProfile
         fields = ("bio",)
         widgets = {"bio": forms.Textarea(attrs={"rows": 4, "maxlength": 280, "placeholder": "Conte brevemente o que você cria."})}
+
+
+class IdentidadeOrganizacaoForm(forms.ModelForm):
+    class Meta:
+        model = IdentidadeOrganizacao
+        fields = ("nome_exibicao", "logo", "cor_primaria", "cor_destaque", "cor_fundo")
+        labels = {
+            "nome_exibicao": "Nome mostrado no ambiente",
+            "logo": "Logo da organização",
+            "cor_primaria": "Cor principal",
+            "cor_destaque": "Cor de destaque",
+            "cor_fundo": "Cor de fundo",
+        }
+        widgets = {"logo": forms.ClearableFileInput(attrs={"accept": ".png,.jpg,.jpeg,.webp"})}
 
 
 class ProjectForm(forms.ModelForm):

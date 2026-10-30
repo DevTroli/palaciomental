@@ -27,17 +27,40 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
-from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
+from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
+from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 
+
+def _tenant_identity_context(organizacao):
+    identidade = getattr(organizacao, "identidade", None)
+    return {
+        "organizacao": organizacao,
+        "identidade": identidade,
+        "tenant_primary_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_primaria", ""), CORES_SEMANTICAS["roxo-institucional"]),
+        "tenant_accent_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"]),
+        "tenant_background_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]),
+    }
+
+
+def _global_home_url(request):
+    host = request.get_host().split(":", 1)[0].lower()
+    if host.endswith(".app.github.dev"):
+        return f"{request.scheme}://{request.get_host()}/"
+    public_url = getattr(settings, "PUBLIC_APP_URL", "").strip().rstrip("/")
+    if public_url and "localhost" not in public_url:
+        return f"{public_url}/"
+    return f"{request.scheme}://{settings.PALACIO_BASE_DOMAIN}/"
+
 def register(request):
     if getattr(request, "organizacao", None) is not None:
+        context = _tenant_identity_context(request.organizacao)
+        context.update({"titulo": "Cadastro fechado", "mensagem": "Este ambiente institucional é privado e funciona somente por convite.", "global_home_url": _global_home_url(request)})
         return render(
             request,
             "institutional/access_denied.html",
-            {"organizacao": request.organizacao, "identidade": getattr(request.organizacao, "identidade", None), "titulo": "Cadastro fechado", "mensagem": "Este ambiente institucional é privado e funciona somente por convite."},
+            context,
             status=403,
         )
     if request.user.is_authenticated:
@@ -62,10 +85,12 @@ def login_view(request):
         if organizacao is not None:
             afiliacao = MembroOrganizacao.objects.filter(organizacao=organizacao, usuario=user, status=MembroOrganizacao.STATUS_ATIVA).first()
             if afiliacao is None:
+                context = _tenant_identity_context(organizacao)
+                context.update({"titulo": "Acesso pendente", "mensagem": "Sua conta foi autenticada, mas ainda não possui um convite ou afiliação ativa neste ambiente.", "global_home_url": _global_home_url(request)})
                 return render(
                     request,
                     "institutional/access_denied.html",
-                    {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "titulo": "Acesso pendente", "mensagem": "Sua conta foi autenticada, mas ainda não possui um convite ou afiliação ativa neste ambiente."},
+                    context,
                     status=403,
                 )
             next_url = request.GET.get("next", "")
@@ -77,7 +102,12 @@ def login_view(request):
                 return redirect("plataforma:institutional_management")
             return redirect("core:index")
         return redirect(request.GET.get("next") or "plataforma:projects")
-    return render(request, "auth/login.html", {"form": form, "organizacao": getattr(request, "organizacao", None), "identidade": getattr(getattr(request, "organizacao", None), "identidade", None)})
+    context = {"form": form}
+    if getattr(request, "organizacao", None) is not None:
+        context.update(_tenant_identity_context(request.organizacao))
+        context["global_home_url"] = _global_home_url(request)
+    template_name = "auth/institutional_login.html" if getattr(request, "organizacao", None) is not None else "auth/login.html"
+    return render(request, template_name, context)
 
 
 @require_http_methods(["POST"])
@@ -178,6 +208,23 @@ def institutional_management(request):
         "institutional/management.html",
         context,
     )
+
+
+@login_required
+def institutional_identity(request):
+    organizacao = getattr(request, "organizacao", None)
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if organizacao is None or afiliacao is None or afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+        return JsonResponse({"detail": "Somente proprietários e gestores podem editar a identidade institucional."}, status=403)
+    identidade, _ = IdentidadeOrganizacao.objects.get_or_create(organizacao=organizacao, defaults={"nome_exibicao": organizacao.nome})
+    form = IdentidadeOrganizacaoForm(request.POST or None, request.FILES or None, instance=identidade)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Identidade institucional atualizada.")
+        return redirect("plataforma:institutional_identity")
+    context = _tenant_identity_context(organizacao)
+    context.update({"afiliacao": afiliacao, "form": form, "paleta": CORES_SEMANTICAS})
+    return render(request, "institutional/identity.html", context)
 
 
 @login_required

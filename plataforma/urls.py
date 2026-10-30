@@ -11,6 +11,7 @@ urlpatterns = [
     path("perfil/<str:username>/", v.profile, name="profile"),
     path("projetos/", v.projects, name="projects"),
     path("gestao/", v.institutional_management, name="institutional_management"),
+    path("gestao/identidade/", v.institutional_identity, name="institutional_identity"),
     path("gestao/membros/", v.institutional_members, name="institutional_members"),
     path("gestao/programas/", v.institutional_programs, name="institutional_programs"),
     path("gestao/programas/<uuid:programa_id>/", v.institutional_program_detail, name="institutional_program_detail"),

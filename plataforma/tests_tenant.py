@@ -20,7 +20,7 @@ User = get_user_model()
 
 
 @override_settings(
-    ALLOWED_HOSTS=["testserver", ".palaciomental.com.br"],
+    ALLOWED_HOSTS=["testserver", ".palaciomental.com.br", ".app.github.dev"],
     PALACIO_BASE_DOMAIN="palaciomental.com.br",
     TENANT_RESERVED_HOSTS=["www", "api", "status", "admin", "app"],
 )
@@ -152,6 +152,14 @@ class TenantResolutionTests(TestCase):
         self.assertContains(response, "Entrar")
         self.assertContains(response, "Ambiente institucional privado")
         self.assertNotContains(response, "Cadastre-se")
+        self.assertContains(response, "Voltar ao início do Palácio Mental")
+
+    @override_settings(DEBUG=True)
+    def test_restricted_access_returns_to_global_host_in_codespace(self):
+        self.client.force_login(self.user)
+        response = self.client.get("/?tenant=camppg", HTTP_HOST="codespace-8000.app.github.dev")
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "http://codespace-8000.app.github.dev/", status_code=403)
 
     def test_tenant_registration_is_closed_and_contextualized(self):
         response = self.client.get(
@@ -297,6 +305,25 @@ class TenantResolutionTests(TestCase):
         self.assertContains(response, "Responsabilidade do proprietário")
         self.assertContains(response, "Programas publicados")
         self.assertContains(response, "1", html=False)
+
+    def test_manager_can_update_tenant_identity_from_portal(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("plataforma:institutional_identity"),
+            {"nome_exibicao": "CAMPPG Projetos", "cor_primaria": "azul-sobrio", "cor_destaque": "verde-institucional", "cor_fundo": "bege-claro"},
+            HTTP_HOST="camppg.palaciomental.com.br",
+        )
+        self.assertRedirects(response, reverse("plataforma:institutional_identity"), fetch_redirect_response=False)
+        identidade = IdentidadeOrganizacao.objects.get(organizacao=self.organization)
+        self.assertEqual(identidade.nome_exibicao, "CAMPPG Projetos")
+        self.assertEqual(identidade.cor_primaria, "azul-sobrio")
+
+    def test_regular_member_cannot_update_tenant_identity(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("plataforma:institutional_identity"), HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 403)
 
     def test_regular_member_cannot_enter_institutional_management_portal(self):
         MembroOrganizacao.objects.create(

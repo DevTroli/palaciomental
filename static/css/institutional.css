@@ -158,6 +158,16 @@ body {
 .tenant-centered-message .tenant-card { width: min(100%, 620px); min-height: 0; margin: 0 auto; }
 .tenant-message-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .tenant-button--secondary { background: var(--tenant-primary); }
+.tenant-identity-form { max-width: 720px; min-height: 0; }
+.tenant-form-field { display: grid; gap: 7px; margin: 0 0 17px; }
+.tenant-form-field label { color: var(--tenant-primary); font-size: 14px; font-weight: 750; }
+.tenant-form-field input, .tenant-form-field select { width: 100%; border: 1px solid var(--tenant-border); border-radius: 7px; padding: 11px; background: #fff; color: var(--tenant-ink); font: inherit; }
+.tenant-form-field small { color: var(--tenant-muted); font-size: 12px; }
+.tenant-form-error { color: #9c2f2f; font-size: 13px; }
+.tenant-palette { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 20px; color: var(--tenant-muted); font-size: 12px; }
+.tenant-palette span { display: inline-flex; align-items: center; gap: 6px; }
+.tenant-palette i { width: 18px; height: 18px; border: 1px solid var(--tenant-border); border-radius: 50%; }
+.tenant-link { color: var(--tenant-primary); font-weight: 750; }
 
 .tenant-card h2 {
   margin: 0 0 9px;

@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models.functions import Lower
 import uuid
 
-from .validators import CORES_SEMANTICAS, caminho_logo, validar_logo
+from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, validar_logo
 
 
 class Organizacao(models.Model):
@@ -49,9 +49,9 @@ class IdentidadeOrganizacao(models.Model):
     )
     nome_exibicao = models.CharField("Nome de exibição", max_length=160, blank=True)
     logo = models.ImageField("Logo", upload_to=caminho_logo, validators=[validar_logo], blank=True)
-    cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple(CORES_SEMANTICAS.items()), blank=True)
-    cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple(CORES_SEMANTICAS.items()), blank=True)
-    cor_fundo = models.CharField("Cor de fundo", max_length=40, choices=tuple(CORES_SEMANTICAS.items()), blank=True)
+    cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
+    cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
+    cor_fundo = models.CharField("Cor de fundo", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
 
     @property
     def completa(self):
