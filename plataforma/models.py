@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models.functions import Lower
+from django.core.exceptions import ValidationError
 import uuid
 
 from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, validar_logo
@@ -510,6 +511,29 @@ class MembroGrupo(models.Model):
         verbose_name = "Membro de grupo"
         verbose_name_plural = "Membros de grupos"
         constraints = [models.UniqueConstraint(fields=["grupo", "usuario"], name="unique_member_per_group_v2")]
+
+
+class VinculoProjetoInstitucional(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projeto = models.OneToOneField(Project, on_delete=models.CASCADE, related_name="vinculo_institucional", verbose_name="Projeto")
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="projetos_institucionais", verbose_name="Turma")
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name="projetos_institucionais", verbose_name="Grupo", null=True, blank=True)
+    vinculado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="projetos_institucionais_vinculados", verbose_name="Vinculado por")
+    legado_id = models.UUIDField("ID legado", null=True, blank=True, unique=True, editable=False)
+    vinculado_em = models.DateTimeField("Vinculado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Vínculo de projeto institucional"
+        verbose_name_plural = "Vínculos de projetos institucionais"
+
+    def clean(self):
+        if self.grupo_id and self.turma_id:
+            turma_id = Grupo.objects.filter(pk=self.grupo_id).values_list("turma_id", flat=True).first()
+            if turma_id and turma_id != self.turma_id:
+                raise ValidationError({"grupo": "O grupo precisa pertencer à turma selecionada."})
+
+    def __str__(self):
+        return f"{self.projeto.title} — {self.grupo or self.turma}"
 
 
 class TurmaGrupo(models.Model):

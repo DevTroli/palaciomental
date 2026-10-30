@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from .models import ConviteOrganizacao, ConviteTurmaGrupo, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, ProjetoTurmaGrupo, Turma, TurmaGrupo
+from .models import ConviteOrganizacao, ConviteTurmaGrupo, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, ProjetoTurmaGrupo, Turma, TurmaGrupo, VinculoProjetoInstitucional
 from .services import ativar_organizacao
 
 
@@ -360,6 +360,32 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(grupo.turma.programa.organizacao_id, self.organization.pk)
         self.assertTrue(grupo.aberto_para_entrada)
         self.assertTrue(grupo.membros.filter(usuario=self.user, representante=True).exists())
+
+    def test_institutional_project_link_rejects_group_from_another_class(self):
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Iniciativa",
+            slug="iniciativa-incompatibilidade",
+            criado_por=self.user,
+        )
+        turma_a = Turma.objects.create(programa=programa, nome="Turma A", criado_por=self.user)
+        turma_b = Turma.objects.create(programa=programa, nome="Turma B", criado_por=self.user)
+        grupo = Grupo.objects.create(turma=turma_a, nome="Grupo A", criado_por=self.user)
+        projeto = Project.objects.create(
+            owner=self.user,
+            organizacao=self.organization,
+            title="Projeto incompatível",
+            direction="Teste",
+            category="Teste",
+        )
+        vinculo = VinculoProjetoInstitucional(
+            projeto=projeto,
+            turma=turma_b,
+            grupo=grupo,
+            vinculado_por=self.user,
+        )
+        with self.assertRaises(ValidationError):
+            vinculo.full_clean()
 
     def test_manager_can_create_program_and_group_in_current_tenant(self):
         MembroOrganizacao.objects.create(
