@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render
 from django.db.models import Count, Q
 
-from plataforma.models import MembroOrganizacao, MembroTurmaGrupo, ProgramaInstitucional, Project, TurmaGrupo
+from plataforma.models import Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, MembroTurmaGrupo, ProgramaInstitucional, Project, Turma, TurmaGrupo
 from plataforma.validators import CORES_SEMANTICAS
 
 
@@ -16,25 +16,43 @@ def index(request):
         background_color = CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"])
         programas = organizacao.programas.filter(
             status=ProgramaInstitucional.STATUS_PUBLICADO,
-        ).prefetch_related("turmas_grupos")[:6]
-        grupos_base = TurmaGrupo.objects.filter(
-            programa__organizacao=organizacao,
-            programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-            status=TurmaGrupo.STATUS_ATIVO,
-        ).select_related("programa", "professor_responsavel").annotate(membros_count=Count("membros", distinct=True))[:8]
+        ).prefetch_related("turmas__grupos")[:6]
+        grupos_base = Grupo.objects.filter(
+            turma__programa__organizacao=organizacao,
+            turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+            status=Grupo.STATUS_ATIVO,
+        ).select_related("turma__programa", "turma__professor_responsavel").annotate(membros_count=Count("membros", distinct=True))
         projetos = organizacao.projetos.filter(
             visibility=Project.VISIBILITY_PUBLIC,
         ).select_related("owner").annotate(relevance=Count("votes", distinct=True)).order_by("-relevance", "-updated_at")[:6]
-        grupos = grupos_base
-        turmas = grupos_base
+        grupos = grupos_base[:8]
+        turmas = Turma.objects.filter(
+            programa__organizacao=organizacao,
+            programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+            status=Turma.STATUS_ATIVO,
+        ).select_related("programa", "professor_responsavel").annotate(membros_count=Count("membros", distinct=True))
         if afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
-            turmas = TurmaGrupo.objects.filter(
+            turmas = turmas.filter(
                 Q(professor_responsavel=request.user)
-                | Q(membros__usuario=request.user, membros__status=MembroTurmaGrupo.STATUS_ATIVO),
+                | Q(membros__usuario=request.user, membros__status=MembroTurma.STATUS_ATIVO),
                 programa__organizacao=organizacao,
                 programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-                status=TurmaGrupo.STATUS_ATIVO,
-            ).select_related("programa", "professor_responsavel").annotate(membros_count=Count("membros", distinct=True)).distinct()[:8]
+                status=Turma.STATUS_ATIVO,
+            ).distinct()[:8]
+            grupos = grupos_base.filter(
+                Q(turma__professor_responsavel=request.user)
+                | Q(membros__usuario=request.user, membros__status=MembroGrupo.STATUS_ATIVO),
+            ).distinct()[:8]
+        else:
+            turmas = turmas[:8]
+        grupos_legados = TurmaGrupo.objects.filter(
+            programa__organizacao=organizacao,
+            programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+            status=TurmaGrupo.STATUS_ATIVO,
+        ).filter(
+            Q(professor_responsavel=request.user)
+            | Q(membros__usuario=request.user, membros__status=MembroTurmaGrupo.STATUS_ATIVO)
+        ).select_related("programa", "professor_responsavel").distinct()[:8]
         return render(
             request,
             "institutional/home.html",
@@ -45,6 +63,7 @@ def index(request):
                 "programas": programas,
                 "turmas": turmas,
                 "grupos_abertos": grupos,
+                "grupos_legados": grupos_legados,
                 "projetos": projetos,
                 "ranking_provisorio": True,
                 "tenant_primary_color": primary_color,

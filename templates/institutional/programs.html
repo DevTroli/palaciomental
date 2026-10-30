@@ -11,7 +11,7 @@
     {% if pode_gerenciar %}
     <article class="tenant-card tenant-card--active"><p class="tenant-eyebrow">Começar simples</p><h2>Novo programa</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="tenant-button" type="submit">Criar programa</button></form></article>
     {% endif %}
-    {% for programa in programas %}<article class="tenant-card"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h2>{{ programa.nome }}</h2><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p><span class="tenant-status">{{ programa.turmas_grupos.count }} turma(s) ou grupo(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Abrir programa</a></article>{% empty %}<article class="tenant-card"><p class="tenant-eyebrow">Nenhum programa</p><h2>O ambiente começa aqui</h2><p>Crie um programa apenas quando fizer sentido para o trabalho institucional. Projetos autônomos não precisam dele.</p></article>{% endfor %}
+    {% for programa in programas %}<article class="tenant-card"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h2>{{ programa.nome }}</h2><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p><span class="tenant-status">{{ programa.turmas.count }} turma(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Abrir programa</a></article>{% empty %}<article class="tenant-card"><p class="tenant-eyebrow">Nenhum programa</p><h2>O ambiente começa aqui</h2><p>Crie um programa apenas quando fizer sentido para o trabalho institucional. Projetos autônomos não precisam dele.</p></article>{% endfor %}
   </div>
 </main>
 </body></html>

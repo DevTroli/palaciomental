@@ -7,6 +7,28 @@
 <main class="tenant-container">
   <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas</a><span>/</span><span>{{ programa.nome }}</span></nav>
   <section class="tenant-hero"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h1>{{ programa.nome }}</h1><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p></section>
-  <section class="tenant-flow-grid"><article class="tenant-card tenant-card--active"><p class="tenant-eyebrow">Estrutura</p><h2>Turmas e grupos</h2><p>Use uma turma ou grupo quando houver orientação ou organização coletiva. Um projeto autônomo não precisa ser vinculado.</p>{% if pode_gerenciar %}<a class="tenant-button" href="{% url 'plataforma:institutional_group_create' programa.pk %}">Criar turma ou grupo</a>{% endif %}</article>{% for grupo in programa.turmas_grupos.all %}<article class="tenant-card"><p class="tenant-eyebrow">{{ grupo.get_tipo_display }} · {{ grupo.get_status_display }}</p><h2>{{ grupo.nome }}</h2><p>{{ grupo.descricao|default:"Sem descrição cadastrada." }}</p><span class="tenant-status">{{ grupo.membros.count }} membro(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_group_members' grupo.pk %}">Gerenciar membros</a></article>{% empty %}<article class="tenant-card"><p class="tenant-eyebrow">Ainda vazio</p><h2>Nenhuma turma ou grupo</h2><p>O programa pode continuar sem agrupamento até que a organização precise dessa estrutura.</p></article>{% endfor %}</section>
+
+  <section class="tenant-section-heading"><p class="tenant-eyebrow">Nível 2 da hierarquia</p><h2>Turmas</h2><p>Uma turma representa um ciclo ou unidade de orientação dentro do programa.</p>{% if pode_gerenciar %}<a class="tenant-button" href="{% url 'plataforma:institutional_class_create' programa.pk %}">Criar turma</a>{% endif %}</section>
+  <section class="tenant-flow-grid">
+    {% for turma in turmas %}
+      <article class="tenant-card tenant-card--active">
+        <p class="tenant-eyebrow">Turma · {{ turma.get_status_display }}</p>
+        <h2>{{ turma.nome }}</h2>
+        <p>{{ turma.descricao|default:"Sem descrição cadastrada." }}</p>
+        {% if turma.professor_responsavel %}<span class="tenant-status">Professor: {{ turma.professor_responsavel.get_full_name|default:turma.professor_responsavel.username }}</span>{% endif %}
+        {% if pode_gerenciar %}<a class="tenant-button" href="{% url 'plataforma:institutional_group_create_for_class' turma.pk %}">Criar grupo nesta turma</a>{% endif %}
+        <div class="tenant-subsection">
+          <p class="tenant-eyebrow">Nível 3 · Grupos</p>
+          {% for grupo in turma.grupos.all %}
+            <div class="tenant-inline-item"><strong>{{ grupo.nome }}</strong><span>{{ grupo.get_status_display }}{% if grupo.aberto_para_entrada %} · entrada aberta{% endif %}</span></div>
+          {% empty %}
+            <p>Nenhum grupo criado nesta turma.</p>
+          {% endfor %}
+        </div>
+      </article>
+    {% empty %}
+      <article class="tenant-card"><p class="tenant-eyebrow">Ainda vazio</p><h2>Nenhuma turma</h2><p>Crie a turma antes de abrir grupos. Projetos autônomos continuam fora desta hierarquia.</p></article>
+    {% endfor %}
+  </section>
 </main>
 </body></html>

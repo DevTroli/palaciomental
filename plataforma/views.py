@@ -27,8 +27,8 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaGrupoForm
-from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, TurmaGrupo
+from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaForm, TurmaGrupoForm
+from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, Turma, TurmaGrupo
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 
@@ -381,7 +381,7 @@ def institutional_programs(request):
                 programa.save()
                 messages.success(request, "Programa criado. Agora você pode adicionar uma turma ou grupo.")
                 return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
-    programas = ProgramaInstitucional.objects.filter(organizacao=organizacao).prefetch_related("turmas_grupos")
+    programas = ProgramaInstitucional.objects.filter(organizacao=organizacao).prefetch_related("turmas__grupos")
     return render(
         request,
         "institutional/programs.html",
@@ -395,11 +395,52 @@ def institutional_program_detail(request, programa_id):
     if organizacao is None:
         raise Http404
     programa = get_object_or_404(ProgramaInstitucional, pk=programa_id, organizacao=organizacao)
+    turmas = programa.turmas.prefetch_related("grupos").all()
     return render(
         request,
         "institutional/program_detail.html",
-        {"organizacao": organizacao, "programa": programa, "pode_gerenciar": _can_manage_institutional_structure(request)},
+        {"organizacao": organizacao, "programa": programa, "turmas": turmas, "pode_gerenciar": _can_manage_institutional_structure(request)},
     )
+
+
+@login_required
+def institutional_class_create(request, programa_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or not _can_manage_institutional_structure(request):
+        return JsonResponse({"detail": "Você não pode criar turmas neste ambiente."}, status=403)
+    programa = get_object_or_404(ProgramaInstitucional, pk=programa_id, organizacao=organizacao)
+    form = TurmaForm(request.POST or None, organizacao=organizacao)
+    if request.method == "POST" and form.is_valid():
+        turma = form.save(commit=False)
+        turma.programa = programa
+        turma.criado_por = request.user
+        if Turma.objects.filter(programa=programa, nome__iexact=turma.nome).exists():
+            form.add_error("nome", "Já existe uma turma com este nome neste programa.")
+        else:
+            turma.save()
+            messages.success(request, "Turma criada. Agora você pode abrir grupos dentro dela.")
+            return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
+    return render(request, "institutional/class_form.html", {"organizacao": organizacao, "programa": programa, "form": form})
+
+
+@login_required
+def institutional_group_create_for_class(request, turma_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None or not _can_manage_institutional_structure(request):
+        return JsonResponse({"detail": "Você não pode criar grupos neste ambiente."}, status=403)
+    turma = get_object_or_404(Turma, pk=turma_id, programa__organizacao=organizacao)
+    form = GrupoForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        grupo = form.save(commit=False)
+        grupo.turma = turma
+        grupo.criado_por = request.user
+        if Grupo.objects.filter(turma=turma, nome__iexact=grupo.nome).exists():
+            form.add_error("nome", "Já existe um grupo com este nome nesta turma.")
+        else:
+            grupo.save()
+            messages.success(request, "Grupo criado dentro da turma.")
+            return redirect("plataforma:institutional_program_detail", programa_id=turma.programa_id)
+    return render(request, "institutional/group_form.html", {"organizacao": organizacao, "programa": turma.programa, "turma": turma, "form": form})
 
 
 @login_required

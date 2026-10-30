@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, TurmaGrupo
+from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, Turma, TurmaGrupo
 
 User = get_user_model()
 
@@ -187,6 +187,45 @@ class TurmaGrupoForm(forms.ModelForm):
         fields = ("nome", "tipo", "descricao", "status")
         widgets = {
             "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o contexto desta turma ou grupo?"}),
+        }
+
+    def clean_nome(self):
+        nome = self.cleaned_data["nome"].strip()
+        if len(nome) < 2:
+            raise forms.ValidationError("Use um nome com pelo menos 2 caracteres.")
+        return nome
+
+
+class TurmaForm(forms.ModelForm):
+    class Meta:
+        model = Turma
+        fields = ("nome", "descricao", "professor_responsavel", "status")
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o ciclo ou unidade de orientação desta turma?"}),
+        }
+
+    def __init__(self, *args, organizacao=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organizacao is not None:
+            self.fields["professor_responsavel"].queryset = User.objects.filter(
+                afiliacoes_organizacionais__organizacao=organizacao,
+                afiliacoes_organizacionais__papel=MembroOrganizacao.PAPEL_PROFESSOR,
+                afiliacoes_organizacionais__status=MembroOrganizacao.STATUS_ATIVA,
+            ).distinct()
+
+    def clean_nome(self):
+        nome = self.cleaned_data["nome"].strip()
+        if len(nome) < 2:
+            raise forms.ValidationError("Use um nome com pelo menos 2 caracteres.")
+        return nome
+
+
+class GrupoForm(forms.ModelForm):
+    class Meta:
+        model = Grupo
+        fields = ("nome", "descricao", "aberto_para_entrada", "status")
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o objetivo deste grupo?"}),
         }
 
     def clean_nome(self):
