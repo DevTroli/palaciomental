@@ -184,7 +184,7 @@ class ProgramaInstitucionalForm(forms.ModelForm):
 class TurmaForm(forms.ModelForm):
     class Meta:
         model = Turma
-        fields = ("nome", "descricao", "professor_responsavel", "status")
+        fields = ("nome", "descricao", "professor_responsavel", "politica_participacao", "status")
         widgets = {
             "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o ciclo ou unidade de orientação desta turma?"}),
         }

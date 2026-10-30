@@ -434,12 +434,23 @@ class Turma(models.Model):
     STATUS_ATIVO = "ativo"
     STATUS_ENCERRADO = "encerrado"
     STATUS_CHOICES = ((STATUS_ATIVO, "Ativa"), (STATUS_ENCERRADO, "Encerrada"))
+    POLITICA_CONVITE = "convite"
+    POLITICA_APROVACAO = "aprovacao"
+    POLITICA_ABERTA = "aberta"
+    POLITICA_ENCERRADA = "encerrada"
+    POLITICA_CHOICES = (
+        (POLITICA_CONVITE, "Somente por convite"),
+        (POLITICA_APROVACAO, "Solicita aprovação"),
+        (POLITICA_ABERTA, "Aberta aos afiliados"),
+        (POLITICA_ENCERRADA, "Participação encerrada"),
+    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     programa = models.ForeignKey(ProgramaInstitucional, on_delete=models.CASCADE, related_name="turmas", verbose_name="Programa")
     nome = models.CharField("Nome", max_length=160)
     descricao = models.TextField("Descrição", max_length=1000, blank=True)
     professor_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="turmas_orientadas", verbose_name="Professor responsável", null=True, blank=True)
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    politica_participacao = models.CharField("Política de participação", max_length=20, choices=POLITICA_CHOICES, default=POLITICA_CONVITE)
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="turmas_criadas", verbose_name="Criado por")
     legado_id = models.UUIDField("ID legado", null=True, blank=True, unique=True, editable=False)
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)

@@ -417,7 +417,7 @@ class TenantResolutionTests(TestCase):
 
         response = self.client.post(
             reverse("plataforma:institutional_class_create", kwargs={"programa_id": programa.pk}),
-            {"nome": "Turma 2026", "descricao": "Turma inicial.", "status": "ativo"},
+            {"nome": "Turma 2026", "descricao": "Turma inicial.", "politica_participacao": Turma.POLITICA_CONVITE, "status": "ativo"},
             HTTP_HOST="camppg.palaciomental.com.br",
         )
 
