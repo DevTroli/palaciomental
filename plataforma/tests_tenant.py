@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from .models import ConviteOrganizacao, ConviteTurmaGrupo, DominioOrganizacao, IdentidadeOrganizacao, MembroOrganizacao, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, ProjetoTurmaGrupo, TurmaGrupo
+from .models import ConviteOrganizacao, ConviteTurmaGrupo, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, ProjetoTurmaGrupo, Turma, TurmaGrupo
 from .services import ativar_organizacao
 
 
@@ -339,6 +339,27 @@ class TenantResolutionTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_program_class_group_hierarchy_keeps_members_in_scope(self):
+        programa = ProgramaInstitucional.objects.create(
+            organizacao=self.organization,
+            nome="Iniciativa",
+            slug="iniciativa",
+            criado_por=self.user,
+        )
+        turma = Turma.objects.create(programa=programa, nome="Turma 2026", criado_por=self.user)
+        grupo = Grupo.objects.create(
+            turma=turma,
+            nome="Grupo A",
+            criado_por=self.user,
+            aberto_para_entrada=True,
+        )
+        MembroTurma.objects.create(turma=turma, usuario=self.user)
+        MembroGrupo.objects.create(grupo=grupo, usuario=self.user, representante=True)
+
+        self.assertEqual(grupo.turma.programa.organizacao_id, self.organization.pk)
+        self.assertTrue(grupo.aberto_para_entrada)
+        self.assertTrue(grupo.membros.filter(usuario=self.user, representante=True).exists())
 
     def test_manager_can_create_program_and_group_in_current_tenant(self):
         MembroOrganizacao.objects.create(

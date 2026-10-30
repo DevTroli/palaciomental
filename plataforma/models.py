@@ -429,6 +429,89 @@ class ProgramaInstitucional(models.Model):
         return self.nome
 
 
+class Turma(models.Model):
+    STATUS_ATIVO = "ativo"
+    STATUS_ENCERRADO = "encerrado"
+    STATUS_CHOICES = ((STATUS_ATIVO, "Ativa"), (STATUS_ENCERRADO, "Encerrada"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    programa = models.ForeignKey(ProgramaInstitucional, on_delete=models.CASCADE, related_name="turmas", verbose_name="Programa")
+    nome = models.CharField("Nome", max_length=160)
+    descricao = models.TextField("Descrição", max_length=1000, blank=True)
+    professor_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="turmas_orientadas", verbose_name="Professor responsável", null=True, blank=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="turmas_criadas", verbose_name="Criado por")
+    legado_id = models.UUIDField("ID legado", null=True, blank=True, unique=True, editable=False)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "Turma"
+        verbose_name_plural = "Turmas"
+        ordering = ["nome"]
+        constraints = [models.UniqueConstraint(fields=["programa", "nome"], name="unique_class_name_per_program")]
+
+    def __str__(self):
+        return f"{self.nome} — {self.programa.nome}"
+
+
+class Grupo(models.Model):
+    STATUS_ATIVO = "ativo"
+    STATUS_ENCERRADO = "encerrado"
+    STATUS_CHOICES = ((STATUS_ATIVO, "Aberto"), (STATUS_ENCERRADO, "Encerrado"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="grupos", verbose_name="Turma")
+    nome = models.CharField("Nome", max_length=160)
+    descricao = models.TextField("Descrição", max_length=1000, blank=True)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="grupos_criados", verbose_name="Criado por")
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    aberto_para_entrada = models.BooleanField("Aberto para entrada de membros", default=False)
+    legado_id = models.UUIDField("ID legado", null=True, blank=True, unique=True, editable=False)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "Grupo"
+        verbose_name_plural = "Grupos"
+        ordering = ["nome"]
+        constraints = [models.UniqueConstraint(fields=["turma", "nome"], name="unique_group_name_per_class")]
+
+    def __str__(self):
+        return f"{self.nome} — {self.turma.nome}"
+
+
+class MembroTurma(models.Model):
+    STATUS_ATIVO = "ativo"
+    STATUS_SUSPENSO = "suspenso"
+    STATUS_CHOICES = ((STATUS_ATIVO, "Ativo"), (STATUS_SUSPENSO, "Suspenso"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="membros", verbose_name="Turma")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="membros_turma", verbose_name="Usuário")
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    entrou_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Membro de turma"
+        verbose_name_plural = "Membros de turmas"
+        constraints = [models.UniqueConstraint(fields=["turma", "usuario"], name="unique_member_per_class")]
+
+
+class MembroGrupo(models.Model):
+    STATUS_ATIVO = "ativo"
+    STATUS_SUSPENSO = "suspenso"
+    STATUS_CHOICES = ((STATUS_ATIVO, "Ativo"), (STATUS_SUSPENSO, "Suspenso"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name="membros", verbose_name="Grupo")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="membros_grupo", verbose_name="Usuário")
+    representante = models.BooleanField("Representante", default=False)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
+    entrou_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Membro de grupo"
+        verbose_name_plural = "Membros de grupos"
+        constraints = [models.UniqueConstraint(fields=["grupo", "usuario"], name="unique_member_per_group_v2")]
+
+
 class TurmaGrupo(models.Model):
     TIPO_TURMA = "turma"
     TIPO_GRUPO = "grupo"
