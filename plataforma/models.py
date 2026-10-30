@@ -507,6 +507,33 @@ class MembroTurma(models.Model):
         constraints = [models.UniqueConstraint(fields=["turma", "usuario"], name="unique_member_per_class")]
 
 
+class SolicitacaoTurma(models.Model):
+    STATUS_PENDENTE = "pendente"
+    STATUS_APROVADA = "aprovada"
+    STATUS_RECUSADA = "recusada"
+    STATUS_CANCELADA = "cancelada"
+    STATUS_CHOICES = (
+        (STATUS_PENDENTE, "Pendente"),
+        (STATUS_APROVADA, "Aprovada"),
+        (STATUS_RECUSADA, "Recusada"),
+        (STATUS_CANCELADA, "Cancelada"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="solicitacoes", verbose_name="Turma")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="solicitacoes_turma", verbose_name="Usuário")
+    mensagem = models.CharField("Mensagem", max_length=500, blank=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDENTE)
+    decidido_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="solicitacoes_turma_decididas", null=True, blank=True, verbose_name="Decidido por")
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    decidido_em = models.DateTimeField("Decidido em", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Solicitação de participação em turma"
+        verbose_name_plural = "Solicitações de participação em turmas"
+        constraints = [models.UniqueConstraint(fields=["turma", "usuario"], condition=models.Q(status="pendente"), name="unique_pending_class_request")]
+        ordering = ["-criado_em"]
+
+
 class MembroGrupo(models.Model):
     STATUS_ATIVO = "ativo"
     STATUS_SUSPENSO = "suspenso"
@@ -522,6 +549,27 @@ class MembroGrupo(models.Model):
         verbose_name = "Membro de grupo"
         verbose_name_plural = "Membros de grupos"
         constraints = [models.UniqueConstraint(fields=["grupo", "usuario"], name="unique_member_per_group_v2")]
+
+
+class SolicitacaoGrupo(models.Model):
+    STATUS_PENDENTE = "pendente"
+    STATUS_APROVADA = "aprovada"
+    STATUS_RECUSADA = "recusada"
+    STATUS_CHOICES = ((STATUS_PENDENTE, "Pendente"), (STATUS_APROVADA, "Aprovada"), (STATUS_RECUSADA, "Recusada"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name="solicitacoes_entrada", verbose_name="Grupo")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="solicitacoes_grupo", verbose_name="Usuário")
+    mensagem = models.CharField("Mensagem", max_length=500, blank=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDENTE)
+    decidido_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="solicitacoes_grupo_decididas", null=True, blank=True, verbose_name="Decidido por")
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    decidido_em = models.DateTimeField("Decidido em", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Solicitação de entrada em grupo"
+        verbose_name_plural = "Solicitações de entrada em grupos"
+        constraints = [models.UniqueConstraint(fields=["grupo", "usuario"], condition=models.Q(status="pendente"), name="unique_pending_group_request")]
+        ordering = ["-criado_em"]
 
 
 class VinculoProjetoInstitucional(models.Model):

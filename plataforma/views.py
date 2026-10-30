@@ -27,8 +27,8 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaForm
-from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, Turma, VinculoProjetoInstitucional
+from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 
@@ -335,6 +335,24 @@ def _can_view_group(request, group):
     return group.membros.filter(usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists()
 
 
+def _can_manage_class(request, turma):
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if afiliacao is None:
+        return False
+    return afiliacao.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR} or turma.professor_responsavel_id == request.user.pk
+
+
+def _can_view_class(request, turma):
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if afiliacao is None:
+        return False
+    if _can_manage_class(request, turma):
+        return True
+    if MembroTurma.objects.filter(turma=turma, usuario=request.user, status=MembroTurma.STATUS_ATIVO).exists():
+        return True
+    return turma.politica_participacao in {Turma.POLITICA_ABERTA, Turma.POLITICA_APROVACAO} and turma.status == Turma.STATUS_ATIVO
+
+
 def _send_group_invitation_email(request, convite, raw_token):
     invite_url = request.build_absolute_uri(reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}))
     grupo = convite.grupo
@@ -391,12 +409,68 @@ def institutional_program_detail(request, programa_id):
     if organizacao is None:
         raise Http404
     programa = get_object_or_404(ProgramaInstitucional, pk=programa_id, organizacao=organizacao)
-    turmas = programa.turmas.prefetch_related("grupos").all()
+    turmas = programa.turmas.prefetch_related("grupos").annotate(
+        solicitacoes_pendentes=Count("solicitacoes", filter=Q(solicitacoes__status=SolicitacaoTurma.STATUS_PENDENTE))
+    ).all()
+    turmas = [turma for turma in turmas if _can_view_class(request, turma)]
+    pode_decidir = _can_manage_institutional_structure(request) or any(turma.professor_responsavel_id == request.user.pk for turma in turmas)
+    solicitacoes = SolicitacaoTurma.objects.filter(turma__in=turmas, status=SolicitacaoTurma.STATUS_PENDENTE).select_related("usuario", "turma") if pode_decidir else []
     return render(
         request,
         "institutional/program_detail.html",
-        {"organizacao": organizacao, "programa": programa, "turmas": turmas, "pode_gerenciar": _can_manage_institutional_structure(request)},
+        {"organizacao": organizacao, "programa": programa, "turmas": turmas, "solicitacoes": solicitacoes, "pode_gerenciar": _can_manage_institutional_structure(request)},
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_class_participate(request, turma_id):
+    organizacao = getattr(request, "organizacao", None)
+    turma = get_object_or_404(Turma, pk=turma_id, programa__organizacao=organizacao)
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if afiliacao is None:
+        return JsonResponse({"detail": "Você precisa estar afiliado a este ambiente."}, status=403)
+    if turma.status == Turma.STATUS_ENCERRADO or turma.politica_participacao == Turma.POLITICA_ENCERRADA:
+        return JsonResponse({"detail": "Esta turma está encerrada."}, status=403)
+    if MembroTurma.objects.filter(turma=turma, usuario=request.user, status=MembroTurma.STATUS_ATIVO).exists():
+        return redirect("plataforma:institutional_program_detail", programa_id=turma.programa_id)
+    if turma.politica_participacao == Turma.POLITICA_CONVITE:
+        return JsonResponse({"detail": "Esta turma aceita apenas convites."}, status=403)
+    form = SolicitacaoTurmaForm(request.POST or None)
+    if turma.politica_participacao == Turma.POLITICA_ABERTA:
+        MembroTurma.objects.create(turma=turma, usuario=request.user)
+        messages.success(request, "Você entrou na turma.")
+    elif form.is_valid():
+        SolicitacaoTurma.objects.update_or_create(
+            turma=turma,
+            usuario=request.user,
+            status=SolicitacaoTurma.STATUS_PENDENTE,
+            defaults={"mensagem": form.cleaned_data["mensagem"]},
+        )
+        messages.success(request, "Sua solicitação foi enviada para aprovação.")
+    else:
+        return render(request, "institutional/class_request.html", {"organizacao": organizacao, "turma": turma, "form": form})
+    return redirect("plataforma:institutional_program_detail", programa_id=turma.programa_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_class_request_decide(request, request_id):
+    solicitacao = get_object_or_404(SolicitacaoTurma.objects.select_related("turma__programa__organizacao"), pk=request_id)
+    if not _can_manage_class(request, solicitacao.turma):
+        return JsonResponse({"detail": "Você não pode decidir solicitações desta turma."}, status=403)
+    if solicitacao.status != SolicitacaoTurma.STATUS_PENDENTE:
+        return JsonResponse({"detail": "Esta solicitação já foi decidida."}, status=400)
+    if request.POST.get("acao") == "aprovar":
+        MembroTurma.objects.update_or_create(turma=solicitacao.turma, usuario=solicitacao.usuario, defaults={"status": MembroTurma.STATUS_ATIVO})
+        solicitacao.status = SolicitacaoTurma.STATUS_APROVADA
+    else:
+        solicitacao.status = SolicitacaoTurma.STATUS_RECUSADA
+    solicitacao.decidido_por = request.user
+    solicitacao.decidido_em = timezone.now()
+    solicitacao.save(update_fields=["status", "decidido_por", "decidido_em"])
+    messages.success(request, "Solicitação atualizada.")
+    return redirect("plataforma:institutional_program_detail", programa_id=solicitacao.turma.programa_id)
 
 
 @login_required
@@ -422,9 +496,14 @@ def institutional_class_create(request, programa_id):
 @login_required
 def institutional_group_create_for_class(request, turma_id):
     organizacao = getattr(request, "organizacao", None)
-    if organizacao is None or not _can_manage_institutional_structure(request):
-        return JsonResponse({"detail": "Você não pode criar grupos neste ambiente."}, status=403)
+    if organizacao is None:
+        return JsonResponse({"detail": "Ambiente institucional inválido."}, status=403)
     turma = get_object_or_404(Turma, pk=turma_id, programa__organizacao=organizacao)
+    afiliacao = getattr(request, "membro_organizacao", None)
+    membro_elegivel = afiliacao is not None and MembroTurma.objects.filter(turma=turma, usuario=request.user, status=MembroTurma.STATUS_ATIVO).exists()
+    pode_criar = _can_manage_class(request, turma) or (membro_elegivel and turma.status == Turma.STATUS_ATIVO and turma.politica_participacao in {Turma.POLITICA_ABERTA, Turma.POLITICA_APROVACAO})
+    if not pode_criar:
+        return JsonResponse({"detail": "Você não pode criar grupos nesta turma."}, status=403)
     form = GrupoForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         grupo = form.save(commit=False)
@@ -434,6 +513,8 @@ def institutional_group_create_for_class(request, turma_id):
             form.add_error("nome", "Já existe um grupo com este nome nesta turma.")
         else:
             grupo.save()
+            if membro_elegivel:
+                MembroGrupo.objects.create(grupo=grupo, usuario=request.user, representante=True)
             messages.success(request, "Grupo criado dentro da turma.")
             return redirect("plataforma:institutional_program_detail", programa_id=turma.programa_id)
     return render(request, "institutional/group_form.html", {"organizacao": organizacao, "programa": turma.programa, "turma": turma, "form": form})
@@ -470,7 +551,50 @@ def institutional_group_members(request, group_id):
                 return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
     membros = grupo.membros.select_related("usuario").filter(status=MembroGrupo.STATUS_ATIVO)
     convites = grupo.convites.filter(status=ConviteGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
-    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros, "convites": convites, "form": form, "pode_gerenciar": pode_gerenciar})
+    pode_decidir = _can_invite_to_group(request, grupo) or grupo.membros.filter(usuario=request.user, representante=True, status=MembroGrupo.STATUS_ATIVO).exists()
+    solicitacoes = grupo.solicitacoes_entrada.filter(status=SolicitacaoGrupo.STATUS_PENDENTE).select_related("usuario") if pode_decidir else []
+    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros, "convites": convites, "solicitacoes": solicitacoes, "form": form, "pode_gerenciar": pode_gerenciar, "pode_decidir": pode_decidir})
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_group_request_join(request, group_id):
+    organizacao = getattr(request, "organizacao", None)
+    grupo = get_object_or_404(Grupo, pk=group_id, turma__programa__organizacao=organizacao)
+    if grupo.status != Grupo.STATUS_ATIVO or not grupo.aberto_para_entrada:
+        return JsonResponse({"detail": "Este grupo exige convite."}, status=403)
+    if MembroGrupo.objects.filter(grupo=grupo, usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists():
+        return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
+    if not MembroTurma.objects.filter(turma=grupo.turma, usuario=request.user, status=MembroTurma.STATUS_ATIVO).exists():
+        return JsonResponse({"detail": "Você precisa participar da turma antes de solicitar entrada no grupo."}, status=403)
+    form = SolicitacaoGrupoForm(request.POST or None)
+    if form.is_valid():
+        SolicitacaoGrupo.objects.update_or_create(grupo=grupo, usuario=request.user, status=SolicitacaoGrupo.STATUS_PENDENTE, defaults={"mensagem": form.cleaned_data["mensagem"]})
+        messages.success(request, "Sua solicitação para o grupo foi enviada.")
+        return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
+    return JsonResponse({"detail": "Solicitação inválida."}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_group_request_decide(request, request_id):
+    solicitacao = get_object_or_404(SolicitacaoGrupo.objects.select_related("grupo__turma__programa__organizacao"), pk=request_id)
+    grupo = solicitacao.grupo
+    afiliacao = getattr(request, "membro_organizacao", None)
+    pode_decidir = _can_invite_to_group(request, grupo) or grupo.membros.filter(usuario=request.user, representante=True, status=MembroGrupo.STATUS_ATIVO).exists()
+    if afiliacao is None or not pode_decidir:
+        return JsonResponse({"detail": "Você não pode decidir solicitações deste grupo."}, status=403)
+    if solicitacao.status != SolicitacaoGrupo.STATUS_PENDENTE:
+        return JsonResponse({"detail": "Esta solicitação já foi decidida."}, status=400)
+    if request.POST.get("acao") == "aprovar":
+        MembroGrupo.objects.get_or_create(grupo=grupo, usuario=solicitacao.usuario)
+        solicitacao.status = SolicitacaoGrupo.STATUS_APROVADA
+    else:
+        solicitacao.status = SolicitacaoGrupo.STATUS_RECUSADA
+    solicitacao.decidido_por = request.user
+    solicitacao.decidido_em = timezone.now()
+    solicitacao.save(update_fields=["status", "decidido_por", "decidido_em"])
+    return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
 
 
 @login_required

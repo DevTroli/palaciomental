@@ -1,0 +1,12 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Solicitar participação — {{ turma.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"></head>
+<body>
+<main class="tenant-container">
+  <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_program_detail' turma.programa.pk %}">{{ turma.programa.nome }}</a><span>/</span><span>{{ turma.nome }}</span></nav>
+  <section class="tenant-hero"><p class="tenant-eyebrow">Participação</p><h1>Solicitar entrada</h1><p>Explique brevemente seu interesse para a pessoa responsável pela turma.</p></section>
+  <form class="tenant-card" method="post">{% csrf_token %}{{ form.as_p }}<button class="tenant-button" type="submit">Enviar solicitação</button></form>
+</main>
+</body>
+</html>

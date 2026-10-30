@@ -87,7 +87,7 @@ A sprint só será considerada concluída quando:
 
 ### Critérios de aceitação
 
-- [ ] Documento define `Organizacao`, `DominioOrganizacao`, `MembroOrganizacao`, `ProgramaInstitucional`, `TurmaGrupo`, `MembroTurmaGrupo` e `Projeto`.
+- [ ] Documento define `Organizacao`, `DominioOrganizacao`, `MembroOrganizacao`, `ProgramaInstitucional`, `Turma e Grupo`, `MembroTurma e Grupo` e `Projeto`.
 - [ ] Documento diferencia projeto autoral pessoal de projeto institucional.
 - [ ] Documento define que a vitrine institucional não alimenta a vitrine global.
 - [ ] Documento registra o papel do PostgreSQL, Redis e eventual MongoDB.
@@ -202,9 +202,9 @@ Adicionar constraints, índices e timestamps. Usar UUID nas entidades institucio
 Criar:
 
 - `ProgramaInstitucional`;
-- `TurmaGrupo`;
-- `MembroTurmaGrupo`;
-- `ProjetoTurmaGrupo`.
+- `Turma e Grupo`;
+- `MembroTurma e Grupo`;
+- `ProjetoTurma e Grupo`.
 
 ### Critérios de aceitação
 

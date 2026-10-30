@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, Turma
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
 
 User = get_user_model()
 
@@ -218,6 +218,22 @@ class GrupoForm(forms.ModelForm):
         if len(nome) < 2:
             raise forms.ValidationError("Use um nome com pelo menos 2 caracteres.")
         return nome
+
+
+class SolicitacaoTurmaForm(forms.ModelForm):
+    class Meta:
+        model = SolicitacaoTurma
+        fields = ("mensagem",)
+        labels = {"mensagem": "Mensagem (opcional)"}
+        widgets = {"mensagem": forms.Textarea(attrs={"rows": 3, "placeholder": "Explique brevemente por que deseja participar."})}
+
+
+class SolicitacaoGrupoForm(forms.ModelForm):
+    class Meta:
+        model = SolicitacaoGrupo
+        fields = ("mensagem",)
+        labels = {"mensagem": "Mensagem (opcional)"}
+        widgets = {"mensagem": forms.Textarea(attrs={"rows": 3, "placeholder": "Explique brevemente seu interesse no grupo."})}
 
 
 class ConviteGrupoForm(forms.ModelForm):

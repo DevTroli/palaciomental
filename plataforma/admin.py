@@ -27,6 +27,8 @@ from .models import (
     ProjectMilestone,
     ProjectVote,
     Grupo,
+    SolicitacaoTurma,
+    SolicitacaoGrupo,
     Turma,
     VinculoProjetoInstitucional,
 )
@@ -333,6 +335,26 @@ class MembroTurmaAdmin(admin.ModelAdmin):
     list_select_related = ("usuario", "turma", "turma__programa")
     autocomplete_fields = ("usuario", "turma")
     readonly_fields = ("id", "entrou_em")
+
+
+@admin.register(SolicitacaoTurma)
+class SolicitacaoTurmaAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "turma", "status", "criado_em", "decidido_por")
+    list_filter = ("status", "turma__programa__organizacao")
+    search_fields = ("usuario__username", "usuario__email", "turma__nome", "turma__programa__nome")
+    list_select_related = ("usuario", "turma", "turma__programa", "decidido_por")
+    autocomplete_fields = ("usuario", "turma", "decidido_por")
+    readonly_fields = ("id", "criado_em", "decidido_em")
+
+
+@admin.register(SolicitacaoGrupo)
+class SolicitacaoGrupoAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "grupo", "status", "criado_em", "decidido_por")
+    list_filter = ("status", "grupo__turma__programa__organizacao")
+    search_fields = ("usuario__username", "usuario__email", "grupo__nome", "grupo__turma__nome")
+    list_select_related = ("usuario", "grupo", "grupo__turma", "decidido_por")
+    autocomplete_fields = ("usuario", "grupo", "decidido_por")
+    readonly_fields = ("id", "criado_em", "decidido_em")
 
 
 @admin.register(MembroGrupo)

@@ -16,11 +16,13 @@
         <h2>{{ turma.nome }}</h2>
         <p>{{ turma.descricao|default:"Sem descrição cadastrada." }}</p>
         {% if turma.professor_responsavel %}<span class="tenant-status">Professor: {{ turma.professor_responsavel.get_full_name|default:turma.professor_responsavel.username }}</span>{% endif %}
+        <p class="tenant-muted">Participação: {{ turma.get_politica_participacao_display }}</p>
+        {% if turma.politica_participacao == 'aberta' and turma.status == 'ativo' %}<form method="post" action="{% url 'plataforma:institutional_class_participate' turma.pk %}">{% csrf_token %}<button class="tenant-button" type="submit">Entrar na turma</button></form>{% elif turma.politica_participacao == 'aprovacao' and turma.status == 'ativo' %}<form method="post" action="{% url 'plataforma:institutional_class_participate' turma.pk %}">{% csrf_token %}<button class="tenant-button" type="submit">Solicitar participação</button></form>{% elif turma.politica_participacao == 'convite' %}<p class="tenant-muted">Entrada somente por convite.</p>{% else %}<p class="tenant-muted">Participação encerrada.</p>{% endif %}
         {% if pode_gerenciar %}<a class="tenant-button" href="{% url 'plataforma:institutional_group_create_for_class' turma.pk %}">Criar grupo nesta turma</a>{% endif %}
         <div class="tenant-subsection">
           <p class="tenant-eyebrow">Nível 3 · Grupos</p>
           {% for grupo in turma.grupos.all %}
-            <div class="tenant-inline-item"><strong>{{ grupo.nome }}</strong><span>{{ grupo.get_status_display }}{% if grupo.aberto_para_entrada %} · entrada aberta{% endif %}</span></div>
+            <div class="tenant-inline-item"><strong>{{ grupo.nome }}</strong><span>{{ grupo.get_status_display }}{% if grupo.aberto_para_entrada %} · entrada aberta{% endif %}</span>{% if grupo.aberto_para_entrada %}<form method="post" action="{% url 'plataforma:institutional_group_request_join' grupo.pk %}">{% csrf_token %}<button class="tenant-button" type="submit">Solicitar entrada</button></form>{% endif %}{% if pode_gerenciar %}<a class="tenant-button tenant-button--secondary" href="{% url 'plataforma:institutional_group_members' grupo.pk %}">Gerenciar</a>{% endif %}</div>
           {% empty %}
             <p>Nenhum grupo criado nesta turma.</p>
           {% endfor %}
@@ -30,5 +32,6 @@
       <article class="tenant-card"><p class="tenant-eyebrow">Ainda vazio</p><h2>Nenhuma turma</h2><p>Crie a turma antes de abrir grupos. Projetos autônomos continuam fora desta hierarquia.</p></article>
     {% endfor %}
   </section>
+  {% if solicitacoes %}<section class="tenant-section-heading"><p class="tenant-eyebrow">Governança</p><h2>Solicitações pendentes</h2></section><section class="tenant-flow-grid">{% for solicitacao in solicitacoes %}<article class="tenant-card"><p class="tenant-eyebrow">{{ solicitacao.turma.nome }}</p><h3>{{ solicitacao.usuario.get_full_name|default:solicitacao.usuario.username }}</h3><p>{{ solicitacao.mensagem|default:"Sem mensagem adicional." }}</p><form method="post" action="{% url 'plataforma:institutional_class_request_decide' solicitacao.pk %}">{% csrf_token %}<button class="tenant-button" name="acao" value="aprovar" type="submit">Aprovar</button><button class="tenant-button tenant-button--secondary" name="acao" value="recusar" type="submit">Recusar</button></form></article>{% endfor %}</section>{% endif %}
 </main>
 </body></html>

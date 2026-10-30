@@ -105,20 +105,34 @@ erDiagram
         string inicia_em
         string termina_em
     }
-    TURMA_GRUPO {
+    TURMA {
         uuid id PK
         uuid programa_id FK
         string nome
-        string codigo
+        string descricao
+        uuid professor_responsavel_id FK
+        string politica_participacao
         string status
-        string inicia_em
-        string termina_em
     }
-    MEMBRO_TURMA_GRUPO {
+    GRUPO {
         uuid id PK
-        uuid turma_grupo_id FK
+        uuid turma_id FK
+        string nome
+        string status
+        boolean aberto_para_entrada
+    }
+    MEMBRO_TURMA {
+        uuid id PK
+        uuid turma_id FK
         uuid usuario_id FK
-        string papel
+        string status
+        string entrou_em
+    }
+    MEMBRO_GRUPO {
+        uuid id PK
+        uuid grupo_id FK
+        uuid usuario_id FK
+        boolean representante
         string status
         string entrou_em
     }
@@ -156,12 +170,13 @@ erDiagram
         uuid token_acesso
         string atualizado_em
     }
-    PROJETO_TURMA_GRUPO {
+    VINCULO_PROJETO_INSTITUCIONAL {
         uuid id PK
-        bigint projeto_id FK
-        uuid turma_grupo_id FK
-        string tipo_vinculo
-        string criado_em
+        bigint projeto_id FK UK
+        uuid turma_id FK
+        uuid grupo_id FK
+        uuid vinculado_por_id FK
+        string vinculado_em
     }
     MEMBRO_PROJETO {
         bigint id PK

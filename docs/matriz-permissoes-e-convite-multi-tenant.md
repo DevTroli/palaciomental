@@ -7,8 +7,9 @@
 | Entrar no tenant | Sim | Sim | Sim | Sim |
 | Acessar `/gestao/` | Sim | Sim | Não por padrão | Não |
 | Criar programa | Sim | Sim | Não | Não |
-| Criar turma ou grupo | Sim | Sim | Não | Não |
-| Criar projeto institucional autônomo | Sim | Sim | Sim | Sim |
+| Criar turma | Sim | Sim | Não | Não |
+| Criar grupo em turma atribuída | Sim | Sim | Sim | Conforme política da turma |
+| Criar projeto institucional vinculado | Sim | Sim | Sim | Sim |
 | Emitir convite de grupo | Sim | Sim | Apenas grupo autorizado | Não |
 | Alterar afiliações e papéis | Sim | Sim | Não | Não |
 | Conceder proprietário | Sim | Não | Não | Não |
@@ -26,8 +27,14 @@ O papel de professor não é um papel de mentor separado. No MVP, professor exer
 - Projetos institucionais pertencem a uma única organização.
 - Um vínculo local de grupo não cria acesso a outro tenant.
 - Um projeto privado continua acessível somente pelo proprietário, salvo regra específica futura de projeto.
-- Convites de grupo aceitam somente `membro` ou `professor`; não podem conceder `gestor` ou `proprietario`.
-- O aceite preserva o papel organizacional existente do usuário; o papel do convite é apenas local ao grupo.
+- Convites de grupo adicionam apenas `membro`; não podem conceder `gestor`, `proprietario` ou papel institucional.
+- O aceite preserva o papel organizacional existente do usuário.
+- Uma turma possui uma política: `convite`, `aprovacao`, `aberta` ou `encerrada`.
+- Turma por convite não aparece para afiliados sem vínculo e só é acessível após aceite do convite.
+- Turma por aprovação recebe uma solicitação pendente; gestor, proprietário ou professor responsável decide.
+- Turma aberta permite entrada direta de afiliados; turma encerrada bloqueia novas entradas.
+- Grupo aberto recebe solicitação de entrada de membros da turma; representante, professor responsável, gestor ou proprietário decide.
+- Grupo fechado exige convite; representante não pode conceder papel institucional nem convidar alguém fora da turma.
 - O último proprietário ativo não pode ser suspenso, removido ou rebaixado.
 - Nenhum cache ou camada futura de Redis pode conceder autorização; PostgreSQL permanece a fonte oficial.
 
@@ -59,6 +66,26 @@ Convite é marcado como aceito
 
 O HTML usa a identidade visual configurada no tenant, exibe organização, programa, grupo, papel inicial, expiração e botão de aceite. A versão texto simples permanece como fallback para clientes que não renderizam HTML.
 
+## 4. Fluxo de elegibilidade
+
+```text
+Afiliado entra no tenant
+        ↓
+Sistema verifica a política da turma
+        ├── aberta → cria MembroTurma
+        ├── aprovação → cria SolicitacaoTurma
+        ├── convite → aguarda ConviteGrupo ou convite institucional
+        └── encerrada → bloqueia a entrada
+        ↓
+Membro da turma solicita grupo aberto
+        ↓
+Representante, professor ou gestão decide
+        ↓
+Sistema cria MembroGrupo sem alterar o papel institucional
+```
+
+Gestores e proprietários administram todas as turmas do tenant. O professor só decide solicitações da turma em que está atribuído. Membros não afiliados à turma não conseguem criar grupo, solicitar grupo ou contornar a regra usando uma URL direta.
+
 Em desenvolvimento:
 
 ```env
@@ -67,7 +94,7 @@ EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
 
 Nesse modo, o e-mail aparece no terminal do serviço Django. Em produção, configurar um provedor SMTP ou transacional e `DEFAULT_FROM_EMAIL` com domínio autenticado.
 
-## 4. Checklist da arquitetura multi-tenant
+## 5. Checklist da arquitetura multi-tenant
 
 | Requisito | Estado | Evidência |
 |---|---|---|
@@ -79,6 +106,9 @@ Nesse modo, o e-mail aparece no terminal do serviço Django. Em produção, conf
 | Portal institucional separado do Admin | Implementado | `/gestao/` e middleware do Admin interno |
 | Programas, turmas e grupos | Implementado | entidades institucionais e portal |
 | Convites de grupo | Implementado | token hash, expiração, aceite e revogação |
+| Políticas de participação | Implementado | `Turma.politica_participacao` e decisões controladas |
+| Solicitações de turma | Implementado | `SolicitacaoTurma`, aprovação por gestão ou professor responsável |
+| Solicitações de grupo aberto | Implementado | `SolicitacaoGrupo`, decisão pelo representante ou gestão |
 | Convite por e-mail HTML | Implementado no backend | templates multipart e `EmailMultiAlternatives` |
 | Separação pessoal/institucional | Implementado | `organizacao_id NULL` versus tenant resolvido |
 | Vitrines separadas | Implementado | `_project_scope()` e catálogo contextual |
@@ -86,7 +116,7 @@ Nesse modo, o e-mail aparece no terminal do serviço Django. Em produção, conf
 | RLS no PostgreSQL | Futuro | não bloquear o MVP atual |
 | Redis/NoSQL | Sprint M4.1 | não é fonte de autorização |
 
-## 5. Limites conhecidos antes da produção
+## 6. Limites conhecidos antes da produção
 
 - O envio atual é síncrono e adequado ao MVP; fila assíncrona deve ser adicionada antes de alto volume.
 - O teste automatizado usa banco temporário SQLite; a homologação precisa repetir o fluxo com PostgreSQL no Compose.
