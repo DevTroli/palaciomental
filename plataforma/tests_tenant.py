@@ -592,6 +592,17 @@ class TenantResolutionTests(TestCase):
         self.assertIsNone(vinculo.grupo_id)
         self.assertEqual(vinculo.orientador_id, self.user.pk)
 
+    def test_editing_oriented_project_to_autonomous_removes_institutional_link(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_PROFESSOR)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de transição", slug="programa-transicao", criado_por=self.user)
+        turma = Turma.objects.create(programa=programa, nome="Turma de transição", criado_por=self.user, professor_responsavel=self.user)
+        project = Project.objects.create(owner=self.user, organizacao=self.organization, title="Projeto para desvincular", direction="Contexto", category="Pesquisa")
+        VinculoProjetoInstitucional.objects.create(projeto=project, turma=turma, orientador=self.user, vinculado_por=self.user)
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("plataforma:project_edit", kwargs={"pk": project.pk}), {"title": project.title, "direction": project.direction, "status": project.status, "visibility": project.visibility, "tipo_projeto": "autonomo"}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(VinculoProjetoInstitucional.objects.filter(projeto=project).exists())
+
     def test_tenant_creation_cannot_accept_a_forged_organization_and_can_link_group(self):
         outro = Organizacao.objects.create(slug="outra", nome="Outra organização")
         programa = ProgramaInstitucional.objects.create(
