@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, Turma, TurmaGrupo
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, Turma
 
 User = get_user_model()
 
@@ -98,19 +98,19 @@ class ProjectBasicsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.project_owner = owner or getattr(self.instance, "owner", None)
         if organizacao is not None:
-            self.fields["turma_grupo"] = forms.ModelChoiceField(
-                label="Turma ou grupo (opcional)",
+            self.fields["grupo"] = forms.ModelChoiceField(
+                label="Grupo (opcional)",
                 required=False,
-                queryset=TurmaGrupo.objects.filter(
-                    programa__organizacao=organizacao,
-                    status=TurmaGrupo.STATUS_ATIVO,
-                ).select_related("programa").order_by("nome"),
-                empty_label="Projeto autônomo, sem turma ou grupo",
-                help_text="Escolha um vínculo principal apenas se este projeto fizer parte de uma turma ou grupo.",
+                queryset=Grupo.objects.filter(
+                    turma__programa__organizacao=organizacao,
+                    status=Grupo.STATUS_ATIVO,
+                ).select_related("turma__programa").order_by("turma__nome", "nome"),
+                empty_label="Projeto autônomo, sem grupo",
+                help_text="Escolha um grupo apenas se este projeto fizer parte de uma turma.",
             )
-            vinculo = getattr(self.instance, "vinculo_turma_grupo", None)
+            vinculo = getattr(self.instance, "vinculo_institucional", None)
             if vinculo is not None:
-                self.initial["turma_grupo"] = vinculo.turma_grupo_id
+                self.initial["grupo"] = vinculo.grupo_id
 
     class Meta:
         model = Project
@@ -181,21 +181,6 @@ class ProgramaInstitucionalForm(forms.ModelForm):
         return nome
 
 
-class TurmaGrupoForm(forms.ModelForm):
-    class Meta:
-        model = TurmaGrupo
-        fields = ("nome", "tipo", "descricao", "status")
-        widgets = {
-            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o contexto desta turma ou grupo?"}),
-        }
-
-    def clean_nome(self):
-        nome = self.cleaned_data["nome"].strip()
-        if len(nome) < 2:
-            raise forms.ValidationError("Use um nome com pelo menos 2 caracteres.")
-        return nome
-
-
 class TurmaForm(forms.ModelForm):
     class Meta:
         model = Turma
@@ -235,11 +220,11 @@ class GrupoForm(forms.ModelForm):
         return nome
 
 
-class ConviteTurmaGrupoForm(forms.ModelForm):
+class ConviteGrupoForm(forms.ModelForm):
     class Meta:
-        model = ConviteTurmaGrupo
-        fields = ("email", "papel")
-        labels = {"email": "E-mail da pessoa", "papel": "Papel no grupo"}
+        model = ConviteGrupo
+        fields = ("email",)
+        labels = {"email": "E-mail da pessoa"}
 
     def clean_email(self):
         return self.cleaned_data["email"].strip().lower()

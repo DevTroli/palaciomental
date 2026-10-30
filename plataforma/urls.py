@@ -17,7 +17,6 @@ urlpatterns = [
     path("gestao/programas/<uuid:programa_id>/", v.institutional_program_detail, name="institutional_program_detail"),
     path("gestao/programas/<uuid:programa_id>/turmas/novo/", v.institutional_class_create, name="institutional_class_create"),
     path("gestao/turmas/<uuid:turma_id>/grupos/novo/", v.institutional_group_create_for_class, name="institutional_group_create_for_class"),
-    path("gestao/programas/<uuid:programa_id>/grupos/novo/", v.institutional_group_create, name="institutional_group_create"),
     path("gestao/grupos/<uuid:group_id>/membros/", v.institutional_group_members, name="institutional_group_members"),
     path("gestao/convites/grupos/<uuid:invite_id>/revogar/", v.institutional_invite_revoke, name="institutional_invite_revoke"),
     path("gestao/convites/organizacao/<uuid:invite_id>/revogar/", v.institutional_organization_invite_revoke, name="institutional_organization_invite_revoke"),

@@ -10,23 +10,25 @@ from django.core.exceptions import ValidationError
 from .models import (
     CollaborationRequest,
     ConviteOrganizacao,
-    ConviteTurmaGrupo,
+    ConviteGrupo,
     DominioOrganizacao,
     IdentidadeOrganizacao,
     MemberProfile,
     MembroOrganizacao,
     Notification,
     Organizacao,
-    MembroTurmaGrupo,
+    MembroGrupo,
+    MembroTurma,
     ProgramaInstitucional,
-    ProjetoTurmaGrupo,
     Project,
     ProjectComment,
     ProjectLink,
     ProjectMember,
     ProjectMilestone,
     ProjectVote,
-    TurmaGrupo,
+    Grupo,
+    Turma,
+    VinculoProjetoInstitucional,
 )
 from .services import ativar_organizacao
 
@@ -303,43 +305,63 @@ class ProgramaInstitucionalAdmin(admin.ModelAdmin):
     readonly_fields = ("id", "criado_em", "atualizado_em")
 
 
-@admin.register(TurmaGrupo)
-class TurmaGrupoAdmin(admin.ModelAdmin):
-    list_display = ("nome", "tipo", "programa", "professor_responsavel", "status", "atualizado_em")
-    list_filter = ("tipo", "status", "programa__organizacao")
+@admin.register(Turma)
+class TurmaAdmin(admin.ModelAdmin):
+    list_display = ("nome", "programa", "professor_responsavel", "status", "atualizado_em")
+    list_filter = ("status", "programa__organizacao")
     search_fields = ("nome", "programa__nome", "programa__organizacao__nome", "professor_responsavel__username")
     list_select_related = ("programa", "programa__organizacao", "professor_responsavel")
     autocomplete_fields = ("programa", "professor_responsavel", "criado_por")
-    readonly_fields = ("id", "criado_em", "atualizado_em")
+    readonly_fields = ("id", "criado_em", "atualizado_em", "legado_id")
 
 
-@admin.register(MembroTurmaGrupo)
-class MembroTurmaGrupoAdmin(admin.ModelAdmin):
-    list_display = ("usuario", "turma_grupo", "papel", "status", "entrou_em")
-    list_filter = ("papel", "status", "turma_grupo__programa__organizacao")
-    search_fields = ("usuario__username", "usuario__email", "turma_grupo__nome", "turma_grupo__programa__nome")
-    list_select_related = ("usuario", "turma_grupo", "turma_grupo__programa")
-    autocomplete_fields = ("usuario", "turma_grupo")
+@admin.register(Grupo)
+class GrupoAdmin(admin.ModelAdmin):
+    list_display = ("nome", "turma", "status", "aberto_para_entrada", "atualizado_em")
+    list_filter = ("status", "aberto_para_entrada", "turma__programa__organizacao")
+    search_fields = ("nome", "turma__nome", "turma__programa__nome", "turma__programa__organizacao__nome")
+    list_select_related = ("turma", "turma__programa", "turma__programa__organizacao")
+    autocomplete_fields = ("turma", "criado_por")
+    readonly_fields = ("id", "criado_em", "atualizado_em", "legado_id")
+
+
+@admin.register(MembroTurma)
+class MembroTurmaAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "turma", "status", "entrou_em")
+    list_filter = ("status", "turma__programa__organizacao")
+    search_fields = ("usuario__username", "usuario__email", "turma__nome", "turma__programa__nome")
+    list_select_related = ("usuario", "turma", "turma__programa")
+    autocomplete_fields = ("usuario", "turma")
     readonly_fields = ("id", "entrou_em")
 
 
-@admin.register(ConviteTurmaGrupo)
-class ConviteTurmaGrupoAdmin(admin.ModelAdmin):
-    list_display = ("email", "turma_grupo", "papel", "status", "expira_em", "aceito_em")
-    list_filter = ("status", "papel", "turma_grupo__programa__organizacao")
-    search_fields = ("email", "turma_grupo__nome", "turma_grupo__programa__nome")
-    list_select_related = ("turma_grupo", "turma_grupo__programa", "convidado_por")
-    autocomplete_fields = ("turma_grupo", "convidado_por")
+@admin.register(MembroGrupo)
+class MembroGrupoAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "grupo", "representante", "status", "entrou_em")
+    list_filter = ("status", "representante", "grupo__turma__programa__organizacao")
+    search_fields = ("usuario__username", "usuario__email", "grupo__nome", "grupo__turma__nome")
+    list_select_related = ("usuario", "grupo", "grupo__turma")
+    autocomplete_fields = ("usuario", "grupo")
+    readonly_fields = ("id", "entrou_em")
+
+
+@admin.register(ConviteGrupo)
+class ConviteGrupoAdmin(admin.ModelAdmin):
+    list_display = ("email", "grupo", "status", "expira_em", "aceito_em")
+    list_filter = ("status", "grupo__turma__programa__organizacao")
+    search_fields = ("email", "grupo__nome", "grupo__turma__nome")
+    list_select_related = ("grupo", "grupo__turma", "convidado_por")
+    autocomplete_fields = ("grupo", "convidado_por")
     readonly_fields = ("id", "hash_token", "criado_em", "aceito_em")
 
 
-@admin.register(ProjetoTurmaGrupo)
-class ProjetoTurmaGrupoAdmin(admin.ModelAdmin):
-    list_display = ("projeto", "turma_grupo", "vinculado_por", "vinculado_em")
-    list_filter = ("turma_grupo__programa__organizacao",)
-    search_fields = ("projeto__title", "turma_grupo__nome", "turma_grupo__programa__nome")
-    list_select_related = ("projeto", "turma_grupo", "turma_grupo__programa", "vinculado_por")
-    autocomplete_fields = ("projeto", "turma_grupo", "vinculado_por")
+@admin.register(VinculoProjetoInstitucional)
+class VinculoProjetoInstitucionalAdmin(admin.ModelAdmin):
+    list_display = ("projeto", "turma", "grupo", "vinculado_por", "vinculado_em")
+    list_filter = ("turma__programa__organizacao",)
+    search_fields = ("projeto__title", "turma__nome", "grupo__nome", "turma__programa__nome")
+    list_select_related = ("projeto", "turma", "grupo", "vinculado_por")
+    autocomplete_fields = ("projeto", "turma", "grupo", "vinculado_por")
     readonly_fields = ("id", "vinculado_em")
 
 

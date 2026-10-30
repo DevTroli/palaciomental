@@ -27,8 +27,8 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import CollaborationRequestForm, CommentForm, ConviteOrganizacaoForm, ConviteTurmaGrupoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaForm, TurmaGrupoForm
-from .models import CollaborationRequest, ConviteOrganizacao, ConviteTurmaGrupo, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, MembroTurmaGrupo, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, ProjetoTurmaGrupo, Turma, TurmaGrupo
+from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, TurmaForm
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 
@@ -197,12 +197,12 @@ def institutional_management(request):
         },
         "programas_rascunho": organizacao.programas.filter(status=ProgramaInstitucional.STATUS_RASCUNHO).order_by("-atualizado_em")[:5],
     }
-    context["grupos_sem_professor"] = TurmaGrupo.objects.filter(
-        programa__organizacao=organizacao,
-        programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-        status=TurmaGrupo.STATUS_ATIVO,
-        professor_responsavel__isnull=True,
-    ).select_related("programa")[:5]
+    context["grupos_sem_professor"] = Grupo.objects.filter(
+        turma__programa__organizacao=organizacao,
+        turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+        status=Grupo.STATUS_ATIVO,
+        turma__professor_responsavel__isnull=True,
+    ).select_related("turma__programa")[:5]
     return render(
         request,
         "institutional/management.html",
@@ -321,11 +321,7 @@ def _can_invite_to_group(request, group):
         return True
     if afiliacao.papel != MembroOrganizacao.PAPEL_PROFESSOR:
         return False
-    return group.professor_responsavel_id == request.user.pk or group.membros.filter(
-        usuario=request.user,
-        papel=MembroTurmaGrupo.PAPEL_PROFESSOR,
-        status=MembroTurmaGrupo.STATUS_ATIVO,
-    ).exists()
+    return group.turma.professor_responsavel_id == request.user.pk
 
 
 def _can_view_group(request, group):
@@ -334,20 +330,20 @@ def _can_view_group(request, group):
         return False
     if afiliacao.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
         return True
-    if group.professor_responsavel_id == request.user.pk:
+    if group.turma.professor_responsavel_id == request.user.pk:
         return True
-    return group.membros.filter(usuario=request.user, status=MembroTurmaGrupo.STATUS_ATIVO).exists()
+    return group.membros.filter(usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists()
 
 
 def _send_group_invitation_email(request, convite, raw_token):
     invite_url = request.build_absolute_uri(reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}))
-    grupo = convite.turma_grupo
+    grupo = convite.grupo
     contexto = {
         "convite": convite,
         "grupo": grupo,
-        "programa": grupo.programa,
-        "organizacao": grupo.programa.organizacao,
-        "identidade": getattr(grupo.programa.organizacao, "identidade", None),
+        "programa": grupo.turma.programa,
+        "organizacao": grupo.turma.programa.organizacao,
+        "identidade": getattr(grupo.turma.programa.organizacao, "identidade", None),
         "convidado_por": convite.convidado_por,
         "invite_url": invite_url,
     }
@@ -444,43 +440,26 @@ def institutional_group_create_for_class(request, turma_id):
 
 
 @login_required
-def institutional_group_create(request, programa_id):
-    organizacao = getattr(request, "organizacao", None)
-    if organizacao is None or not _can_manage_institutional_structure(request):
-        return JsonResponse({"detail": "Você não pode criar uma turma ou grupo neste ambiente."}, status=403)
-    programa = get_object_or_404(ProgramaInstitucional, pk=programa_id, organizacao=organizacao)
-    form = TurmaGrupoForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        turma_grupo = form.save(commit=False)
-        turma_grupo.programa = programa
-        turma_grupo.criado_por = request.user
-        turma_grupo.save()
-        messages.success(request, "Turma ou grupo criado.")
-        return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
-    return render(request, "institutional/group_form.html", {"organizacao": organizacao, "programa": programa, "form": form})
-
-
-@login_required
 def institutional_group_members(request, group_id):
     organizacao = getattr(request, "organizacao", None)
     if organizacao is None:
         raise Http404
-    grupo = get_object_or_404(TurmaGrupo, pk=group_id, programa__organizacao=organizacao)
+    grupo = get_object_or_404(Grupo, pk=group_id, turma__programa__organizacao=organizacao)
     if not _can_view_group(request, grupo):
         raise Http404
     pode_gerenciar = _can_invite_to_group(request, grupo)
-    form = ConviteTurmaGrupoForm(request.POST or None)
+    form = ConviteGrupoForm(request.POST or None)
     if request.method == "POST":
         if not pode_gerenciar:
             return JsonResponse({"detail": "Você não pode convidar pessoas para este grupo."}, status=403)
         if form.is_valid():
             email = form.cleaned_data["email"]
-            if MembroTurmaGrupo.objects.filter(turma_grupo=grupo, usuario__email__iexact=email, status=MembroTurmaGrupo.STATUS_ATIVO).exists():
+            if MembroGrupo.objects.filter(grupo=grupo, usuario__email__iexact=email, status=MembroGrupo.STATUS_ATIVO).exists():
                 form.add_error("email", "Esta pessoa já participa do grupo.")
             else:
                 raw_token = secrets.token_urlsafe(32)
                 convite = form.save(commit=False)
-                convite.turma_grupo = grupo
+                convite.grupo = grupo
                 convite.convidado_por = request.user
                 convite.hash_token = hashlib.sha256(raw_token.encode()).hexdigest()
                 convite.expira_em = timezone.now() + timedelta(days=7)
@@ -489,8 +468,8 @@ def institutional_group_members(request, group_id):
                 transaction.on_commit(lambda: _send_group_invitation_email(request, convite, raw_token))
                 messages.success(request, f"Convite criado para {email}. Link para envio: {link}")
                 return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
-    membros = grupo.membros.select_related("usuario").filter(status=MembroTurmaGrupo.STATUS_ATIVO)
-    convites = grupo.convites.filter(status=ConviteTurmaGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
+    membros = grupo.membros.select_related("usuario").filter(status=MembroGrupo.STATUS_ATIVO)
+    convites = grupo.convites.filter(status=ConviteGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
     return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros, "convites": convites, "form": form, "pode_gerenciar": pode_gerenciar})
 
 
@@ -500,12 +479,12 @@ def institutional_invite_revoke(request, invite_id):
     organizacao = getattr(request, "organizacao", None)
     if organizacao is None or not _can_manage_institutional_structure(request):
         return JsonResponse({"detail": "Você não pode revogar convites neste ambiente."}, status=403)
-    convite = get_object_or_404(ConviteTurmaGrupo, pk=invite_id, turma_grupo__programa__organizacao=organizacao)
-    if convite.status == ConviteTurmaGrupo.STATUS_PENDENTE:
-        convite.status = ConviteTurmaGrupo.STATUS_REVOGADO
+    convite = get_object_or_404(ConviteGrupo, pk=invite_id, grupo__turma__programa__organizacao=organizacao)
+    if convite.status == ConviteGrupo.STATUS_PENDENTE:
+        convite.status = ConviteGrupo.STATUS_REVOGADO
         convite.save(update_fields=["status"])
         messages.success(request, "Convite revogado.")
-    return redirect("plataforma:institutional_group_members", group_id=convite.turma_grupo_id)
+    return redirect("plataforma:institutional_group_members", group_id=convite.grupo_id)
 
 
 @login_required
@@ -524,29 +503,29 @@ def institutional_organization_invite_revoke(request, invite_id):
 
 def institutional_invite_accept(request, token):
     digest = hashlib.sha256(token.encode()).hexdigest()
-    convite = get_object_or_404(ConviteTurmaGrupo.objects.select_related("turma_grupo__programa__organizacao"), hash_token=digest)
-    if convite.status != ConviteTurmaGrupo.STATUS_PENDENTE or convite.expira_em <= timezone.now():
+    convite = get_object_or_404(ConviteGrupo.objects.select_related("grupo__turma__programa__organizacao"), hash_token=digest)
+    if convite.status != ConviteGrupo.STATUS_PENDENTE or convite.expira_em <= timezone.now():
         return HttpResponseForbidden("Este convite não está mais disponível.")
     if not request.user.is_authenticated:
         return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
     if request.user.email.lower() != convite.email.lower():
         return HttpResponseForbidden("Este convite foi emitido para outro endereço de e-mail.")
-    organizacao = convite.turma_grupo.programa.organizacao
+    organizacao = convite.grupo.turma.programa.organizacao
     with transaction.atomic():
         MembroOrganizacao.objects.get_or_create(
             organizacao=organizacao,
             usuario=request.user,
             defaults={"papel": MembroOrganizacao.PAPEL_MEMBRO},
         )
-        membro, _ = MembroTurmaGrupo.objects.get_or_create(turma_grupo=convite.turma_grupo, usuario=request.user, defaults={"papel": convite.papel})
-        if membro.status != MembroTurmaGrupo.STATUS_ATIVO:
-            membro.status = MembroTurmaGrupo.STATUS_ATIVO
-            membro.papel = convite.papel
-            membro.save(update_fields=["status", "papel"])
-        convite.status = ConviteTurmaGrupo.STATUS_ACEITO
+        MembroTurma.objects.get_or_create(turma=convite.grupo.turma, usuario=request.user)
+        membro, _ = MembroGrupo.objects.get_or_create(grupo=convite.grupo, usuario=request.user)
+        if membro.status != MembroGrupo.STATUS_ATIVO:
+            membro.status = MembroGrupo.STATUS_ATIVO
+            membro.save(update_fields=["status"])
+        convite.status = ConviteGrupo.STATUS_ACEITO
         convite.aceito_em = timezone.now()
         convite.save(update_fields=["status", "aceito_em"])
-    return redirect("plataforma:institutional_program_detail", programa_id=convite.turma_grupo.programa_id)
+    return redirect("plataforma:institutional_program_detail", programa_id=convite.grupo.turma.programa_id)
 
 
 def institutional_organization_invite_accept(request, token):
@@ -625,9 +604,9 @@ def project_create(request):
         project.owner = request.user
         project.organizacao = organizacao
         project.save()
-        turma_grupo = form.cleaned_data.get("turma_grupo")
-        if turma_grupo is not None:
-            ProjetoTurmaGrupo.objects.create(projeto=project, turma_grupo=turma_grupo, vinculado_por=request.user)
+        grupo = form.cleaned_data.get("grupo")
+        if grupo is not None:
+            VinculoProjetoInstitucional.objects.create(projeto=project, turma=grupo.turma, grupo=grupo, vinculado_por=request.user)
         _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
         return redirect("plataforma:project_context", pk=project.pk)
@@ -672,15 +651,18 @@ def project_edit(request, pk):
         before_title, before_status = project.title, project.status
         project = form.save()
         if organizacao is not None:
-            turma_grupo = form.cleaned_data.get("turma_grupo")
-            vinculo, _ = ProjetoTurmaGrupo.objects.get_or_create(projeto=project, defaults={"turma_grupo": turma_grupo, "vinculado_por": request.user}) if turma_grupo else (None, False)
-            if turma_grupo is not None:
-                if vinculo.turma_grupo_id != turma_grupo.pk or vinculo.vinculado_por_id != request.user.pk:
-                    vinculo.turma_grupo = turma_grupo
+            grupo = form.cleaned_data.get("grupo")
+            vinculo = getattr(project, "vinculo_institucional", None)
+            if grupo is not None:
+                if vinculo is None:
+                    VinculoProjetoInstitucional.objects.create(projeto=project, turma=grupo.turma, grupo=grupo, vinculado_por=request.user)
+                else:
+                    vinculo.turma = grupo.turma
+                    vinculo.grupo = grupo
                     vinculo.vinculado_por = request.user
-                    vinculo.save(update_fields=["turma_grupo", "vinculado_por"])
+                    vinculo.save(update_fields=["turma", "grupo", "vinculado_por"])
             else:
-                ProjetoTurmaGrupo.objects.filter(projeto=project).delete()
+                VinculoProjetoInstitucional.objects.filter(projeto=project).delete()
         changes = []
         if before_title != project.title: changes.append("nome")
         if before_status != project.status: changes.append("status")

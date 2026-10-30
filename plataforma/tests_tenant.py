@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from .models import ConviteOrganizacao, ConviteTurmaGrupo, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, MembroTurmaGrupo, Organizacao, ProgramaInstitucional, Project, ProjetoTurmaGrupo, Turma, TurmaGrupo, VinculoProjetoInstitucional
+from .models import ConviteGrupo, ConviteOrganizacao, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, Turma, VinculoProjetoInstitucional
 from .services import ativar_organizacao
 
 
@@ -43,6 +43,15 @@ class TenantResolutionTests(TestCase):
             password="Senha-forte-123",
             is_staff=True,
         )
+
+    def make_group(self, programa, nome, criado_por=None, professor=None):
+        turma = Turma.objects.create(
+            programa=programa,
+            nome=f"Turma de {nome}",
+            criado_por=criado_por or self.user,
+            professor_responsavel=professor,
+        )
+        return Grupo.objects.create(turma=turma, nome=nome, criado_por=criado_por or self.user)
 
     def logo_file(self, name="logo.png", size=(320, 120), image_format="PNG"):
         buffer = BytesIO()
@@ -201,7 +210,7 @@ class TenantResolutionTests(TestCase):
             status=ProgramaInstitucional.STATUS_PUBLICADO,
             criado_por=self.user,
         )
-        TurmaGrupo.objects.create(programa=programa, nome="Grupo CAMPPG", criado_por=self.user)
+        self.make_group(programa, "Grupo CAMPPG")
         Project.objects.create(
             owner=self.user,
             organizacao=self.organization,
@@ -235,9 +244,10 @@ class TenantResolutionTests(TestCase):
             status=ProgramaInstitucional.STATUS_PUBLICADO,
             criado_por=self.user,
         )
-        own_group = TurmaGrupo.objects.create(programa=programa, nome="Grupo do participante", criado_por=self.user)
-        other_group = TurmaGrupo.objects.create(programa=programa, nome="Grupo de outra equipe", criado_por=self.user)
-        MembroTurmaGrupo.objects.create(turma_grupo=own_group, usuario=self.user)
+        own_group = self.make_group(programa, "Grupo do participante")
+        other_group = self.make_group(programa, "Grupo de outra equipe")
+        MembroTurma.objects.create(turma=own_group.turma, usuario=self.user)
+        MembroGrupo.objects.create(grupo=own_group, usuario=self.user)
         self.client.force_login(self.user)
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
         self.assertContains(response, "Grupo do participante")
@@ -406,13 +416,13 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(programa.criado_por_id, self.user.pk)
 
         response = self.client.post(
-            reverse("plataforma:institutional_group_create", kwargs={"programa_id": programa.pk}),
-            {"nome": "Turma 2026", "tipo": "turma", "descricao": "Grupo inicial.", "status": "ativo"},
+            reverse("plataforma:institutional_class_create", kwargs={"programa_id": programa.pk}),
+            {"nome": "Turma 2026", "descricao": "Turma inicial.", "status": "ativo"},
             HTTP_HOST="camppg.palaciomental.com.br",
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(TurmaGrupo.objects.filter(programa=programa, nome="Turma 2026").exists())
+        self.assertTrue(Turma.objects.filter(programa=programa, nome="Turma 2026").exists())
 
     def test_regular_member_cannot_create_program(self):
         MembroOrganizacao.objects.create(
@@ -491,7 +501,7 @@ class TenantResolutionTests(TestCase):
             slug="programa-camppg",
             criado_por=self.user,
         )
-        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo principal", criado_por=self.user)
+        grupo = self.make_group(programa, "Grupo principal")
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
         self.client.force_login(self.user)
 
@@ -502,7 +512,7 @@ class TenantResolutionTests(TestCase):
                 "direction": "Projeto interno da CAMPPG.",
                 "status": "ideia",
                 "visibility": "privado",
-                "turma_grupo": str(grupo.pk),
+                "grupo": str(grupo.pk),
                 "organizacao": str(outro.pk),
             },
             HTTP_HOST="camppg.palaciomental.com.br",
@@ -511,7 +521,7 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         project = Project.objects.get(title="Projeto vinculado")
         self.assertEqual(project.organizacao_id, self.organization.pk)
-        self.assertTrue(ProjetoTurmaGrupo.objects.filter(projeto=project, turma_grupo=grupo).exists())
+        self.assertTrue(VinculoProjetoInstitucional.objects.filter(projeto=project, grupo=grupo).exists())
 
     def test_global_catalog_and_tenant_catalog_do_not_mix_projects(self):
         global_project = Project.objects.create(owner=self.user, title="Projeto global", direction="Referência pública", category="Pesquisa", visibility=Project.VISIBILITY_PUBLIC)
@@ -582,14 +592,14 @@ class TenantResolutionTests(TestCase):
             slug="programa-camppg",
             criado_por=manager,
         )
-        grupo = TurmaGrupo.objects.create(programa=programa, nome="Turma 2026", criado_por=manager)
+        grupo = self.make_group(programa, "Turma 2026", criado_por=manager)
         invited = User.objects.create_user(username="convidado", email="convidado@example.com", password="Senha-forte-123")
         raw_token = secrets.token_urlsafe(24)
-        invite = ConviteTurmaGrupo.objects.create(
-            turma_grupo=grupo,
+        invite = ConviteGrupo.objects.create(
+            grupo=grupo,
             convidado_por=manager,
             email=invited.email,
-            papel=MembroTurmaGrupo.PAPEL_MEMBRO,
+            papel="membro",
             hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
             expira_em=timezone.now() + timedelta(days=7),
         )
@@ -607,9 +617,9 @@ class TenantResolutionTests(TestCase):
         )
         self.assertRedirects(response, reverse("plataforma:institutional_program_detail", kwargs={"programa_id": programa.pk}), fetch_redirect_response=False)
         self.assertTrue(MembroOrganizacao.objects.filter(organizacao=self.organization, usuario=invited, papel=MembroOrganizacao.PAPEL_MEMBRO).exists())
-        self.assertTrue(MembroTurmaGrupo.objects.filter(turma_grupo=grupo, usuario=invited, status=MembroTurmaGrupo.STATUS_ATIVO).exists())
+        self.assertTrue(MembroGrupo.objects.filter(grupo=grupo, usuario=invited, status=MembroGrupo.STATUS_ATIVO).exists())
         invite.refresh_from_db()
-        self.assertEqual(invite.status, ConviteTurmaGrupo.STATUS_ACEITO)
+        self.assertEqual(invite.status, ConviteGrupo.STATUS_ACEITO)
 
     def test_expired_group_invitation_is_rejected(self):
         programa = ProgramaInstitucional.objects.create(
@@ -618,10 +628,10 @@ class TenantResolutionTests(TestCase):
             slug="programa-expirado",
             criado_por=self.user,
         )
-        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo expirado", criado_por=self.user)
+        grupo = self.make_group(programa, "Grupo expirado")
         raw_token = secrets.token_urlsafe(24)
-        ConviteTurmaGrupo.objects.create(
-            turma_grupo=grupo,
+        ConviteGrupo.objects.create(
+            grupo=grupo,
             convidado_por=self.user,
             email=self.user.email,
             hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
@@ -647,11 +657,11 @@ class TenantResolutionTests(TestCase):
         target = User.objects.create_user(username="aluno", email="aluno@example.com", password="Senha-forte-123")
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=professor, papel=MembroOrganizacao.PAPEL_PROFESSOR)
         programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa professores", slug="programa-professores", criado_por=professor)
-        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo orientado", professor_responsavel=professor, criado_por=professor)
+        grupo = self.make_group(programa, "Grupo orientado", criado_por=professor, professor=professor)
         self.client.force_login(professor)
-        response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": target.email, "papel": MembroTurmaGrupo.PAPEL_MEMBRO}, HTTP_HOST="camppg.palaciomental.com.br")
+        response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": target.email, "papel": "membro"}, HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(ConviteTurmaGrupo.objects.filter(turma_grupo=grupo, email=target.email).exists())
+        self.assertTrue(ConviteGrupo.objects.filter(grupo=grupo, email=target.email).exists())
 
     def test_last_owner_cannot_be_suspended_or_demoted(self):
         owner = self.user
@@ -669,10 +679,10 @@ class TenantResolutionTests(TestCase):
     def test_group_invite_sends_html_and_text_email_after_commit(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
         programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de e-mail", slug="programa-email", criado_por=self.user)
-        grupo = TurmaGrupo.objects.create(programa=programa, nome="Grupo de convite", criado_por=self.user)
+        grupo = self.make_group(programa, "Grupo de convite")
         self.client.force_login(self.user)
         with self.captureOnCommitCallbacks(execute=True):
-            response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": "email@example.com", "papel": MembroTurmaGrupo.PAPEL_MEMBRO}, HTTP_HOST="camppg.palaciomental.com.br")
+            response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": "email@example.com", "papel": "membro"}, HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 302)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to[0], "email@example.com")

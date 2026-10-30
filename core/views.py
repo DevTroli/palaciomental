@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render
 from django.db.models import Count, Q
 
-from plataforma.models import Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, MembroTurmaGrupo, ProgramaInstitucional, Project, Turma, TurmaGrupo
+from plataforma.models import Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, Turma
 from plataforma.validators import CORES_SEMANTICAS
 
 
@@ -45,14 +45,6 @@ def index(request):
             ).distinct()[:8]
         else:
             turmas = turmas[:8]
-        grupos_legados = TurmaGrupo.objects.filter(
-            programa__organizacao=organizacao,
-            programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-            status=TurmaGrupo.STATUS_ATIVO,
-        ).filter(
-            Q(professor_responsavel=request.user)
-            | Q(membros__usuario=request.user, membros__status=MembroTurmaGrupo.STATUS_ATIVO)
-        ).select_related("programa", "professor_responsavel").distinct()[:8]
         return render(
             request,
             "institutional/home.html",
@@ -63,7 +55,6 @@ def index(request):
                 "programas": programas,
                 "turmas": turmas,
                 "grupos_abertos": grupos,
-                "grupos_legados": grupos_legados,
                 "projetos": projetos,
                 "ranking_provisorio": True,
                 "tenant_primary_color": primary_color,
