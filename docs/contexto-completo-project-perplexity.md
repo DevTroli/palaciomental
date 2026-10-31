@@ -4,7 +4,7 @@
 
 Este arquivo apresenta o Palácio Mental conforme a **primeira guia canônica do Contexto Mestre**. Ele foi preparado para orientar um Project no Perplexity sobre o produto, sua visão, seu ecossistema, seu modelo de negócio, seus ambientes institucionais e seu estado de desenvolvimento.
 
-**Escopo deste arquivo:** considerar somente a primeira guia oficial do Contexto Mestre. Não considerar versões adaptadas, documentos acadêmicos posteriores, guias de extensão, formulações específicas para ONGs ou conteúdos a partir do limite indicado pelo Product Owner.
+**Escopo deste arquivo:** considerar somente a primeira guia oficial do Contexto Mestre. Não considerar versões adaptadas ou conteúdos a partir do limite indicado pelo Product Owner.
 
 O assistente deve usar este arquivo para compreender a visão do produto e usar o código, as migrations, os testes e a documentação técnica para confirmar o que já está implementado.
 
