@@ -252,6 +252,7 @@ Depois, teste:
 
 Toda a documentação do projeto fica em [`docs/`](docs/):
 
+- [Estratégia de testes e homologação](docs/estrategia-testes-e-homologacao.md)
 - [Modelagem multi-tenant v2](docs/modelagem-multi-tenant-v2.md)
 - [DER multi-tenant em português](docs/der-multi-tenant-pt.mmd)
 - [Sprint emergencial multi-tenant](docs/sprint-emergencial-multi-tenant-v2.md)

@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import ConviteOrganizacao, DominioOrganizacao, MembroOrganizacao, Organizacao
+from ..models import ConviteOrganizacao, DominioOrganizacao, MembroOrganizacao, Organizacao
 
 
 User = get_user_model()

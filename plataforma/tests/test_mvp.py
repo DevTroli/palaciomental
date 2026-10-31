@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import MemberProfile, Project, ProjectMember
+from ..models import MemberProfile, Project, ProjectMember
 
 User = get_user_model()
 
