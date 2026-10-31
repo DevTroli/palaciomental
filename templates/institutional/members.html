@@ -1,10 +1,10 @@
 {% load static %}
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Membros — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Membros — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
-<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_management' %}"><span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a><div class="tenant-context"><span>Ambiente institucional</span><strong>Afiliações</strong></div></header>
-<main class="tenant-container">
+<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_management' %}"><span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a><div class="tenant-context"><span>Ambiente institucional</span><strong>Afiliações</strong></div>{% include 'institutional/partials/shell_nav.html' %}</header>
+<main id="main-content" class="tenant-container">
   <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_management' %}">{{ organizacao.nome }}</a><span>/</span><span>Membros</span></nav>
   <section class="tenant-hero"><p class="tenant-eyebrow">Governança do tenant</p><h1>Afiliações e papéis</h1><p>Altere somente o papel necessário. A organização sempre precisa manter pelo menos um proprietário ativo.</p></section>
   {% if papeis_convidaveis %}<section class="tenant-card"><h2>Convidar para o ambiente</h2><p>Escolha apenas um papel que esteja sob sua responsabilidade. O convite será enviado por um link de uso único.</p><form method="post">{% csrf_token %}<input type="hidden" name="acao" value="convidar">{{ convite_form.non_field_errors }}<label for="id_email">{{ convite_form.email.label }}</label>{{ convite_form.email }}{% if convite_form.email.errors %}<p role="alert">{{ convite_form.email.errors|join:", " }}</p>{% endif %}<label for="id_papel">{{ convite_form.papel.label }}</label>{{ convite_form.papel }}{% if convite_form.papel.errors %}<p role="alert">{{ convite_form.papel.errors|join:", " }}</p>{% endif %}<button class="tenant-button" type="submit">Enviar convite</button></form></section>{% endif %}
@@ -13,4 +13,4 @@
     {% for membro in membros %}<article class="tenant-card"><p class="tenant-eyebrow">{{ membro.get_status_display }}</p><h2>{{ membro.usuario.get_full_name|default:membro.usuario.username }}</h2><p>{{ membro.usuario.email }}</p><form method="post">{% csrf_token %}<input type="hidden" name="membro_id" value="{{ membro.pk }}"><input type="hidden" name="acao" value="papel"><label for="papel-{{ membro.pk }}">Papel</label><select id="papel-{{ membro.pk }}" name="papel">{% for value,label in papeis %}<option value="{{ value }}" {% if membro.papel == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="tenant-button" type="submit">Salvar papel</button></form>{% if membro.status == 'ativa' %}<form method="post">{% csrf_token %}<input type="hidden" name="membro_id" value="{{ membro.pk }}"><input type="hidden" name="acao" value="suspender"><button class="tenant-button" type="submit">Suspender acesso</button></form>{% else %}<form method="post">{% csrf_token %}<input type="hidden" name="membro_id" value="{{ membro.pk }}"><input type="hidden" name="acao" value="ativar"><button class="tenant-button" type="submit">Reativar acesso</button></form>{% endif %}</article>{% empty %}<article class="tenant-card"><h2>Nenhuma afiliação cadastrada</h2></article>{% endfor %}
   </section>
 </main>
-</body></html>
+{% include 'institutional/partials/shell_footer.html' %}</body></html>

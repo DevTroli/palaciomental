@@ -6,7 +6,7 @@
   <title>{{ identidade.nome_exibicao|default:organizacao.nome }} — início</title>
   <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
   <style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style>
-</head>
+<link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
   <header class="tenant-header">
     <a class="tenant-brand" href="{% url 'core:index' %}" aria-label="Início de {{ identidade.nome_exibicao|default:organizacao.nome }}">
@@ -14,8 +14,9 @@
       <span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span>
     </a>
     <div class="tenant-context"><span>Ambiente institucional</span><strong>{{ afiliacao.get_papel_display }}</strong></div>
+    {% include 'institutional/partials/shell_nav.html' %}
   </header>
-  <main class="tenant-container">
+  <main id="main-content" class="tenant-container">
     <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span><span aria-hidden="true">/</span><strong>Início</strong></nav>
 
     <section class="tenant-overview-hero" aria-label="Apresentação do ambiente">
@@ -42,5 +43,5 @@
 
     <section class="tenant-ranking" aria-labelledby="ranking-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Descoberta</p><h2 id="ranking-title">Projetos em destaque</h2></div><p class="tenant-muted">Esta classificação inicial usa votos e atualização recente. Ela é provisória e será substituída pela projeção oficial baseada em Redis.</p></section>
   </main>
-</body>
+{% include 'institutional/partials/shell_footer.html' %}</body>
 </html>

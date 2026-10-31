@@ -228,3 +228,21 @@ body {
   .tenant-breadcrumbs { margin-bottom: 24px; }
   .tenant-card { min-height: 0; }
 }
+
+/* Acessibilidade do shell compartilhado */
+.tenant-eyebrow { color: var(--tenant-primary); }
+.tenant-overview-hero .tenant-eyebrow { color: #c6f2d8; }
+.tenant-button { background: var(--tenant-primary); }
+.tenant-nav { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.tenant-nav a { padding: 7px 10px; border-radius: 6px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
+.tenant-nav a:hover { background: rgba(255,255,255,.14); }
+.tenant-nav a:focus-visible, .tenant-brand:focus-visible, .tenant-button:focus-visible, .tenant-footer a:focus-visible, .tenant-card--link:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid #f5d66b; outline-offset: 3px; }
+.tenant-footer { border-top: 1px solid var(--tenant-border); background: #fff; }
+.tenant-footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 22px 0; }
+.tenant-footer-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--tenant-primary); font-weight: 800; text-decoration: none; }
+.tenant-footer-brand img { width: 30px; height: 30px; border-radius: 6px; object-fit: contain; }
+.tenant-footer nav { display: flex; flex-wrap: wrap; gap: 16px; }
+.tenant-footer nav a { color: var(--tenant-primary); font-size: 13px; font-weight: 700; }
+@media (max-width: 760px) { .tenant-header { flex-wrap: wrap; } .tenant-nav { width: 100%; justify-content: flex-start; margin-left: 0; } .tenant-footer-inner { align-items: flex-start; flex-direction: column; width: min(100% - 28px, 1120px); } }
+.skip-link { position: absolute; top: 8px; left: 8px; z-index: 20; padding: 9px 12px; transform: translateY(-150%); border-radius: 6px; background: #fff; color: var(--tenant-primary); font-weight: 800; }
+.skip-link:focus { transform: translateY(0); outline: 3px solid #f5d66b; outline-offset: 2px; }

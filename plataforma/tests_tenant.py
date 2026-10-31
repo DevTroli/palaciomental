@@ -233,6 +233,17 @@ class TenantResolutionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Programa CAMPPG")
         self.assertContains(response, "Projeto CAMPPG publicado")
+
+    def test_tenant_shell_has_skip_link_navigation_footer_and_no_global_vitrine_link(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        self.client.force_login(self.user)
+        response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pular para o conteúdo principal")
+        self.assertContains(response, 'aria-label="Navegação do ambiente"')
+        self.assertContains(response, "Meu Espaço")
+        self.assertContains(response, "tenant-footer")
+        self.assertNotContains(response, "Vitrine global")
         self.assertNotContains(response, "Projeto de outro tenant")
 
     def test_member_home_limits_turmas_to_their_active_group_scope(self):

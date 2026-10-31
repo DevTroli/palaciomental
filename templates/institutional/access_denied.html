@@ -5,9 +5,9 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{ titulo }} — {{ identidade.nome_exibicao|default:organizacao.nome }}</title>
   <link rel="stylesheet" href="{% static 'css/institutional.css' %}"><style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style>
-</head>
+<link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
-  <main class="tenant-container tenant-centered-message">
+  <main id="main-content" class="tenant-container tenant-centered-message">
     <section class="tenant-card tenant-card--active" role="alert" aria-labelledby="access-title">
       {% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
       <p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }} · ambiente privado</p>

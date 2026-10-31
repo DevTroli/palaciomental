@@ -1,12 +1,12 @@
 {% load static %}
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Nova turma — {{ programa.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Nova turma — {{ programa.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
-<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_program_detail' programa.pk %}"><span>{{ organizacao.nome }}</span></a><div class="tenant-context"><span>Programa</span><strong>{{ programa.nome }}</strong></div></header>
-<main class="tenant-container">
+<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_program_detail' programa.pk %}"><span>{{ organizacao.nome }}</span></a><div class="tenant-context"><span>Programa</span><strong>{{ programa.nome }}</strong></div>{% include 'institutional/partials/shell_nav.html' %}</header>
+<main id="main-content" class="tenant-container">
   <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas</a><span>/</span><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}">{{ programa.nome }}</a><span>/</span><span>Nova turma</span></nav>
   <section class="tenant-hero"><p class="tenant-eyebrow">Programa → Turma</p><h1>Criar turma</h1><p>Defina o ciclo ou unidade orientada. Os grupos serão criados depois, dentro desta turma.</p></section>
   <form method="post" class="tenant-form">{% csrf_token %}{{ form.as_p }}<div class="tenant-form-actions"><a class="tenant-button tenant-button--secondary" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Cancelar</a><button class="tenant-button" type="submit">Salvar turma</button></div></form>
 </main>
-</body></html>
+{% include 'institutional/partials/shell_footer.html' %}</body></html>
