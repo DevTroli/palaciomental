@@ -1,67 +1,75 @@
-# Palácio Mental — Contexto completo para Project de IA
+# Palácio Mental — Contexto Mestre canônico para Project de IA
 
-## Finalidade deste documento
+## Finalidade
 
-Este arquivo traduz o Contexto Mestre do Palácio Mental para uso em um Project de IA. Ele não é apenas um resumo técnico. Seu objetivo é explicar o Palácio Mental como conceito, produto, ecossistema, iniciativa de impacto, plataforma institucional e projeto em desenvolvimento.
+Este arquivo apresenta o Palácio Mental conforme a **primeira guia canônica do Contexto Mestre**. Ele foi preparado para orientar um Project no Perplexity sobre o produto, sua visão, seu ecossistema, seu modelo de negócio, seus ambientes institucionais e seu estado de desenvolvimento.
 
-O assistente deve usar este documento para compreender a visão ampla do P.M. e usar o repositório, o README, as migrations e os testes para verificar o estado real da implementação.
+**Escopo deste arquivo:** considerar somente a primeira guia oficial do Contexto Mestre. Não considerar versões adaptadas, documentos acadêmicos posteriores, guias de extensão, formulações específicas para ONGs ou conteúdos a partir do limite indicado pelo Product Owner.
 
-Este documento preserva decisões, hipóteses e tensões ainda abertas. Elas não devem ser tratadas como se fossem todas definitivas.
+O assistente deve usar este arquivo para compreender a visão do produto e usar o código, as migrations, os testes e a documentação técnica para confirmar o que já está implementado.
 
-## Regra de leitura das fontes
+## Ordem de prioridade das fontes
 
-Quando houver conflito, seguir esta ordem:
+Quando houver conflito:
 
-1. código, migrations e testes atuais para saber o que existe;
+1. código, migrations e testes atuais;
 2. decisões mais recentes aprovadas pelo Product Owner;
-3. Contexto Mestre para visão, propósito, problema, proposta e hipóteses;
-4. README e documentação técnica para arquitetura e operação;
-5. issues do GitHub para escopo de execução;
-6. conversas antigas apenas como histórico.
+3. primeira guia canônica do Contexto Mestre;
+4. README e documentação técnica;
+5. issues do GitHub;
+6. histórico de conversas.
 
-O assistente deve dizer quando uma definição do Contexto Mestre ainda não corresponde ao código ou quando existem duas versões estratégicas em discussão.
+O assistente deve apontar conflitos em vez de escolher uma versão silenciosamente.
 
-## 1. O que é o Palácio Mental
+## 1. Identidade do Palácio Mental
 
-O Palácio Mental é um ecossistema para contexto, evolução e conexão de projetos. Seu propósito é ajudar criações, iniciativas e conhecimentos a permanecerem compreensíveis, encontráveis, aproveitáveis e retomáveis ao longo do tempo.
+O Palácio Mental é um ecossistema para contexto, evolução e conexão de projetos.
 
-O P.M. não é apenas um gerenciador de tarefas, um armazenamento de arquivos, uma rede social, um repositório Git ou uma ferramenta de comunicação. Ele adiciona uma camada de contexto, autoria, decisões, trajetória, colaboração, descoberta e continuidade ao redor dos projetos.
+Ele ajuda pessoas e organizações a preservar o sentido de uma iniciativa, organizar sua trajetória e criar condições para que um projeto seja compreendido, encontrado, aproveitado ou continuado ao longo do tempo.
+
+O P.M. não é apenas uma ferramenta de armazenamento, tarefas, comunicação, versionamento ou divulgação. Ele acrescenta uma camada de contexto, autoria, decisões, trajetória, colaboração, descoberta e continuidade ao redor dos projetos.
 
 Slogan:
 
 > **Ideias para além do rascunho.**
 
-Diferencial conceitual:
+Definição resumida:
 
-> Outras ferramentas ajudam a construir. O Palácio Mental ajuda a continuar.
+> Ecossistema para auxiliar no contexto, evolução e conexão de projetos.
 
-O Palácio Mental não guarda somente o que foi feito. Ele busca preservar como e por que foi feito.
+Valor entregue:
 
-Princípio de experiência:
+> Dar às criações condições para persistir durante e além do momento em que foram iniciadas.
+
+Princípio de uso:
 
 > Entrada simples, profundidade progressiva.
 
-O usuário deve conseguir começar com poucas informações e aprofundar o contexto conforme a iniciativa evolui.
+Diferencial:
 
-## 2. Problema central: o cemitério de projetos
+> O Palácio Mental não guarda apenas o que foi feito. Guarda como e por que foi feito.
 
-O problema central investigado é a perda de contexto que transforma criações relevantes em projetos descontinuados.
+## 2. Problema: o cemitério de projetos
 
-O “cemitério de projetos” representa o conjunto de criações que continuam armazenadas, mas deixam de possuir sentido suficiente para gerar valor. Um projeto pode chegar a esse estado sem ter falhado. Pode ter sido concluído, pausado, interrompido, esquecido ou deixado de ser prioridade.
+O problema central é a perda de contexto que transforma criações relevantes em projetos descontinuados.
 
-Quando isso acontece, arquivos podem continuar existindo, mas o motivo do projeto, as decisões, a autoria, os aprendizados, as responsabilidades e os caminhos de continuidade se perdem.
+Projetos podem perder continuidade depois de uma entrega, do fim de um ciclo, da dissolução de um grupo, da mudança de prioridades ou do afastamento dos responsáveis. Os arquivos continuam armazenados, mas o motivo do projeto, as decisões, a autoria, os aprendizados e os caminhos para continuar se perdem entre ferramentas e memórias individuais.
 
-Um projeto tende a perder continuidade quando:
+O problema não é apenas abandonar um projeto. É fazer com que ele se torne difícil de compreender, encontrar, aproveitar ou retomar.
 
-- o contexto fica espalhado entre várias ferramentas;
-- decisões permanecem em conversas ou na memória de uma pessoa;
-- um grupo se desfaz;
-- responsáveis ou prioridades mudam;
+O “cemitério de projetos” representa criações que permanecem guardadas, mas deixam de possuir sentido suficiente para continuar gerando valor. Um projeto pode estar concluído, pausado, interrompido ou simplesmente fora da prioridade atual sem ter fracassado.
+
+Um projeto tende a chegar a esse estado quando:
+
+- seu contexto fica espalhado entre diferentes ferramentas;
+- decisões permanecem apenas em conversas ou na memória de alguém;
+- o grupo se desfaz ou os responsáveis mudam;
+- prioridades pessoais ou institucionais se alteram;
 - o projeto é entregue sem registrar seu processo;
 - faltam colaboradores que compreendam sua direção;
-- o autor não consegue retomar o trabalho depois de uma pausa.
+- o autor não consegue retomar o projeto depois de uma pausa.
 
-A dificuldade para começar, encontrar referências e localizar colaboradores é uma dimensão complementar. O foco central continua sendo impedir que um projeto relevante se torne incompreensível e esquecido.
+A dificuldade para começar, encontrar referências e localizar colaboradores é uma dimensão complementar. O foco principal continua sendo evitar que projetos com potencial se tornem incompreensíveis e esquecidos.
 
 ## 3. How Might We
 
@@ -69,26 +77,27 @@ Pergunta central:
 
 > Como poderíamos evitar que projetos com potencial percam seu sentido, sejam esquecidos ou deixem de ser aproveitados quando deixam de ser prioridade?
 
-O P.M. não promete concluir todos os projetos, financiar iniciativas ou garantir impacto. Ele busca manter as condições para que uma criação tenha sobrevida como referência, aprendizado, inspiração, legado, ponto de partida ou projeto retomável.
+O Palácio Mental responde a esse desafio preservando contexto, autoria e evolução de forma simples e progressiva.
+
+A plataforma não promete manter todos os projetos em desenvolvimento, concluir iniciativas ou gerar resultados automaticamente. Ela preserva condições para que uma criação tenha uma sobrevida como referência, aprendizado, inspiração, legado ou ponto de partida para outra iniciativa.
 
 ## 4. Proposta de valor
 
-O Palácio Mental ajuda pessoas e organizações a manterem o sentido de seus projetos antes, durante e depois da execução.
+O Palácio Mental ajuda pessoas e organizações com seus projetos a continuarem além do momento em que foram criados.
 
-O núcleo do valor não é armazenar um projeto. É preservar as condições para que ele continue fazendo sentido.
+O núcleo do valor não é armazenar o projeto. É preservar as condições para que ele continue fazendo sentido.
 
-O P.M. organiza em torno do projeto:
+A plataforma ajuda a registrar:
 
-- por que ele existe;
+- por que o projeto existe;
 - quem participou ou participa;
 - o que foi feito;
-- como decisões foram tomadas;
+- como as decisões foram tomadas;
 - quais aprendizados surgiram;
 - quais recursos e links estão relacionados;
-- quais são os próximos passos;
-- como a iniciativa pode ser encontrada, continuada ou reutilizada.
+- quais caminhos existem para continuar.
 
-Fluxo de valor:
+Fluxo progressivo do valor:
 
 ```text
 entrada simples
@@ -99,86 +108,69 @@ entrada simples
 → reutilização, continuidade ou legado
 ```
 
-Para uma pessoa, o P.M. reduz a perda do significado e da trajetória de uma criação.
+Para uma pessoa, o P.M. ajuda a não perder o significado ou a trajetória de uma ideia.
 
-Para uma organização, o P.M. preserva conhecimento institucional, facilita o acompanhamento de iniciativas e reduz a dependência de arquivos dispersos ou da memória de poucas pessoas.
+Para uma organização, preserva conhecimento institucional, facilita o acompanhamento de iniciativas e reduz a dependência de arquivos dispersos ou da memória de poucas pessoas.
 
-Limites da proposta:
+### Diferencial
 
-- não garante conclusão;
-- não garante financiamento;
-- não garante retomada;
-- não substitui professores, mentores, gestores ou equipes;
-- não substitui ferramentas especializadas de execução;
-- não deve ser tratado como sistema contábil, prontuário, canal de atendimento ou gestor completo de uma organização.
+> Outras ferramentas ajudam a construir. O Palácio Mental ajuda a continuar.
 
-## 5. Ecossistema P.M.
-
-O ecossistema foi pensado em camadas complementares.
-
-### P.M. Plataforma
-
-É o núcleo atual. Organiza projetos, contexto, autoria, pessoas, links, marcos, colaboração, descoberta e trajetória.
-
-A Plataforma não pretende substituir GitHub, Drive, Docs, Figma, Trello, WhatsApp ou outras ferramentas. Ela conecta e contextualiza informações que continuam podendo viver em serviços externos.
-
-### Ambiente institucional
-
-É a camada multi-tenant da Plataforma. Permite que uma organização possua um ambiente próprio, com identidade, usuários, papéis, programas, turmas, grupos, projetos e vitrine institucional.
-
-Projetos institucionais permanecem separados de projetos pessoais e não entram automaticamente na vitrine global do P.M.
-
-### PM VCS
-
-É uma hipótese de produto standalone do ecossistema. Sua ideia é abstrair o Git para salvar, compreender, comparar, recuperar e compartilhar versões de projetos de forma mais acessível.
-
-O PM VCS não deve ser tratado como implementado no MVP atual. Ele é uma direção futura e precisa ser validado antes de receber desenvolvimento amplo.
-
-### PM Flow
-
-É uma hipótese de camada de integrações e automações. Conecta eventos e serviços externos à Plataforma e, no futuro, ao PM VCS.
-
-O PM Flow não deve decidir sozinho autoria, permissão ou publicação. Essas decisões continuam sob controle do sistema e das pessoas autorizadas.
-
-### Relação entre as camadas
+O diferencial combina:
 
 ```text
-P.M. Plataforma = contexto, autoria e continuidade
-Ambiente institucional = governança e uso organizacional
-PM VCS = versões e histórico técnico, hipótese futura
-PM Flow = integrações e automações, hipótese futura
+contexto + autoria + trajetória + colaboração + descoberta + continuidade
 ```
 
-## 6. Públicos e stakeholders
+O Palácio Mental complementa ferramentas como GitHub, Drive, Docs, Figma, Trello, WhatsApp e LinkedIn. Ele não pretende substituir todas essas soluções.
+
+### Limites da proposta
+
+O P.M. não garante que todo projeto será concluído, retomado, financiado ou transformado em resultado. Também não substitui professores, mentores, gestores, equipes, instituições de ensino ou ferramentas especializadas de execução.
+
+Sua função é preservar as condições para que projetos e conhecimentos não desapareçam completamente quando sua etapa original termina.
+
+## 5. Públicos e stakeholders
 
 ### Públicos centrais
 
-- autores e equipes: criam e preservam contexto;
-- participantes: exploram e compreendem projetos;
-- colaboradores: identificam onde e como contribuir;
-- professores, facilitadores e instituições: acompanham e preservam projetos entre ciclos;
-- organizações: precisam de memória, governança e continuidade;
-- beneficiários: recebem conhecimento, soluções ou apoio produzido pelas iniciativas.
+- **Autores e equipes:** registram e preservam contexto, autoria e evolução.
+- **Participantes:** encontram referências e compreendem projetos.
+- **Colaboradores:** identificam onde contribuir e como participar.
+- **Professores e instituições:** acompanham e preservam projetos entre ciclos.
+- **Organizações:** precisam de memória, acompanhamento, governança e continuidade.
+- **Beneficiários dos projetos:** recebem conhecimento, soluções ou apoio gerado pelas iniciativas.
 
 ### Stakeholders
 
-- organização: pode contratar, financiar, operar ou manter o ambiente institucional;
-- decisores institucionais: avaliam, aprovam e priorizam adoção;
-- gestores: administram pessoas, permissões, programas, grupos e projetos;
-- professores/facilitadores: acompanham, orientam e apoiam participantes;
-- autores e participantes: criam, desenvolvem e registram projetos;
-- colaboradores e voluntários: contribuem dentro de um escopo definido;
-- apoiadores e financiadores: acompanham evidências sem receber acesso automático a dados pessoais;
-- beneficiários: recebem os resultados ou o valor social das iniciativas;
-- equipe P.M.: desenvolve, opera, documenta, protege e melhora a plataforma.
+- **Organização:** pode contratar, financiar e definir o ambiente institucional.
+- **Decisores institucionais:** avaliam, aprovam e priorizam a adoção.
+- **Gestores institucionais:** administram membros, grupos, permissões e projetos.
+- **Orientadores e facilitadores:** acompanham e apoiam participantes.
+- **Autores e participantes:** criam, desenvolvem e registram projetos.
+- **Colaboradores:** contribuem para a evolução das iniciativas.
+- **Apoiadores:** acompanham projetos e preservam aprendizados autorizados.
+- **Equipe do P.M.:** desenvolve, opera, mantém e evolui a plataforma.
 
-Esses grupos não têm o mesmo papel, nem o mesmo interesse, influência ou nível de acesso.
+Esses públicos não possuem o mesmo papel, interesse, influência ou nível de acesso.
 
-## 7. ODS e impacto social
+## 6. ODS 4 e impacto
 
-A conexão prioritária é com a ODS 4 — Educação de qualidade, principalmente as metas 4.4 e 4.7.
+A conexão prioritária do P.M. é com a **ODS 4 — Educação de qualidade**, especialmente as metas 4.4 e 4.7.
 
-A relação não deve ser apresentada como se o P.M. produzisse sozinho formação profissional ou impacto social. A contribuição está em apoiar aprendizagem baseada em projetos, organização da experiência, colaboração, registro de aprendizados, reflexão e continuidade.
+A contribuição do Palácio Mental ocorre ao apoiar aprendizagem baseada em projetos, organização da experiência, colaboração, registro de aprendizados e continuidade do conhecimento.
+
+### Meta 4.4
+
+Projetos permitem praticar, registrar decisões, desenvolver soluções, colaborar e apresentar evidências de competências técnicas, profissionais e empreendedoras.
+
+O P.M. documenta e organiza essa prática. Não oferece sozinho formação profissional ou empregabilidade.
+
+### Meta 4.7
+
+Projetos relacionados a sustentabilidade, cidadania, direitos humanos, cultura, inclusão e desenvolvimento comunitário podem ser organizados, compartilhados e continuados.
+
+O P.M. cria condições de contexto e memória. Não garante sozinho que cada projeto produzirá impacto social.
 
 Ciclo de contribuição:
 
@@ -186,216 +178,246 @@ Ciclo de contribuição:
 projeto → prática → registro → reflexão → colaboração → continuidade
 ```
 
-A relação com a meta 4.4 ocorre porque projetos permitem praticar, registrar decisões, desenvolver soluções, colaborar e apresentar evidências de competências técnicas, profissionais e empreendedoras.
+Indicadores iniciais possíveis:
 
-A relação com a meta 4.7 ocorre porque projetos de sustentabilidade, cidadania, direitos humanos, cultura, inclusão e desenvolvimento comunitário podem ser organizados, compartilhados e continuados.
+- projetos educacionais criados e contextualizados;
+- participantes e professores envolvidos;
+- colaborações e interações qualificadas;
+- projetos reutilizados, continuados ou descobertos;
+- projetos associados a sustentabilidade, inclusão ou desenvolvimento comunitário;
+- percepção de organização, aprendizagem e continuidade.
 
-Limite: o P.M. cria condições de organização e memória. Não garante que um projeto produzirá impacto social, empregabilidade ou transformação educacional.
+A relação com a ODS 4 é uma hipótese de impacto que precisa ser observada e validada.
 
-Indicadores possíveis:
+## 7. Ecossistema do Palácio Mental
 
-- projetos educacionais ou sociais contextualizados;
-- participantes, professores e facilitadores envolvidos;
-- colaborações qualificadas;
-- projetos descobertos, reutilizados ou continuados;
-- iniciativas relacionadas à sustentabilidade, inclusão ou desenvolvimento comunitário;
-- percepção de organização, aprendizagem e continuidade;
-- redução do tempo para integrar novos participantes;
-- histórico consultado depois da mudança de responsável.
+### P.M. Plataforma
 
-## 8. Duas camadas estratégicas que precisam ser preservadas
+É o núcleo do ecossistema. Concentra projetos, contexto, autoria, pessoas, marcos, colaboração, descoberta e trajetória.
 
-O Contexto Mestre reúne duas formulações estratégicas relacionadas, mas não idênticas.
+### Ambiente institucional
 
-### 8.1 Formulação original: ecossistema sustentável
+É uma camada da Plataforma para organizações. Usa a base do P.M. com identidade própria, usuários, permissões, programas, turmas, grupos, projetos e vitrine institucional.
 
-A formulação original considera um modelo híbrido:
+### PM VCS
 
-- usuários individuais com conta Free;
-- usuários individuais com conta Pro;
-- ambientes institucionais para organizações;
-- planos institucionais pagos para instituições que possam pagar;
-- acesso gratuito ou subsidiado para ONGs, conforme capacidade e critérios;
-- implantação, suporte, integrações e personalização como possíveis fontes de sustentabilidade.
+É um produto futuro do ecossistema, pensado para simplificar o versionamento de projetos. Sua proposta é abstrair o Git para salvar, compreender, comparar, recuperar e compartilhar versões.
 
-Nessa formulação, o objetivo é criar uma startup de impacto financeiramente saudável, sem pay-to-win, sem vender relevância, sem vender exposição e sem transformar dados pessoais em mercadoria.
+O PM VCS não deve ser tratado como implementado no MVP atual.
 
-O BMC original é uma hipótese de negócio, não uma receita comprovada. Ainda precisam ser validados disposição a pagar, preço, formato contratual, custo de suporte, margem e recurso mais valioso para organizações.
+### PM Flow
 
-### 8.2 Formulação de extensão e terceiro setor
+É uma camada futura de integrações e automações entre a Plataforma, o PM VCS e ferramentas externas.
 
-A parte adaptada para o projeto de extensão reposiciona o P.M. como uma iniciativa sem fins lucrativos de apoio a organizações da sociedade civil, coletivos e programas comunitários.
+O PM Flow não deve decidir sozinho autoria, permissão ou publicação. Essas decisões precisam permanecer sob controle da plataforma e das pessoas autorizadas.
 
-Nessa formulação:
+### Relação entre as camadas
 
-- o acesso essencial não deve ser cobrado dos beneficiários;
-- dados pessoais não são vendidos;
-- exposição não é uma mercadoria;
-- sustentabilidade pode vir de bolsas, extensão, editais, doações, fundos de apoio, parcerias educacionais, apoio técnico e colaboração voluntária;
-- o sucesso é medido por continuidade, colaboração, acessibilidade, governança e aprendizagem;
-- a plataforma deve preservar autonomia das organizações e consentimento dos participantes.
+```text
+P.M. Plataforma = contexto, autoria e continuidade
+Ambiente institucional = governança e escala organizacional
+PM VCS = versionamento acessível, hipótese futura
+PM Flow = integrações e automações, hipótese futura
+```
 
-Essa formulação não deve ser apagada em favor da anterior. Ela representa uma direção social e acadêmica que pode definir o ciclo atual do projeto.
+## 8. Arquitetura de planos
 
-### Regra para o assistente
-
-Nunca afirmar que o modelo financeiro está definitivamente decidido. Ao discutir planos ou receita, perguntar se a análise se refere a:
-
-1. hipótese de startup de impacto sustentável;
-2. operação sem fins lucrativos do projeto de extensão;
-3. possível combinação futura das duas camadas.
-
-## 9. Arquitetura de planos como hipótese
-
-A arquitetura conceitual discutida contém:
+A arquitetura de planos é uma hipótese de produto e negócio. Os limites e preços ainda precisam ser validados.
 
 ### Free
 
+Pode incluir:
+
 - criação de projetos;
-- contexto básico;
+- contextualização básica;
 - exploração;
-- publicação conforme visibilidade;
+- publicação conforme a visibilidade;
 - links manuais;
 - automações básicas.
 
-Limites exemplificativos ainda sujeitos à validação: quantidade de projetos, projetos ativos, links e automações.
+Limites de referência discutidos: quantidade de projetos pessoais, projetos ativos, links por projeto e volume de automações.
 
 ### Pro
 
+Pode incluir:
+
 - tudo do Free;
-- maior profundidade de contexto;
+- maior limite de contexto;
 - Meu Espaço avançado;
 - integrações e automações completas;
+- acesso ampliado às funcionalidades do ecossistema;
 - possível acesso futuro ao PM VCS e PM Flow.
-
-Os limites e preços ainda não são definitivos.
 
 ### Institucional
 
+Pode incluir:
+
 - ambiente próprio;
-- identidade visual;
 - membros;
 - programas, turmas e grupos;
 - permissões e governança;
 - vitrine institucional;
 - relatórios;
+- identidade visual;
 - domínio institucional;
-- suporte e implantação;
-- integrações e automações conforme o pacote.
+- suporte;
+- implantação;
+- integrações e automações.
 
-### ONGs
+### Princípios
 
-Podem receber acesso gratuito ou subsidiado, mas isso não deve ser tratado como gratuidade ilimitada. É necessário considerar critérios, capacidade operacional, suporte, proteção de dados, custo por organização e revisão periódica.
+- não praticar pay-to-win;
+- não vender relevância, votos ou exposição;
+- não bloquear o uso essencial por pagamento;
+- separar assinatura individual de assinatura institucional;
+- cobrar por potência, volume, governança, implantação ou suporte quando houver valor comprovado;
+- validar disposição a pagar antes de transformar hipóteses em preços.
 
-Princípio de preço:
+A assinatura individual pertence ao usuário. A assinatura institucional pertence à organização. Uma não deve controlar automaticamente os recursos da outra.
 
-> Não monetizar relevância, votos, exposição, privacidade ou acesso essencial.
+## 9. Sustentabilidade financeira
 
-## 10. Sustentabilidade e impacto
+A sustentabilidade financeira ainda é uma hipótese estruturada, não uma receita comprovada.
 
-A sustentabilidade financeira ainda é uma hipótese. A organização deve distinguir:
+O objetivo é crescer conforme o uso real, preservar o acesso essencial e evitar custos ou customizações antes de comprovar valor.
 
 ### Custos fixos
 
-- infraestrutura mínima;
+- hospedagem mínima;
 - domínio;
-- ferramentas essenciais;
+- ferramentas de desenvolvimento;
 - monitoramento;
+- comunicação e gestão;
 - reserva operacional;
-- capacidade mínima da equipe.
+- capacidade mínima de desenvolvimento, segurança, produto e manutenção.
 
 ### Custos variáveis
 
 - CPU e memória;
-- banco e Redis;
+- banco de dados e Redis;
 - armazenamento e tráfego;
 - usuários ativos;
 - organizações e tenants;
 - suporte;
 - implantação;
 - integrações;
+- automações;
 - customizações.
 
-O custo está mais relacionado ao uso ativo, volume de dados, número de organizações e nível de suporte do que ao simples número de contas cadastradas.
+O custo está mais relacionado ao uso ativo, volume de dados, quantidade de organizações e nível de suporte do que ao simples número de contas cadastradas.
 
-A fórmula econômica de referência é:
-
-```text
-receita recorrente > custos fixos alocados
-                    + custos variáveis
-                    + suporte
-                    + implantação amortizada
-                    + margem de segurança
-```
-
-As premissas financeiras do Contexto Mestre são hipóteses de planejamento. Devem ser substituídas por faturas, consumo medido, horas da equipe e evidências de disposição a pagar.
-
-## 11. Funcionamento do produto atual
-
-O fluxo básico do MVP é:
+Regra econômica de referência:
 
 ```text
-criar → adicionar contexto → definir visibilidade
-→ publicar ou manter restrito → explorar
-→ interagir → registrar evolução
+receita recorrente
+>
+custos fixos alocados
++ custos variáveis
++ suporte
++ implantação amortizada
++ margem de segurança
 ```
 
-A entrada deve ser curta. O contexto pode incluir direção, links, marcos, autoria, decisões, responsáveis, aprendizados e próximos passos.
+Possíveis fontes de receita:
 
-Marcos registram mudanças importantes. Eles não substituem commits, arquivos, histórico técnico ou ferramentas externas de versionamento.
+- planos individuais;
+- planos institucionais;
+- implantação;
+- suporte;
+- treinamento;
+- integrações;
+- automações;
+- personalização controlada;
+- parcerias e programas alinhados ao impacto.
 
-## 12. Ambiente institucional
+As premissas devem ser substituídas por faturas, consumo medido, horas de equipe e entrevistas com compradores potenciais.
 
-Projetos pessoais pertencem ao usuário. Quando públicos, podem aparecer na vitrine global.
+## 10. Funcionamento do MVP
 
-Projetos institucionais pertencem ao ambiente de uma organização, preservam a autoria do usuário e aparecem somente na vitrine institucional da própria organização.
+O cadastro inicial deve ser pequeno e conter somente informações necessárias para iniciar:
 
-Uma organização pode ser:
+- título;
+- direção inicial;
+- autoria;
+- status;
+- visibilidade.
 
-- ONG;
-- escola;
-- faculdade;
-- empresa;
-- laboratório;
-- programa;
-- coletivo;
-- outra instituição que precise acompanhar projetos sem perder autoria, contexto e continuidade.
+O contexto é aprofundado conforme o projeto evolui. Marcos registram mudanças importantes, mas não substituem commits, arquivos ou histórico técnico.
 
-A arquitetura atual usa banco compartilhado com isolamento por linhas e resolução por subdomínio, como:
+Fluxo do MVP:
+
+```text
+criar
+→ adicionar contexto
+→ definir visibilidade
+→ publicar ou manter restrito
+→ explorar
+→ interagir
+→ registrar evolução
+```
+
+Ideia e projeto são estágios da mesma iniciativa. A ideia é o conceito inicial. O projeto começa quando existe direção suficiente para uma primeira execução.
+
+## 11. Ambientes institucionais
+
+Projetos autorais pessoais pertencem ao usuário e podem aparecer na vitrine global quando públicos.
+
+Projetos institucionais pertencem ao ambiente de uma organização, preservam a autoria do usuário e aparecem somente na vitrine da própria organização. Eles não devem ser misturados à vitrine global do Palácio Mental.
+
+Uma organização pode ser uma escola, faculdade, empresa, laboratório, programa, organização social ou outra instituição que precise acompanhar projetos sem perder autoria, contexto e continuidade.
+
+A arquitetura multi-tenant usa banco compartilhado com isolamento por linhas. O PostgreSQL mantém os dados oficiais. Redis pode acelerar sessões, cache, rankings derivados e eventos transitórios. O subdomínio identifica o ambiente.
+
+Exemplo:
 
 ```text
 camppg.palaciomental.com.br
 ```
 
-A identidade visual do tenant deve fazer a pessoa reconhecer que está no ambiente da organização, sem apagar a linguagem base do P.M.
+A organização possui identidade visual, usuários, programas, turmas, grupos, projetos, permissões e vitrine própria.
 
-Fluxo institucional:
+### Fluxo institucional
 
 ```text
-organização → programa → turma → grupo → projeto
-→ contexto → evolução → vitrine institucional
+organização
+→ programa
+→ turma
+→ grupo
+→ projeto
+→ contexto
+→ evolução
+→ vitrine institucional
 ```
 
-Um projeto pode ser orientado, autônomo institucional ou autoral pessoal. Esses três tipos não devem ser confundidos.
+Um programa pode representar uma disciplina, ciclo de formação, laboratório, edital, projeto de extensão ou iniciativa interna.
 
-## 13. Papéis e permissões
+Um projeto institucional pode ser:
 
-Papéis institucionais atuais do código:
+- orientado, associado a turma, grupo ou professor;
+- autônomo, criado por iniciativa dos participantes dentro do ambiente;
+- pessoal, quando pertence somente ao usuário no Meu Espaço.
 
-- proprietário: responsabilidade geral pelo tenant;
-- gestor: administração operacional;
-- professor: orientação e acompanhamento;
-- membro/aluno: participação conforme elegibilidade.
+O projeto pessoal não deve ser criado a partir do contexto institucional.
 
-O Contexto Mestre também utiliza os termos mentor, facilitador, orientador e observador. Esses termos podem ser conceituais ou futuros. Não presumir que sejam papéis técnicos já implementados.
+## 12. Papéis e permissões
 
-A implementação atual prioriza Professor como papel de orientação. Mentor pode ser tratado como função conceitual até que exista uma decisão específica para virar papel de sistema.
+Papéis institucionais conceituais:
 
-Papéis de projeto incluem proprietário e colaboradores, com permissões específicas para contexto, comentários, marcos e edição.
+- proprietário: responsável geral pelo ambiente;
+- gestor: administra usuários, programas, grupos e configurações;
+- professor: orienta e acompanha projetos;
+- mentor ou facilitador: função conceitual de acompanhamento, ainda dependente de decisão de modelagem;
+- membro: participa do ambiente e dos projetos autorizados.
 
-## 14. MVP e estado de implementação
+Papéis de turma ou grupo podem incluir gestor, orientador e participante.
 
-O MVP conceitual já cobre:
+Papéis de projeto podem incluir proprietário, colaborador e observador/gestor.
+
+O código atual deve ser consultado para diferenciar papéis conceituais dos papéis efetivamente implementados.
+
+## 13. MVP e versão 1.0
+
+O MVP conceitual inclui:
 
 - conta, autenticação e perfil;
 - criação, edição e página de projeto;
@@ -407,15 +429,31 @@ O MVP conceitual já cobre:
 - relevância;
 - colaboração;
 - caixa de entrada;
-- ambientes institucionais em desenvolvimento;
-- identidade e navegação institucional;
-- programas, turmas, grupos e projetos institucionais.
+- ambientes institucionais;
+- identidade visual de tenant;
+- programas, turmas e grupos;
+- projetos autônomos e orientados.
 
-O status exato deve ser verificado no código, nos testes e nas issues. Este documento não deve ser usado para afirmar que PM VCS, PM Flow, ranking Redis ou todas as funções de extensão já estão implementadas.
+O status exato de cada recurso deve ser confirmado no repositório, nos testes e nas issues. PM VCS, PM Flow e funcionalidades avançadas do ecossistema continuam sendo hipóteses futuras até que existam implementação e validação próprias.
 
-## 15. Arquitetura de dados e tecnologia
+## 14. Estrutura técnica
 
-PostgreSQL mantém os dados oficiais:
+Tecnologias e responsabilidades:
+
+- **Django:** aplicação web, autenticação, projetos, permissões e experiência principal;
+- **PostgreSQL:** usuários, projetos, membros, permissões e dados oficiais;
+- **Redis:** sessões, cache, contadores, rankings derivados, eventos e filas quando implementado;
+- **Spring Boot:** API de status e observabilidade;
+- **Django Templates, HTML, CSS e JavaScript:** interface responsiva e acessível;
+- **Docker:** ambiente local;
+- **Railway:** hospedagem prevista;
+- **Cloudflare:** DNS, TLS e subdomínios;
+- **Cloudflare R2:** object storage persistente em produção;
+- **N8N ou ferramenta similar:** possibilidade futura para onboarding, comunicação, pesquisas e integrações operacionais.
+
+## 15. Arquitetura de dados
+
+O PostgreSQL é a fonte oficial para:
 
 - usuários e perfis;
 - organizações e domínios;
@@ -430,106 +468,112 @@ PostgreSQL mantém os dados oficiais:
 - notificações persistentes;
 - planos e assinaturas quando implementados.
 
-Redis pode ser usado como camada operacional para:
+Redis é uma camada operacional derivada para:
 
 - sessões;
-- cache de organização e identidade;
-- eventos;
-- processamento assíncrono;
+- cache de organização e identidade visual;
+- eventos e processamento assíncrono;
 - contadores;
 - rankings derivados;
 - notificações temporárias.
 
-A regra é: o PostgreSQL é a verdade; Redis acelera, projeta ou transporta eventos.
+Regras essenciais:
 
-A infraestrutura planejada é:
+- Redis nunca é a fonte única de dados oficiais;
+- cache nunca concede autorização;
+- dados privados não entram em cache ou ranking público;
+- ranking deve poder ser reconstruído a partir do PostgreSQL;
+- autorização deve ser verificada no servidor.
+
+## 16. Subdomínios institucionais
+
+A infraestrutura prevista utiliza:
 
 ```text
-Registro.br + Cloudflare
-→ wildcard *.palaciomental.com.br
-→ Railway
-→ Django identifica o hostname
-→ domínio cadastrado resolve o tenant
+*.palaciomental.com.br → aplicação no Railway
+camppg.palaciomental.com.br → organização CAMPPG
 ```
 
-Em desenvolvimento, `?tenant=slug` substitui o DNS real quando DEBUG está habilitado.
+O wildcard da Cloudflare encaminha novos subdomínios para a aplicação. A Railway participa da configuração do domínio e do certificado SSL. O Django identifica o host recebido e consulta o domínio cadastrado para descobrir a organização.
 
-## 16. Requisitos sociais e éticos
+A criação de uma organização deve exigir apenas cadastrar o tenant, seu slug, sua identidade e seu domínio no sistema, respeitando as regras de ativação e segurança.
 
-O P.M. deve:
+## 17. Divulgação e comunicação
 
-- preservar autoria;
-- obter consentimento antes de expor pessoas ou relatos;
-- separar conteúdo público, restrito e privado;
-- permitir correção, ocultação ou retirada autorizada;
-- evitar ranking de pessoas como mecanismo de pressão;
-- manter o Modo Foco como recurso de acessibilidade, não como privilégio pago;
-- permitir exportação dos registros principais;
-- reduzir dependência da plataforma;
-- proteger dados pessoais;
-- registrar decisões de governança e moderação;
-- não usar custo próximo de zero como justificativa para eliminar segurança, backup ou continuidade.
+A divulgação inicial deve ser enxuta e voltada à validação do uso, não a uma campanha ampla antes da comprovação de valor.
 
-## 17. Hipóteses de produto e negócio
+Mensagem de referência:
 
-As hipóteses devem receber métrica, prazo, método e decisão. As datas presentes no documento original devem ser revisadas antes de serem usadas; algumas aparecem como datas provisórias ou inválidas.
+> Crie, organize e continue seus projetos em um só lugar.
 
-Hipóteses de produto:
+Canais possíveis:
 
-- usuários compreendem a proposta;
-- entrada simples reduz abandono;
-- contexto progressivo gera valor;
-- Meu Espaço gera retorno recorrente;
-- ambientes institucionais atendem CAMPPG;
-- relevância melhora descoberta sem criar viés predatório;
-- PM Flow e PM VCS resolvem problemas reais.
+- professores e coordenadores;
+- site e QR Code;
+- comunidade Discord;
+- YouTube;
+- suporte dentro da plataforma;
+- indicações e programas de inovação.
 
-Hipóteses de negócio:
+## 18. Hipóteses para validação
 
-- usuários pagariam por maior profundidade;
+Cada hipótese precisa de uma métrica observável, um alvo provisório, um método e uma data de decisão. As datas presentes no documento original são provisórias e devem ser revisadas antes de serem usadas.
+
+### Produto
+
+- usuários entendem a proposta;
+- o contexto progressivo gera valor;
+- Meu Espaço é útil;
+- o ambiente institucional atende às necessidades da organização-piloto;
+- relevância melhora a descoberta sem criar viés por plano;
+- PM Flow e PM VCS respondem a demandas reais.
+
+### Negócio
+
+- pessoas pagariam por maior profundidade;
 - organizações pagariam por governança;
-- ONGs subsidiadas gerariam aprendizado sustentável;
-- implantação seria viável;
-- configuração seria mais escalável do que customização;
-- o núcleo compartilhado poderia ser replicado para outras organizações.
+- implantação seria economicamente viável;
+- suporte teria custo controlável;
+- configuração seria suficiente para replicar o núcleo;
+- a solução poderia atender outros segmentos.
 
-Hipóteses de operação:
+### Operação
 
-- a equipe consegue oferecer suporte;
-- custo por organização permanece controlado;
-- dados podem ser exportados;
-- o sistema permanece acessível;
-- a plataforma pode ser operada com segurança por uma equipe enxuta.
+- a equipe consegue suportar organizações;
+- o núcleo compartilhado pode ser replicado;
+- os custos crescem de forma controlada;
+- a personalização por configuração evita código exclusivo;
+- a infraestrutura permanece sustentável.
 
-## 18. Próximas decisões recomendadas
+O assistente deve ajudar a transformar essas hipóteses em entrevistas, métricas, experimentos e decisões. Não deve apresentar hipótese como fato comprovado.
 
-Antes de ampliar o produto, o assistente deve ajudar a responder:
+## 19. Instruções finais para o assistente
 
-1. Qual formulação estratégica governa o próximo ciclo: extensão sem fins lucrativos, startup de impacto sustentável ou combinação controlada?
-2. Qual é a unidade central do piloto: projeto, iniciativa, ação, oficina, campanha ou programa?
-3. Quais dados do CAMPPG são reais, sensíveis, restritos ou publicáveis?
-4. Qual é o fluxo mínimo que uma organização precisa completar sem suporte?
-5. Quem administra cada tipo de conteúdo?
-6. Qual é o indicador principal de continuidade?
-7. Qual é o custo real de manter um tenant?
-8. Qual é o limite operacional para ONGs subsidiadas?
-9. O PM VCS e o PM Flow continuam como hipóteses futuras ou entram no próximo ciclo?
-10. Qual é o critério para autorizar a homologação da Issue #82?
+Atue como parceiro de produto, negócio, impacto, pesquisa, arquitetura e desenvolvimento do Palácio Mental.
 
-## 19. Instrução final para o assistente
+Preserve a visão completa do Contexto Mestre canônico. Não reduza o P.M. ao multi-tenant atual e não introduza conteúdos de versões adaptadas que foram excluídas pelo Product Owner.
 
-Atue como parceiro de produto, pesquisa, arquitetura e desenvolvimento do Palácio Mental. Preserve a visão ampla do Contexto Mestre, mas não trate hipóteses como funcionalidades prontas.
+Diferencie sempre:
 
-Em toda resposta importante, diferencie:
-
-- visão e propósito;
+- visão do produto;
 - decisão aprovada;
-- implementação existente;
+- funcionalidade implementada;
 - hipótese de produto;
 - hipótese de negócio;
-- requisito de extensão;
-- pendência do Product Owner;
+- funcionalidade futura;
 - dependência de outro membro;
-- risco técnico ou ético.
+- pendência do Product Owner;
+- risco técnico, financeiro ou de experiência.
 
-Use fontes externas apenas quando necessário e cite-as. Use o código para confirmar o estado técnico. Não proponha apagar partes do ecossistema, da visão social ou do modelo de sustentabilidade apenas porque elas não fazem parte da implementação atual.
+Antes de propor código:
+
+1. ler os arquivos envolvidos;
+2. verificar o estado do repositório;
+3. consultar testes e migrations;
+4. explicar riscos;
+5. propor a menor mudança coerente;
+6. executar testes específicos;
+7. executar a regressão completa;
+8. registrar o que foi validado.
+
+Responder sempre em português brasileiro, com clareza, síntese e comunicação acessível para pessoas técnicas e não técnicas.
