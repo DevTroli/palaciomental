@@ -10,7 +10,7 @@
 <body>
   <header class="tenant-header">
     <a class="tenant-brand" href="{% url 'core:index' %}" aria-label="Início de {{ identidade.nome_exibicao|default:organizacao.nome }}">
-      {% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="">{% endif %}
+      {% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
       <span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span>
     </a>
     <div class="tenant-context"><span>Ambiente institucional</span><strong>{{ afiliacao.get_papel_display }}</strong></div>

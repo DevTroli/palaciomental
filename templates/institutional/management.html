@@ -9,7 +9,7 @@
 <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
   <header class="tenant-header">
-    <a class="tenant-brand" href="{% url 'core:index' %}">{% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="">{% endif %}<span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a>
+    <a class="tenant-brand" href="{% url 'core:index' %}">{% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a>
     <div class="tenant-context"><span>Painel administrativo do tenant</span><strong>{{ afiliacao.get_papel_display }}</strong></div>
     {% include 'institutional/partials/shell_nav.html' %}
   </header>

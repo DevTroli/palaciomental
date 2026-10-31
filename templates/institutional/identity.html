@@ -1,1 +1,91 @@
-{% load static %}<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Identidade — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head><body><header class="tenant-header"><a class="tenant-brand" href="{% url 'core:index' %}">{% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="">{% endif %}<span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a><div class="tenant-context"><span>Configuração do ambiente</span><strong>{{ afiliacao.get_papel_display }}</strong></div>{% include 'institutional/partials/shell_nav.html' %}</header><main id="main-content" class="tenant-container"><nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_management' %}">Gestão</a><span aria-hidden="true">/</span><strong>Identidade visual</strong></nav><section class="tenant-hero"><p class="tenant-eyebrow">Marca da organização</p><h1>Faça o ambiente ter a sua cara.</h1><p>Escolha uma paleta pronta e envie a logo. Você não precisa conhecer códigos de cor.</p></section><form method="post" enctype="multipart/form-data" class="tenant-card tenant-identity-form" novalidate>{% csrf_token %}{% for field in form %}<p class="tenant-form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="tenant-form-error">{{ error }}</span>{% endfor %}</p>{% endfor %}{% if form.non_field_errors %}<p class="tenant-form-error">{{ form.non_field_errors }}</p>{% endif %}<div class="tenant-palette" aria-label="Referência visual da paleta">{% for nome, cor in paleta.items %}<span><i style="background:{{ cor }}" aria-hidden="true"></i>{{ nome|title }}</span>{% endfor %}</div><div class="tenant-message-actions"><button class="tenant-button" type="submit">Salvar identidade</button><a class="tenant-button tenant-button--secondary" href="{% url 'plataforma:institutional_management' %}">Cancelar</a></div></form></main>{% include 'institutional/partials/shell_footer.html' %}</body></html>
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Identidade — {{ organizacao.nome }}</title>
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style>
+</head>
+<body>
+  <header class="tenant-header">
+    <a class="tenant-brand" href="{% url 'core:index' %}">
+      {% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
+      <span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span>
+    </a>
+    <div class="tenant-context"><span>Configuração do ambiente</span><strong>{{ afiliacao.get_papel_display }}</strong></div>
+    {% include 'institutional/partials/shell_nav.html' %}
+  </header>
+
+  <main id="main-content" class="tenant-container">
+    <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_management' %}">Gestão</a><span aria-hidden="true">/</span><strong>Identidade visual</strong></nav>
+    <section class="tenant-hero">
+      <p class="tenant-eyebrow">Marca da organização</p>
+      <h1>Faça o ambiente ter a sua cara.</h1>
+      <p>Escolha nomes e paletas prontas. O sistema aplica a identidade sem aceitar CSS ou scripts livres.</p>
+    </section>
+
+    <div class="identity-layout">
+      <form method="post" enctype="multipart/form-data" class="tenant-card tenant-identity-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="tenant-form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+          <div class="tenant-form-field{% if field.errors %} has-error{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<span class="tenant-form-error" role="alert">{{ error }}</span>{% endfor %}
+          </div>
+        {% endfor %}
+        <div class="tenant-message-actions"><button class="tenant-button" type="submit">Salvar identidade</button><a class="tenant-button tenant-button--secondary" href="{% url 'plataforma:institutional_management' %}">Cancelar</a></div>
+      </form>
+
+      <aside class="identity-preview-panel" aria-labelledby="identity-preview-title">
+        <p class="tenant-eyebrow">Pré-visualização</p>
+        <h2 id="identity-preview-title">Assim o tenant será percebido</h2>
+        <div class="identity-preview" id="identity-preview">
+          <div class="identity-preview-header"><img id="logo-preview" src="{% if tenant_logo_url %}{{ tenant_logo_url }}{% else %}{% static 'img/mind_palace_logo.png' %}{% endif %}" alt="Prévia da logo"><strong id="name-preview">{{ identidade.nome_exibicao|default:organizacao.nome }}</strong></div>
+          <div class="identity-preview-body"><span class="identity-preview-badge" id="primary-preview">Cor principal</span><h3>Ambiente institucional</h3><p>Programas, turmas, grupos e projetos com a identidade da organização.</p><button type="button" id="accent-preview">Ação principal</button></div>
+        </div>
+        <div class="identity-palette" aria-label="Cores semânticas disponíveis">
+          {% for nome, cor in paleta.items %}<span><i style="background:{{ cor }}" aria-hidden="true"></i><strong>{{ nome|title }}</strong><small data-palette-contrast="{{ nome }}">Amostra</small></span>{% endfor %}
+        </div>
+        <p class="identity-contrast-status" id="contrast-status" role="status" aria-live="polite">O preview acompanha suas escolhas.</p>
+      </aside>
+    </div>
+  </main>
+  {% include 'institutional/partials/shell_footer.html' %}
+  {{ paleta|json_script:"tenant-palette-data" }}
+  <script>
+    (() => {
+      const palette = JSON.parse(document.getElementById('tenant-palette-data').textContent);
+      const primary = document.querySelector('[data-color-role="primary"]');
+      const accent = document.querySelector('[data-color-role="accent"]');
+      const background = document.querySelector('[data-color-role="background"]');
+      const name = document.querySelector('#id_nome_exibicao');
+      const logo = document.querySelector('[data-logo-input]');
+      const preview = document.querySelector('#identity-preview');
+      const logoPreview = document.querySelector('#logo-preview');
+      const namePreview = document.querySelector('#name-preview');
+      const primaryPreview = document.querySelector('#primary-preview');
+      const status = document.querySelector('#contrast-status');
+      const luminance = (hex) => { const rgb = hex.replace('#','').match(/.{2}/g).map(v => parseInt(v,16)/255).map(v => v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4); return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2]; };
+      const contrast = (a,b) => { const x=luminance(a), y=luminance(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+      const sync = () => {
+        const p=palette[primary?.value] || '#321943', a=palette[accent?.value] || '#1fae6d', b=palette[background?.value] || '#f7f4ee';
+        preview.style.setProperty('--preview-primary', p); preview.style.setProperty('--preview-accent', a); preview.style.setProperty('--preview-background', b);
+        primaryPreview.textContent = primary?.selectedOptions[0]?.text || 'Cor principal';
+        namePreview.textContent = name?.value || '{{ organizacao.nome|escapejs }}';
+        const ratio = contrast(p,b).toFixed(2); status.textContent = `Contraste principal sobre o fundo: ${ratio}:1. As ações usam uma cor segura automaticamente.`;
+        status.classList.toggle('identity-contrast-warning', Number(ratio) < 4.5);
+        document.querySelectorAll('[data-palette-contrast]').forEach(item => { const color=palette[item.dataset.paletteContrast]; item.textContent = color ? `${contrast(color,b).toFixed(2)}:1 sobre o fundo` : 'Amostra'; });
+      };
+      [primary,accent,background,name].forEach(el => el?.addEventListener('input', sync));
+      logo?.addEventListener('change', () => { const file=logo.files?.[0]; if(file){ const reader=new FileReader(); reader.onload=event => { logoPreview.src=event.target.result; }; reader.readAsDataURL(file); } });
+      sync();
+    })();
+  </script>
+</body>
+</html>

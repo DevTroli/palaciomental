@@ -33,6 +33,16 @@ class ProfileForm(forms.ModelForm):
 
 
 class IdentidadeOrganizacaoForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["nome_exibicao"].help_text = "Nome curto que aparecerá no cabeçalho e no rodapé do ambiente."
+        self.fields["logo"].help_text = "PNG, JPEG ou WebP. Até 2 MB, com pelo menos 64 px e proporção de até 8:1."
+        self.fields["cor_primaria"].help_text = "Identidade principal usada em cabeçalhos, títulos e ações seguras."
+        self.fields["cor_destaque"].help_text = "Cor de apoio para detalhes visuais; o sistema garante contraste nas ações."
+        self.fields["cor_fundo"].help_text = "Fundo geral do ambiente, sempre aplicado com texto legível."
+        for field_name, role in (("cor_primaria", "primary"), ("cor_destaque", "accent"), ("cor_fundo", "background")):
+            self.fields[field_name].widget.attrs.update({"class": "identity-color-select", "data-color-role": role})
+
     class Meta:
         model = IdentidadeOrganizacao
         fields = ("nome_exibicao", "logo", "cor_primaria", "cor_destaque", "cor_fundo")
@@ -43,7 +53,7 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
             "cor_destaque": "Cor de destaque",
             "cor_fundo": "Cor de fundo",
         }
-        widgets = {"logo": forms.ClearableFileInput(attrs={"accept": ".png,.jpg,.jpeg,.webp"})}
+        widgets = {"logo": forms.ClearableFileInput(attrs={"accept": ".png,.jpg,.jpeg,.webp", "data-logo-input": "true"})}
 
 
 class ProjectForm(forms.ModelForm):

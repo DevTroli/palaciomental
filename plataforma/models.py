@@ -4,7 +4,7 @@ from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 import uuid
 
-from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, validar_logo
+from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, normalizar_logo, validar_logo
 
 
 class Organizacao(models.Model):
@@ -53,6 +53,17 @@ class IdentidadeOrganizacao(models.Model):
     cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
     cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
     cor_fundo = models.CharField("Cor de fundo", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._logo_original_name = self.logo.name
+
+    def save(self, *args, **kwargs):
+        if self.logo and (not self.logo._committed or self.logo.name != self._logo_original_name):
+            self.logo = normalizar_logo(self.logo.file, self.logo.name)
+        result = super().save(*args, **kwargs)
+        self._logo_original_name = self.logo.name
+        return result
 
     @property
     def completa(self):

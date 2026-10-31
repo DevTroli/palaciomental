@@ -55,7 +55,8 @@ class TenantResolutionTests(TestCase):
 
     def logo_file(self, name="logo.png", size=(320, 120), image_format="PNG"):
         buffer = BytesIO()
-        Image.new("RGBA", size, (110, 74, 163, 255)).save(buffer, format=image_format)
+        mode = "RGB" if image_format.upper() in {"JPEG", "JPG"} else "RGBA"
+        Image.new(mode, size, (110, 74, 163, 255) if mode == "RGBA" else (110, 74, 163)).save(buffer, format=image_format)
         return SimpleUploadedFile(name, buffer.getvalue(), content_type=f"image/{image_format.lower()}")
 
     def test_logo_is_validated_and_saved_under_tenant_path(self):
@@ -68,6 +69,19 @@ class TenantResolutionTests(TestCase):
         )
         self.assertTrue(identidade.completa)
         self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", identidade.logo.name)
+
+    def test_logo_is_normalized_before_storage(self):
+        identidade = IdentidadeOrganizacao.objects.create(
+            organizacao=self.organization,
+            logo=self.logo_file("large-logo.jpg", size=(2000, 1200), image_format="JPEG"),
+            cor_primaria="roxo-institucional",
+            cor_destaque="verde-institucional",
+            cor_fundo="bege-claro",
+        )
+        identidade.logo.open()
+        with Image.open(identidade.logo) as imagem:
+            self.assertLessEqual(max(imagem.size), 1600)
+            self.assertEqual(imagem.format, "JPEG")
 
     def test_invalid_logo_format_is_rejected(self):
         identidade = IdentidadeOrganizacao(
@@ -339,6 +353,26 @@ class TenantResolutionTests(TestCase):
         identidade = IdentidadeOrganizacao.objects.get(organizacao=self.organization)
         self.assertEqual(identidade.nome_exibicao, "CAMPPG Projetos")
         self.assertEqual(identidade.cor_primaria, "azul-sobrio")
+
+    def test_identity_editor_has_live_preview_and_shell_uses_uploaded_logo(self):
+        identidade = IdentidadeOrganizacao.objects.create(
+            organizacao=self.organization,
+            nome_exibicao="CAMPPG com identidade",
+            logo=self.logo_file("camp-logo.png"),
+            cor_primaria="azul-sobrio",
+            cor_destaque="verde-institucional",
+            cor_fundo="bege-claro",
+        )
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("plataforma:institutional_identity"), HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pré-visualização")
+        self.assertContains(response, "tenant-palette-data")
+        self.assertContains(response, identidade.logo.url)
+
+        programs_response = self.client.get(reverse("plataforma:institutional_programs"), HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertContains(programs_response, identidade.logo.url)
 
     def test_regular_member_cannot_update_tenant_identity(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)

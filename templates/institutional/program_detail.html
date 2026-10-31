@@ -3,7 +3,7 @@
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ programa.nome }} — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
-<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_management' %}"><span>{{ organizacao.nome }}</span></a><div class="tenant-context"><span>Programa institucional</span><strong>{{ programa.get_status_display }}</strong></div>{% include 'institutional/partials/shell_nav.html' %}</header>
+<header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_management' %}">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a><div class="tenant-context"><span>Programa institucional</span><strong>{{ programa.get_status_display }}</strong></div>{% include 'institutional/partials/shell_nav.html' %}</header>
 <main id="main-content" class="tenant-container">
   <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas</a><span>/</span><span>{{ programa.nome }}</span></nav>
   <section class="tenant-hero"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h1>{{ programa.nome }}</h1><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p></section>
