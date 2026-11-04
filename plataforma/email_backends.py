@@ -60,7 +60,7 @@ class ResendEmailBackend(BaseEmailBackend):
             method="POST",
         )
         try:
-            with urlopen(request, timeout=settings.RESEND_TIMEOUT) as response:
+            with urlopen(request, timeout=settings.RESEND_TIMEOUT) as response:  # nosec B310: URL HTTPS fixa da Resend, sem entrada externa
                 result = json.load(response)
                 message_id = result.get("id") if isinstance(result, dict) else None
                 if not isinstance(message_id, str) or not message_id.strip():
