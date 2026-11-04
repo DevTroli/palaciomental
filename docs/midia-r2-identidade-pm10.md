@@ -66,12 +66,21 @@ A imagem copiada abriu no Comet via HTTPS no domínio de mídia. Essa evidência
 comprova a cópia e leitura pública, não substitui o teste de novo upload pela
 interface após o merge deste PR.
 
+Após o redeploy de configuração da main existente, o console de produção
+confirmou `R2_ENABLED=True` e `S3Storage`. Um novo objeto de teste de 57.819 bytes
+foi gravado e relido pelo `default_storage` do Django, com SHA-256 idêntico. Sua
+chave é `tenants/<id da organização A>/branding/logo/pm10-storage-smoke-20261104.png`.
+O registro da logo institucional não foi alterado. O comando
+`pm_rls_status --strict` continuou passando com `pm_app`, sem superuser/BYPASSRLS.
+
 ## Validação
 
 Onze testes adicionais cobrem URL CDN, mídia local em URL absoluta, ausência de
 identidade/logo, fallback de cores, contraste, contexto das telas, ambos os
 templates HTML e os dois remetentes reais usando backend de e-mail em memória.
 Um teste de regressão impede `src="{{ identidade.logo }}"` nos templates afetados.
+A suíte completa passou com 158 testes, e `check`, `makemigrations --check`,
+`compileall` e `git diff --check` passaram sem alterações de schema.
 
 Após merge e deploy:
 
