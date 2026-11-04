@@ -34,6 +34,7 @@ from .validators import CORES_SEMANTICAS
 from .navigation import global_home_url as _global_home_url, project_notification_url
 from .invitations import invitation_accept, invitation_login_target
 from .invitation_delivery import deliver_invitation
+from .branding import invitation_branding
 
 
 def _tenant_identity_context(organizacao):
@@ -352,6 +353,7 @@ def _send_organization_invitation_email(request, convite, raw_token):
         "identidade": getattr(convite.organizacao, "identidade", None),
         "convidado_por": convite.convidado_por,
         "invite_url": invite_url,
+        **invitation_branding(request, convite.organizacao),
     }
     email = EmailMultiAlternatives(
         subject=f"Convite para entrar em {convite.organizacao.nome}",
@@ -415,6 +417,7 @@ def _send_group_invitation_email(request, convite, raw_token):
         "identidade": getattr(grupo.turma.programa.organizacao, "identidade", None),
         "convidado_por": convite.convidado_por,
         "invite_url": invite_url,
+        **invitation_branding(request, grupo.turma.programa.organizacao),
     }
     email = EmailMultiAlternatives(
         subject=f"Convite para participar de {grupo.nome}",

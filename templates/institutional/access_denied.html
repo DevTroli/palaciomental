@@ -9,7 +9,7 @@
 <body>
   <main id="main-content" class="tenant-container tenant-centered-message">
     <section class="tenant-card tenant-card--active" role="alert" aria-labelledby="access-title">
-      {% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
+      {% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
       <p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }} · ambiente privado</p>
       <h1 id="access-title">{{ titulo }}</h1>
       <p>{{ mensagem }}</p>

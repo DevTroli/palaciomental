@@ -10,7 +10,7 @@
 <body>
   <header class="tenant-header">
     <a class="tenant-brand" href="{% url 'core:index' %}" aria-label="Início de {{ identidade.nome_exibicao|default:organizacao.nome }}">
-      {% if identidade and identidade.logo %}<img src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
+      {% if identidade and identidade.logo %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}
       <span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span>
     </a>
     <div class="tenant-context"><span>Ambiente institucional</span><strong>{{ afiliacao.get_papel_display }}</strong></div>
@@ -21,7 +21,7 @@
 
     <section class="tenant-overview-hero" aria-label="Apresentação do ambiente">
       <div class="tenant-hero-slide tenant-hero-slide--active">
-        <div>{% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ identidade.logo }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }}</p><h1>Um espaço para acompanhar o que está em movimento.</h1><p>Explore os programas, encontre grupos e acompanhe os projetos institucionais deste ambiente.</p></div>
+        <div>{% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<p class="tenant-eyebrow">{{ identidade.nome_exibicao|default:organizacao.nome }}</p><h1>Um espaço para acompanhar o que está em movimento.</h1><p>Explore os programas, encontre grupos e acompanhe os projetos institucionais deste ambiente.</p></div>
       </div>
     </section>
 
