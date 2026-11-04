@@ -242,7 +242,9 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         response = self.client.get(reverse("plataforma:institutional_identity"), HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Pré-visualização")
-        self.assertContains(response, "tenant-palette-data")
+        self.assertContains(response, "tenant-identity.js")
+        self.assertContains(response, 'data-theme-color="primary"')
+        self.assertContains(response, 'data-theme-color="surface"')
         self.assertContains(response, identidade.logo.url)
 
         programs_response = self.client.get(reverse("plataforma:institutional_programs"), HTTP_HOST="camppg.palaciomental.com.br")

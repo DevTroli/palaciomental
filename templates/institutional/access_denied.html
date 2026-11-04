@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{ titulo }} — {{ identidade.nome_exibicao|default:organizacao.nome }}</title>
-  <link rel="stylesheet" href="{% static 'css/institutional.css' %}"><style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};}</style>
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">{% include "institutional/partials/theme.html" %}
 <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
   <main id="main-content" class="tenant-container tenant-centered-message">

@@ -4,14 +4,12 @@ from django.templatetags.static import static
 
 from .navigation import global_home_url
 from .validators import CORES_SEMANTICAS
+from .theme import COLOR_ROLES, HEX_COLOR, readable_color, text_on
 
 
 def contrasting_text(color):
     """Escolhe preto ou branco pelo maior contraste WCAG com uma cor sRGB."""
-    channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
-    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
-    luminance = sum(c * weight for c, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
-    return "#000000" if luminance > 0.179 else "#ffffff"
+    return text_on(color)
 
 
 def organization_branding(organization):
@@ -22,6 +20,17 @@ def organization_branding(organization):
     accent = CORES_SEMANTICAS.get(
         getattr(identity, "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"]
     )
+    background = CORES_SEMANTICAS.get(
+        getattr(identity, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]
+    )
+    colors = dict(primary=primary, secondary=primary, accent=accent, background=background, surface="#ffffff")
+    custom = getattr(identity, "tema", {})
+    if isinstance(custom, dict):
+        for role in COLOR_ROLES:
+            value = custom.get(role)
+            if isinstance(value, str) and HEX_COLOR.fullmatch(value):
+                colors[role] = value.upper()
+    primary, accent = colors["primary"], colors["accent"]
     return {
         "tenant_display_name": getattr(identity, "nome_exibicao", "") or organization.nome,
         "tenant_identidade": identity,
@@ -30,9 +39,15 @@ def organization_branding(organization):
         "tenant_accent_color": accent,
         "tenant_primary_text_color": contrasting_text(primary),
         "tenant_accent_text_color": contrasting_text(accent),
-        "tenant_background_color": CORES_SEMANTICAS.get(
-            getattr(identity, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]
-        ),
+        "tenant_background_color": colors["background"],
+        "tenant_secondary_color": colors["secondary"],
+        "tenant_secondary_text_color": text_on(colors["secondary"]),
+        "tenant_surface_color": colors["surface"],
+        "tenant_background_text_color": text_on(colors["background"]),
+        "tenant_surface_text_color": text_on(colors["surface"]),
+        "tenant_link_color": readable_color(primary, colors["background"]),
+        "tenant_surface_link_color": readable_color(primary, colors["surface"]),
+        "tenant_colors": colors,
     }
 
 

@@ -11,9 +11,6 @@ def index(request):
     afiliacao = getattr(request, "membro_organizacao", None)
     if organizacao is not None and afiliacao is not None:
         identidade = getattr(organizacao, "identidade", None)
-        primary_color = CORES_SEMANTICAS.get(getattr(identidade, "cor_primaria", ""), CORES_SEMANTICAS["roxo-institucional"])
-        accent_color = CORES_SEMANTICAS.get(getattr(identidade, "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"])
-        background_color = CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"])
         programas = organizacao.programas.filter(
             status=ProgramaInstitucional.STATUS_PUBLICADO,
         ).prefetch_related("turmas__grupos")[:6]
@@ -57,9 +54,6 @@ def index(request):
                 "grupos_abertos": grupos,
                 "projetos": projetos,
                 "ranking_provisorio": True,
-                "tenant_primary_color": primary_color,
-                "tenant_accent_color": accent_color,
-                "tenant_background_color": background_color,
             },
         )
     latest_projects = Project.objects.filter(

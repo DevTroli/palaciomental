@@ -1,7 +1,7 @@
 {% load static %}
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Programas — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Programas — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">{% include "institutional/partials/theme.html" %}</head>
 <body>
 <header class="tenant-header"><a class="tenant-brand" href="{% url 'plataforma:institutional_management' %}">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a><div class="tenant-context"><span>Ambiente institucional</span><strong>Programas</strong></div>{% include 'institutional/partials/shell_nav.html' %}</header>
 <main id="main-content" class="tenant-container">

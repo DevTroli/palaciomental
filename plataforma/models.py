@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 import uuid
 
 from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, normalizar_logo, validar_logo
+from .theme import validate_theme
 
 
 class Organizacao(models.Model):
@@ -49,6 +50,7 @@ class IdentidadeOrganizacao(models.Model):
         verbose_name="Organização",
     )
     nome_exibicao = models.CharField("Nome de exibição", max_length=160, blank=True)
+    tema = models.JSONField("Cores personalizadas", default=dict, blank=True, validators=[validate_theme])
     logo = models.ImageField("Logo", upload_to=caminho_logo, validators=[validar_logo], blank=True)
     cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
     cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
@@ -67,7 +69,13 @@ class IdentidadeOrganizacao(models.Model):
 
     @property
     def completa(self):
-        return bool(self.logo and self.cor_primaria and self.cor_destaque and self.cor_fundo)
+        from .theme import HEX_COLOR
+
+        custom_complete = isinstance(self.tema, dict) and all(
+            isinstance(self.tema.get(role), str) and HEX_COLOR.fullmatch(self.tema[role])
+            for role in ("primary", "accent", "background")
+        )
+        return bool(self.logo and (custom_complete or (self.cor_primaria and self.cor_destaque and self.cor_fundo)))
 
     class Meta:
         verbose_name = "Identidade visual da organização"

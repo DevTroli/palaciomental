@@ -5,7 +5,7 @@
 {% block extra_head %}<link rel="stylesheet" href="{% static 'css/invitation.css' %}">{% endblock %}
 {% block institutional_header %}
 <header class="tenant-header">
-  <span class="tenant-brand">{{ tenant_display_name }}</span>
+  <span class="tenant-brand">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}{{ tenant_display_name }}</span>
   <span>Convite institucional</span>
 </header>
 {% endblock %}
@@ -20,6 +20,7 @@
 <section class="auth-section mvp-container invitation-section">
   <div class="form-card invitation-card">
     <span class="eyebrow">Entrada por convite</span>
+    {% if tenant_logo_url %}<img class="auth-tenant-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}
     <h1>{% if user.is_authenticated %}Confirme sua entrada{% else %}Crie sua conta{% endif %}</h1>
     <ol class="invitation-progress" aria-label="Etapas de entrada">
       <li {% if not user.is_authenticated %}aria-current="step"{% endif %}><span>1</span> Sua conta</li>

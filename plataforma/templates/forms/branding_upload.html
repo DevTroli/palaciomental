@@ -1,0 +1,7 @@
+{% if widget.is_initial %}
+  <span class="branding-file-current"><a href="{{ widget.value.url }}" target="_blank" rel="noopener noreferrer">Ver imagem atual</a></span>
+  {% if not widget.required %}
+    <label class="branding-file-clear" for="{{ widget.checkbox_id }}"><input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.disabled %} disabled{% endif %}> Remover imagem atual</label>
+  {% endif %}
+{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
