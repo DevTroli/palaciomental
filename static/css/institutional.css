@@ -57,6 +57,10 @@ body {
 
 .tenant-context strong { color: #a9ebc7; }
 
+.tenant-project-header { flex-wrap: wrap; }
+.tenant-nav button { border: 0; padding: 7px 10px; border-radius: 6px; color: #fff; background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.tenant-nav button:hover { background: rgba(255,255,255,.14); }
+
 .tenant-container {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
