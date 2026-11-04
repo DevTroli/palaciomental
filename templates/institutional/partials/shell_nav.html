@@ -1,0 +1,7 @@
+<a class="skip-link" href="#main-content">Pular para o conteúdo principal</a>
+<nav class="tenant-nav" aria-label="Navegação do ambiente">
+  <a href="{% url 'core:index' %}">Início</a>
+  <a href="{% url 'plataforma:projects' %}">Projetos</a>
+  {% if request.membro_organizacao and request.membro_organizacao.papel == 'proprietario' or request.membro_organizacao and request.membro_organizacao.papel == 'gestor' %}<a href="{% url 'plataforma:institutional_management' %}">Gestão</a>{% endif %}
+  {% if request.user.is_authenticated %}<a href="{% url 'plataforma:profile' request.user.username %}">Meu Espaço</a>{% endif %}
+</nav>

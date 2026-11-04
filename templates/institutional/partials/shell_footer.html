@@ -1,0 +1,7 @@
+{% load static %}
+<footer class="tenant-footer">
+  <div class="tenant-footer-inner">
+    <a class="tenant-footer-brand" href="{% url 'core:index' %}"><img src="{% if identidade and identidade.logo %}{{ identidade.logo }}{% else %}{% static 'img/mind_palace_logo.png' %}{% endif %}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}"><span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a>
+    <nav aria-label="Links do rodapé"><a href="{% url 'plataforma:profile' request.user.username %}">Meu Espaço</a><a href="{% url 'core:index' %}">Início do ambiente</a></nav>
+  </div>
+</footer>

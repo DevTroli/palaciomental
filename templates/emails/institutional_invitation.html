@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Convite institucional</title></head>
+<body style="margin:0;background:#f3ecdf;color:#30243f;font-family:Arial,Helvetica,sans-serif;line-height:1.5">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3ecdf;padding:32px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden">
+        <tr><td style="padding:28px 36px;background:{{ identidade.cor_primaria|default:'#6e4aa3' }};color:#fff">
+          {% if identidade.logo %}<img src="{{ identidade.logo }}" alt="{{ identidade.nome_exibicao|default:organizacao.nome }}" style="max-width:180px;max-height:56px">{% endif %}
+          <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-top:8px">{{ identidade.nome_exibicao|default:organizacao.nome }}</div>
+        </td></tr>
+        <tr><td style="padding:36px">
+          <p style="color:#6e4aa3;font-size:13px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase">Convite institucional</p>
+          <h1 style="margin:0 0 18px;font-size:28px;color:#30243f">Você foi convidado para participar</h1>
+          <p>{{ convidado_por.get_full_name|default:convidado_por.username }} convidou você para participar de <strong>{{ grupo.nome }}</strong>, no programa <strong>{{ programa.nome }}</strong>.</p>
+          <p>Seu papel inicial será <strong>{{ convite.get_papel_display }}</strong>. O acesso fica limitado ao ambiente e aos vínculos autorizados da organização.</p>
+          <p style="margin:30px 0"><a href="{{ invite_url }}" style="display:inline-block;background:{{ identidade.cor_destaque|default:'#6e4aa3' }};color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Aceitar convite</a></p>
+          <p style="font-size:13px;color:#665f70">Este convite expira em {{ convite.expira_em|date:"d/m/Y H:i" }} e só pode ser aceito pelo e-mail destinatário.</p>
+          <p style="font-size:12px;color:#665f70;word-break:break-all">Se o botão não funcionar, copie este endereço:<br>{{ invite_url }}</p>
+        </td></tr>
+      </table>
+      <p style="max-width:600px;color:#665f70;font-size:12px">Se você não reconhece este convite, ignore esta mensagem.</p>
+    </td></tr>
+  </table>
+</body>
+</html>
