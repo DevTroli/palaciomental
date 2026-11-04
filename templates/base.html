@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{% static 'css/plataforma.css' %}">
   {% if request.organizacao %}
   <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
-  <style>:root{--tenant-primary:{{ tenant_primary_color }};--tenant-accent:{{ tenant_accent_color }};--tenant-background:{{ tenant_background_color }};--pm-purple:var(--tenant-primary);--pm-purple-2:var(--tenant-primary);--pm-green:var(--tenant-primary);--pm-green-dark:var(--tenant-primary);--pm-cream:var(--tenant-background);}</style>
+  {% include "institutional/partials/theme.html" %}
   {% endif %}
   {% block extra_head %}{% endblock %}
 </head>

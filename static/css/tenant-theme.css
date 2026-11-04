@@ -1,0 +1,44 @@
+/* Carregado somente em hosts institucionais. As cores são HEX validadas. */
+body { background: var(--tenant-background); color: var(--tenant-ink); }
+.tenant-header, .tenant-header .tenant-brand, .tenant-header a, .tenant-header button,
+.tenant-header .tenant-context { color: var(--tenant-primary-text); }
+.tenant-header { background: var(--tenant-primary); }
+.tenant-card, .form-card, .tenant-footer, .identity-preview-panel, .tenant-form-field input,
+.tenant-form-field select, .tenant-form-field textarea, .field input, .field textarea,
+.invitation-summary, .project-card, .project-hero, .project-panel, .project-sidebar {
+  --tenant-ink: var(--tenant-surface-ink);
+  --tenant-muted: var(--tenant-surface-ink);
+  background: var(--tenant-surface);
+  color: var(--tenant-surface-ink);
+}
+.tenant-card a:not(.tenant-button), .form-card a, .tenant-footer a,
+.tenant-link { color: var(--tenant-surface-link); }
+.tenant-breadcrumbs a, .breadcrumbs a { color: var(--tenant-link); }
+.tenant-button, .button-green, .form-card .button-green {
+  background: var(--tenant-accent); color: var(--tenant-accent-text);
+  border: 1px solid currentColor;
+}
+.tenant-button:hover, .button-green:hover { filter: brightness(.95); }
+.tenant-button--secondary { background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
+.tenant-card h1, .tenant-card h2, .tenant-card h3, .form-card h1,
+.form-card .field label, .form-card .form-foot, .form-card .muted,
+.form-card .field-help, .form-card .invitation-note, .form-card .invitation-login,
+.invitation-progress, .invitation-progress [aria-current=step] { color: var(--tenant-surface-ink); }
+.invitation-progress [aria-current=step] span { background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
+.tenant-eyebrow { color: inherit; }
+.tenant-hero h1, .tenant-section-heading h2, .identity-preview-panel h2,
+.tenant-form-field label, .tenant-header .tenant-context strong { color: inherit; }
+.tenant-footer-brand img { background: #fff; padding: 4px; border-radius: 6px; }
+.tenant-card :focus-visible, .form-card :focus-visible {
+  outline: 3px solid var(--tenant-surface-ink); outline-offset: 3px;
+}
+.tenant-header :focus-visible { outline: 3px solid var(--tenant-primary-text); outline-offset: 3px; }
+.identity-color-row { display: flex; align-items: center; gap: 12px; }
+.identity-color-row input { min-width: 0; flex: 1; font-family: monospace; }
+.identity-color-trigger { width: 44px; height: 44px; border: 2px solid currentColor; border-radius: 8px; flex-shrink: 0; }
+.branding-file-current, .branding-file-clear { display: block; margin-bottom: 8px; }
+.branding-file-clear input { width: auto; }
+.auth-tenant-logo { display: block; max-width: 160px; max-height: 96px; object-fit: contain; margin-bottom: 16px; }
+.pcr-app .pcr-interaction .pcr-save { background: var(--tenant-accent); color: var(--tenant-accent-text); }
+.pcr-app .pcr-interaction .pcr-type.active { background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
+.pcr-app .pcr-interaction .pcr-cancel { background: #eeeeee; color: #222222; }

@@ -32,16 +32,49 @@ class ProfileForm(forms.ModelForm):
         widgets = {"bio": forms.Textarea(attrs={"rows": 4, "maxlength": 280, "placeholder": "Conte brevemente o que você cria."})}
 
 
+class BrandingUploadWidget(forms.ClearableFileInput):
+    template_name = "forms/branding_upload.html"
+
+
 class IdentidadeOrganizacaoForm(forms.ModelForm):
+    theme_primary = forms.RegexField(r"^#[0-9a-fA-F]{6}$", label="Cor principal", required=False)
+    theme_secondary = forms.RegexField(r"^#[0-9a-fA-F]{6}$", label="Cor secundária", required=False)
+    theme_accent = forms.RegexField(r"^#[0-9a-fA-F]{6}$", label="Cor de destaque", required=False)
+    theme_background = forms.RegexField(r"^#[0-9a-fA-F]{6}$", label="Fundo do ambiente", required=False)
+    theme_surface = forms.RegexField(r"^#[0-9a-fA-F]{6}$", label="Superfície dos cartões", required=False)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from .branding import organization_branding
+        from .theme import COLOR_ROLES
+
+        colors = organization_branding(self.instance.organizacao)["tenant_colors"]
+        for role in COLOR_ROLES:
+            field = self.fields[f"theme_{role}"]
+            field.initial = colors[role]
+            field.widget.attrs.update({"data-theme-color": role, "placeholder": "#RRGGBB", "maxlength": 7})
+            field.help_text = "Escolha no seletor ou digite #RRGGBB. O texto terá contraste automático."
+        for name in ("cor_primaria", "cor_destaque", "cor_fundo"):
+            self.fields[name].widget = forms.HiddenInput()
         self.fields["nome_exibicao"].help_text = "Nome curto que aparecerá no cabeçalho e no rodapé do ambiente."
         self.fields["logo"].help_text = "PNG, JPEG ou WebP. Até 2 MB, com pelo menos 64 px e proporção de até 8:1."
         self.fields["cor_primaria"].help_text = "Identidade principal usada em cabeçalhos, títulos e ações seguras."
         self.fields["cor_destaque"].help_text = "Cor de apoio para detalhes visuais; o sistema garante contraste nas ações."
         self.fields["cor_fundo"].help_text = "Fundo geral do ambiente, sempre aplicado com texto legível."
-        for field_name, role in (("cor_primaria", "primary"), ("cor_destaque", "accent"), ("cor_fundo", "background")):
-            self.fields[field_name].widget.attrs.update({"class": "identity-color-select", "data-color-role": role})
+
+    def save(self, commit=True):
+        from .theme import COLOR_ROLES
+
+        instance = super().save(commit=False)
+        if any(f"theme_{role}" in self.data for role in COLOR_ROLES):
+            instance.tema = {
+                role: self.cleaned_data[f"theme_{role}"].upper()
+                for role in COLOR_ROLES if self.cleaned_data.get(f"theme_{role}")
+            }
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
     class Meta:
         model = IdentidadeOrganizacao
@@ -53,7 +86,7 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
             "cor_destaque": "Cor de destaque",
             "cor_fundo": "Cor de fundo",
         }
-        widgets = {"logo": forms.ClearableFileInput(attrs={"accept": ".png,.jpg,.jpeg,.webp", "data-logo-input": "true"})}
+        widgets = {"logo": BrandingUploadWidget(attrs={"accept": ".png,.jpg,.jpeg,.webp", "data-logo-input": "true"})}
 
 
 class ProjectForm(forms.ModelForm):

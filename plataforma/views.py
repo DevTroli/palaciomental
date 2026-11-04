@@ -42,9 +42,6 @@ def _tenant_identity_context(organizacao):
     return {
         "organizacao": organizacao,
         "identidade": identidade,
-        "tenant_primary_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_primaria", ""), CORES_SEMANTICAS["roxo-institucional"]),
-        "tenant_accent_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"]),
-        "tenant_background_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]),
     }
 
 
@@ -200,9 +197,6 @@ def institutional_management(request):
         "organizacao": organizacao,
         "afiliacao": afiliacao,
         "identidade": identidade,
-        "tenant_primary_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_primaria", ""), CORES_SEMANTICAS["roxo-institucional"]),
-        "tenant_accent_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_destaque", ""), CORES_SEMANTICAS["verde-institucional"]),
-        "tenant_background_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]),
         "metricas": {
             "membros": organizacao.afiliacoes.filter(status=MembroOrganizacao.STATUS_ATIVA).count(),
             "convites": organizacao.convites.filter(status=ConviteOrganizacao.STATUS_PENDENTE, expira_em__gt=timezone.now()).count(),
