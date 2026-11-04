@@ -102,13 +102,13 @@ class ConviteSomenteNoHostDaOrganizacaoTests(TestCase):
                 self.assertEqual(response.status_code, 404)
 
     def test_host_correto_aceita_convite_de_organizacao(self):
-        response = self.client.get(self._url("institutional_organization_invite_accept", self.token_org), HTTP_HOST=HOST_A)
+        response = self.client.post(self._url("institutional_organization_invite_accept", self.token_org), {"action": "accept"}, HTTP_HOST=HOST_A)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(MembroOrganizacao.objects.filter(organizacao=self.org_a, usuario=self.convidado).exists())
         self.assertEqual(ConviteOrganizacao.objects.get().status, ConviteOrganizacao.STATUS_ACEITO)
 
     def test_host_correto_aceita_convite_de_grupo(self):
-        response = self.client.get(self._url("institutional_invite_accept", self.token_grupo), HTTP_HOST=HOST_A)
+        response = self.client.post(self._url("institutional_invite_accept", self.token_grupo), {"action": "accept"}, HTTP_HOST=HOST_A)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(MembroGrupo.objects.filter(grupo=self.grupo, usuario=self.convidado).exists())
         self.assertEqual(ConviteGrupo.objects.get().status, ConviteGrupo.STATUS_ACEITO)

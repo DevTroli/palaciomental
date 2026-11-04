@@ -52,11 +52,13 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
             reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
             HTTP_HOST="camppg.palaciomental.com.br",
         )
-        self.assertRedirects(response, f"{reverse('plataforma:login')}?next={reverse('plataforma:institutional_invite_accept', kwargs={'token': raw_token})}", fetch_redirect_response=False)
+        self.assertContains(response, "Criar conta e continuar")
+        self.assertFalse(MembroOrganizacao.objects.filter(usuario=invited).exists())
 
         self.client.force_login(invited)
-        response = self.client.get(
+        response = self.client.post(
             reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
+            {"action": "accept"},
             HTTP_HOST="camppg.palaciomental.com.br",
         )
         self.assertRedirects(response, reverse("plataforma:institutional_program_detail", kwargs={"programa_id": programa.pk}), fetch_redirect_response=False)
@@ -198,8 +200,9 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
             expira_em=timezone.now() + timedelta(days=7),
         )
         self.client.force_login(invited)
-        response = self.client.get(
+        response = self.client.post(
             reverse("plataforma:institutional_organization_invite_accept", kwargs={"token": raw_token}),
+            {"action": "accept"},
             HTTP_HOST="camppg.palaciomental.com.br",
         )
         self.assertRedirects(response, reverse("plataforma:projects"), fetch_redirect_response=False)
