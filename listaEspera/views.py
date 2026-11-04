@@ -10,7 +10,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import DatabaseError
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Case, Count, Exists, OuterRef, Q, When
 from django.db.models.functions import TruncDate
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -21,6 +21,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .forms import CollaborationRequestForm, CommentForm, MemberCreationForm, MilestoneForm, ProfileForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet
 from .models import CollaborationRequest, MemberProfile, Notification, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, WaitlistEntry
+from core.rankings import public_ranking_ids
 
 def index(request):
     """Página pública exclusiva da lista de espera durante a validação."""
@@ -91,7 +92,15 @@ def projects(request):
     if tag:
         queryset = queryset.filter(tags__icontains=tag)
     if ordering == "relevance":
-        queryset = queryset.order_by("-relevance", "-updated_at")
+        ranking_ids = public_ranking_ids(limit=500)
+        if ranking_ids:
+            ranking_order = Case(
+                *[When(pk=project_id, then=position) for position, project_id in enumerate(ranking_ids)],
+                default=len(ranking_ids),
+            )
+            queryset = queryset.order_by(ranking_order, "-relevance", "-updated_at")
+        else:
+            queryset = queryset.order_by("-relevance", "-updated_at")
     categories = Project.objects.filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
     context = {"projects": queryset, "categories": categories, "statuses": Project.STATUS_CHOICES, "filters": {"q": query, "category": category, "status": status, "tag": tag, "ordering": ordering}}
     return render(request, "projects/list.html", context)
