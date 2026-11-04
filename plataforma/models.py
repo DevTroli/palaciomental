@@ -231,6 +231,7 @@ class MemberProfile(models.Model):
     """Informações públicas e curtas do portfólio de um membro."""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     bio = models.CharField("Biografia", max_length=280, blank=True)
+    avatar = models.FileField("Foto de perfil", upload_to="avatars/", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

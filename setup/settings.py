@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "camp.apps.CampConfig",
     "plataforma.apps.PlataformaConfig"
 ]
 
@@ -137,6 +138,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "plataforma.context_processors.inbox_unread_count",
                 "plataforma.context_processors.tenant_branding",
+                "camp.context_processors.demo_access",
             ],
         },
     },

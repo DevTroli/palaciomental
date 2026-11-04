@@ -1,0 +1,348 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}{{ organizacao.nome|default:"CAMP" }} · CAMP-PG{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/camp.css' %}">
+</head>
+<body class="camp-body">
+
+  {# ── Ícones reutilizáveis ─────────────────────────────────────────── #}
+  <svg class="camp-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5h6l2 2h10v9.5H3z"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m14.8 9.2-1.7 4-4 1.7 1.7-4z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.8"/><path d="M17 14c2.3.4 4 2.4 4 5"/></symbol>
+    <symbol id="i-teams" viewBox="0 0 24 24"><rect x="3" y="4" width="7.5" height="7" rx="2"/><rect x="13.5" y="4" width="7.5" height="7" rx="2"/><rect x="8.25" y="14" width="7.5" height="7" rx="2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5v15"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M4 14h4l1.5 2h5L16 14h4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></symbol>
+    <symbol id="i-life" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="m6 6 3.5 3.5M18 6l-3.5 3.5M18 18l-3.5-3.5M6 18l3.5-3.5"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h9"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="m14 6 4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  </svg>
+
+  <a class="camp-skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <div class="camp-app">
+
+    {# ── Topbar ────────────────────────────────────────────────────── #}
+    <header class="camp-topbar">
+      <button class="camp-menu-toggle" type="button" aria-label="Abrir menu" aria-controls="camp-sidebar" aria-expanded="false">
+        <svg class="camp-icon" aria-hidden="true"><use href="#i-menu"/></svg>
+      </button>
+
+      <a class="camp-brand" href="{% url 'camp:dashboard' %}" aria-label="Ir para a página inicial do CAMP-PG">
+        <img class="camp-brand-logo" src="{% static 'img/logo_camp2.png' %}" alt="">
+        <span class="camp-brand-name">CAMP-PG</span>
+      </a>
+
+      <div class="camp-topbar-actions">
+        <a class="camp-icon-btn" href="{% url 'camp:inbox' %}" aria-label="Caixa de entrada{% if inbox_novas %} — {{ inbox_novas }} novidade{{ inbox_novas|pluralize }}{% endif %}" title="Caixa de entrada">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-inbox"/></svg>
+          {% if inbox_novas %}<span class="camp-icon-badge">{{ inbox_novas }}</span>{% endif %}
+        </a>
+
+        <a class="camp-icon-btn camp-icon-btn--add" href="{% url 'camp:project_create' %}" aria-label="Criar novo projeto" title="Novo projeto">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+        </a>
+
+        <button class="camp-icon-btn" type="button" aria-label="Buscar no CAMP" aria-expanded="false" aria-controls="camp-topbar-search" data-search-toggle>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
+        </button>
+
+        <div class="camp-account">
+          <button class="camp-account-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="camp-account-menu">
+            <span class="camp-account-avatar">{{ nome_usuario|first|upper }}</span>
+            <span class="camp-account-text">
+              <strong>{{ nome_usuario }}</strong>
+              <small>{{ papel_usuario }}</small>
+            </span>
+            <svg class="camp-icon camp-account-chevron" aria-hidden="true"><use href="#i-chevron"/></svg>
+          </button>
+
+          <div class="camp-account-menu" id="camp-account-menu" hidden>
+            <div class="camp-account-menu-head">
+              <strong>{{ nome_usuario }}</strong>
+              <span>{{ papel_usuario }}{% if organizacao %} · {{ organizacao.nome }}{% endif %}</span>
+            </div>
+
+            <a class="camp-account-item" href="{% url 'camp:profile' %}">
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
+              <span>MEU ESPAÇO</span>
+            </a>
+
+            <a class="camp-account-item" href="{% url 'camp:inbox' %}">
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-inbox"/></svg>
+              <span>Caixa de entrada</span>
+              {% if inbox_novas %}<span class="camp-account-badge">{{ inbox_novas }}</span>{% endif %}
+            </a>
+
+            {% if pode_gerenciar %}
+              <a class="camp-account-item camp-account-item--manager" href="{% url 'camp:manage' %}">
+                <svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg>
+                <span>Painel do gestor</span>
+              </a>
+            {% endif %}
+
+            <form class="camp-account-logout" method="post" action="{% url 'camp:logout' %}">
+              {% csrf_token %}
+              <button class="camp-account-item" type="submit">
+                <svg class="camp-icon" aria-hidden="true"><use href="#i-logout"/></svg>
+                <span>Logout</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="camp-topbar-search" id="camp-topbar-search" hidden>
+        <form method="get" action="{% url 'camp:explore' %}" role="search">
+          <label class="camp-sr-only" for="camp-topbar-busca">Buscar projetos e alunos</label>
+          <span class="camp-topbar-search-field">
+            <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
+            <input id="camp-topbar-busca" type="search" name="q" placeholder="Buscar projetos e alunos..." autocomplete="off">
+          </span>
+          <button class="camp-btn camp-btn--primary camp-btn--sm" type="submit">Buscar</button>
+        </form>
+      </div>
+    </header>
+
+    {# ── Sidebar ───────────────────────────────────────────────────── #}
+    <aside class="camp-sidebar" id="camp-sidebar" aria-label="Menu institucional">
+      <div class="camp-sidebar-brand">
+        <span class="camp-sidebar-mark" aria-hidden="true">{% if organizacao %}{{ organizacao.nome|first|upper }}{% else %}C{% endif %}</span>
+        <div class="camp-sidebar-brand-text">
+          <strong>CAMP</strong>
+          <span>Espaço exclusivo do CAMP</span>
+        </div>
+      </div>
+
+      <nav class="camp-nav" aria-label="Navegação do CAMP">
+        <a class="camp-nav-link" href="{% url 'camp:dashboard' %}" aria-label="Início"{% if nav_ativo == 'inicio' %} aria-current="page"{% endif %}>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-home"/></svg>
+          <span>Início</span>
+        </a>
+
+        <a class="camp-nav-link" href="{% url 'camp:profile' %}#meus-projetos" aria-label="Meus Projetos">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-folder"/></svg>
+          <span>Meus Projetos</span>
+        </a>
+
+        <a class="camp-nav-link" href="{% url 'camp:explore' %}" aria-label="Explorar Projetos"{% if nav_ativo == 'explorar' %} aria-current="page"{% endif %}>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg>
+          <span>Explorar Projetos</span>
+        </a>
+
+        <a class="camp-nav-link" href="{% url 'camp:explore' %}?vista=alunos" aria-label="Alunos"{% if nav_ativo == 'alunos' %} aria-current="page"{% endif %}>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
+          <span>Alunos</span>
+          {% if total_membros %}<span class="camp-nav-badge">{{ total_membros }}</span>{% endif %}
+        </a>
+
+        <a class="camp-nav-link" href="#" data-em-breve="Equipes" title="Em breve" aria-label="Equipes">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg>
+          <span>Equipes</span>
+        </a>
+
+        <a class="camp-nav-link" href="{% url 'camp:calendar' %}" aria-label="Calendário"{% if nav_ativo == 'calendario' %} aria-current="page"{% endif %}>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+          <span>Calendário</span>
+        </a>
+
+        <a class="camp-nav-link" href="#" data-em-breve="Recursos" title="Em breve" aria-label="Recursos">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-book"/></svg>
+          <span>Recursos</span>
+        </a>
+
+        <a class="camp-nav-link" href="{% url 'camp:profile' %}" aria-label="Perfil"{% if nav_ativo == 'perfil' %} aria-current="page"{% endif %}>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
+          <span>Perfil</span>
+        </a>
+
+        {% if pode_gerenciar %}
+          <a class="camp-nav-link" href="{% url 'camp:manage' %}" aria-label="Gestão"{% if nav_ativo == 'gestao' %} aria-current="page"{% endif %}>
+            <svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg>
+            <span>Gestão</span>
+          </a>
+        {% endif %}
+      </nav>
+
+      <div class="camp-sidebar-foot">
+        <span class="camp-sidebar-foot-mark" aria-hidden="true">
+          <img src="{% static 'img/palacio_camp_logo.png' %}" alt="">
+        </span>
+        <div>
+          <strong>CAMP</strong>
+          <span>Conhecimento que transforma</span>
+        </div>
+      </div>
+    </aside>
+
+    {# ── Conteúdo ──────────────────────────────────────────────────── #}
+    <main class="camp-main" id="conteudo">
+      {% if messages %}
+        <div class="camp-messages" aria-live="polite">
+          {% for message in messages %}
+            <p class="camp-message" role="status">
+              <span>{{ message }}</span>
+              <button type="button" class="camp-message-close" aria-label="Fechar mensagem">×</button>
+            </p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+
+      <footer class="camp-footer">
+        <span>CAMP · Conhecimento que transforma · criado por Palácio Mental</span>
+      </footer>
+
+    </main>
+  </div>
+
+  <div class="camp-scrim" hidden></div>
+  <div class="camp-toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    (() => {
+      const body = document.body;
+      const sidebar = document.querySelector('.camp-sidebar');
+      const toggle = document.querySelector('.camp-menu-toggle');
+      const scrim = document.querySelector('.camp-scrim');
+      const toast = document.querySelector('.camp-toast');
+
+      /* Menu lateral no mobile */
+      const setMenu = (open) => {
+        if (!sidebar || !toggle || !scrim) return;
+        sidebar.classList.toggle('is-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        scrim.hidden = !open;
+        body.classList.toggle('camp-menu-open', open);
+      };
+      toggle?.addEventListener('click', () => setMenu(!sidebar.classList.contains('is-open')));
+      scrim?.addEventListener('click', () => setMenu(false));
+      sidebar?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMenu(false)));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') setMenu(false);
+      });
+
+      /* Menu da conta */
+      const account = document.querySelector('.camp-account');
+      const accountTrigger = account?.querySelector('.camp-account-trigger');
+      const accountMenu = account?.querySelector('.camp-account-menu');
+
+      const setAccount = (open) => {
+        if (!accountTrigger || !accountMenu) return;
+        accountMenu.hidden = !open;
+        accountTrigger.setAttribute('aria-expanded', String(open));
+      };
+
+      accountTrigger?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setAccount(accountMenu.hidden);
+        setSearch(false);
+      });
+
+      /* Busca rápida do topbar */
+      const searchToggle = document.querySelector('[data-search-toggle]');
+      const searchPanel = document.getElementById('camp-topbar-search');
+      const searchInput = searchPanel?.querySelector('input[type="search"]');
+
+      const setSearch = (open) => {
+        if (!searchToggle || !searchPanel) return;
+        searchPanel.hidden = !open;
+        searchToggle.setAttribute('aria-expanded', String(open));
+        if (open) searchInput?.focus();
+      };
+
+      searchToggle?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setSearch(searchPanel.hidden);
+        setAccount(false);
+      });
+
+      document.addEventListener('click', (event) => {
+        if (account && !account.contains(event.target)) setAccount(false);
+        if (searchPanel && !searchPanel.hidden && !searchPanel.contains(event.target)) setSearch(false);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        setAccount(false);
+        setSearch(false);
+      });
+
+      /* Abas de "Seus Projetos" */
+      const tabs = Array.from(document.querySelectorAll('.camp-tab'));
+      const projects = Array.from(document.querySelectorAll('.camp-myproject'));
+      const tabEmpty = document.querySelector('.camp-tab-empty');
+
+      const applyFilter = (filter) => {
+        let visible = 0;
+        projects.forEach((project) => {
+          const show = project.dataset.grupo === filter;
+          project.hidden = !show;
+          if (show) visible += 1;
+        });
+        if (tabEmpty) tabEmpty.hidden = visible > 0 || projects.length === 0;
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach((item) => {
+            const active = item === tab;
+            item.classList.toggle('is-active', active);
+            item.setAttribute('aria-pressed', String(active));
+          });
+          applyFilter(tab.dataset.filter);
+        });
+      });
+
+
+
+      /* Áreas que ainda não existem */
+      let toastTimer;
+      document.querySelectorAll('[data-em-breve]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          if (!toast) return;
+          toast.textContent = `${link.dataset.emBreve} chega em breve.`;
+          toast.hidden = false;
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+        });
+      });
+
+      /* Mensagens do Django */
+      document.querySelectorAll('.camp-message').forEach((message) => {
+        const close = message.querySelector('.camp-message-close');
+        if (close) close.addEventListener('click', () => message.remove());
+        setTimeout(() => message.remove(), 7000);
+      });
+
+      /* Confirmação de exclusão */
+      document.querySelectorAll('form[data-confirm]').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+          if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>

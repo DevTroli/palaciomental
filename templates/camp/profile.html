@@ -1,0 +1,505 @@
+{% extends "camp/base.html" %}
+
+{% block title %}Meu perfil · {{ organizacao.nome|default:"CAMP" }}{% endblock %}
+
+{% block content %}
+
+  <section class="camp-profile-page" aria-labelledby="perfil-titulo">
+
+    {# ── Cabeçalho: identidade à esquerda, calendário à direita ───── #}
+    <header class="camp-profile-head">
+      <div class="camp-profile-left">
+        <div class="camp-profile-id">
+          {% if perfil_usuario.avatar %}
+            <img class="camp-profile-avatar-xl" src="{{ perfil_usuario.avatar.url }}" alt="Foto de perfil de {{ nome_usuario }}">
+          {% else %}
+            <span class="camp-profile-avatar-xl" aria-hidden="true">{{ inicial_usuario }}</span>
+          {% endif %}
+          <div class="camp-profile-info">
+            <p class="camp-eyebrow">Meu perfil</p>
+            <h1 class="camp-profile-name" id="perfil-titulo">{{ nome_usuario }}</h1>
+            <p class="camp-profile-role-line">
+              {{ organizacao.nome|default:"CAMP"|upper }} - {{ papel_usuario|upper }}
+            </p>
+            <p class="camp-profile-handle">@{{ request.user.username }}{% if request.user.email %} · {{ request.user.email }}{% endif %}</p>
+
+            <div class="camp-profile-quickstats" aria-label="Resumo do perfil">
+              <span><strong>{{ total_projetos }}</strong> projeto{{ total_projetos|pluralize }}</span>
+              <span><strong>{{ total_inscricoes }}</strong> colabora{{ total_inscricoes|pluralize:"ção,ções" }}</span>
+              <span><strong>{{ total_concluidos }}</strong> concluído{{ total_concluidos|pluralize }}</span>
+            </div>
+          </div>
+        </div>
+
+        {# Abas do perfil #}
+        <nav class="camp-profile-tabs" role="tablist" aria-label="Seções do perfil">
+          <button
+            class="camp-profile-tab{% if aba_ativa == 'projetos' %} is-active{% endif %}"
+            type="button"
+            role="tab"
+            id="tab-projetos"
+            aria-controls="painel-projetos"
+            aria-selected="{% if aba_ativa == 'projetos' %}true{% else %}false{% endif %}"
+            tabindex="{% if aba_ativa == 'projetos' %}0{% else %}-1{% endif %}"
+            data-profile-tab="projetos">
+            <svg class="camp-icon" aria-hidden="true"><use href="#i-folder"/></svg>
+            Meus Projetos
+            <span class="camp-profile-tab-count">{{ total_projetos }}</span>
+          </button>
+
+          <button
+            class="camp-profile-tab{% if aba_ativa == 'colaboracoes' %} is-active{% endif %}"
+            type="button"
+            role="tab"
+            id="tab-colaboracoes"
+            aria-controls="painel-colaboracoes"
+            aria-selected="{% if aba_ativa == 'colaboracoes' %}true{% else %}false{% endif %}"
+            tabindex="{% if aba_ativa == 'colaboracoes' %}0{% else %}-1{% endif %}"
+            data-profile-tab="colaboracoes">
+            <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
+            Colaborações
+            <span class="camp-profile-tab-count">{{ total_inscricoes }}</span>
+          </button>
+
+          <button
+            class="camp-profile-tab{% if aba_ativa == 'configuracoes' %} is-active{% endif %}"
+            type="button"
+            role="tab"
+            id="tab-configuracoes"
+            aria-controls="painel-configuracoes"
+            aria-selected="{% if aba_ativa == 'configuracoes' %}true{% else %}false{% endif %}"
+            tabindex="{% if aba_ativa == 'configuracoes' %}0{% else %}-1{% endif %}"
+            data-profile-tab="configuracoes">
+            <svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg>
+            Configurações
+          </button>
+        </nav>
+      </div>
+
+      <aside class="camp-profile-calendar" aria-labelledby="perfil-calendario-titulo">
+        <div class="camp-profile-cal-head">
+          <h2 id="perfil-calendario-titulo">Meu calendário</h2>
+          <div class="camp-profile-cal-tools">
+            <div class="camp-profile-cal-nav" aria-label="Navegação do calendário">
+              <a href="?ano={{ ano_anterior }}&amp;mes={{ mes_anterior }}&amp;aba={{ aba_ativa }}" aria-label="Mês anterior" rel="prev">
+                <svg class="camp-icon camp-icon--prev" aria-hidden="true"><use href="#i-arrow"/></svg>
+              </a>
+              <span>{{ mes_nome|capfirst }} {{ ano }}</span>
+              <a href="?ano={{ ano_proximo }}&amp;mes={{ mes_proximo }}&amp;aba={{ aba_ativa }}" aria-label="Próximo mês" rel="next">
+                <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+              </a>
+            </div>
+            <button class="camp-profile-cal-toggle" type="button" aria-expanded="true" aria-controls="perfil-calendario-corpo" title="Minimizar calendário" data-calendar-toggle>
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-chevron"/></svg>
+              <span class="camp-sr-only">Minimizar calendário</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="camp-profile-cal-body" id="perfil-calendario-corpo" data-calendar-body>
+        <table class="camp-mini-calendar">
+          <caption class="camp-sr-only">Calendário de {{ mes_nome }} de {{ ano }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">S</th>
+              <th scope="col">T</th>
+              <th scope="col">Q</th>
+              <th scope="col">Q</th>
+              <th scope="col">S</th>
+              <th scope="col">S</th>
+              <th scope="col">D</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for semana in semanas %}
+              <tr>
+                {% for dia in semana %}
+                  <td class="camp-mini-day{% if dia.fora_do_mes %} is-outside{% endif %}{% if dia.hoje %} is-today{% endif %}{% if dia.eventos %} has-event{% endif %}">
+                    <span>{{ dia.numero }}</span>
+                    {% if dia.eventos %}
+                      <i class="camp-mini-dot" title="{% for evento in dia.eventos %}{{ evento.titulo }}{% if not forloop.last %}, {% endif %}{% endfor %}"></i>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="camp-profile-upcoming">
+          <div class="camp-profile-upcoming-head">
+            <h3>Próximas atividades</h3>
+            <a href="{% url 'camp:calendar' %}">Ver calendário</a>
+          </div>
+
+          {% for evento in proximas_atividades %}
+            <article class="camp-profile-upcoming-item">
+              <span class="camp-profile-upcoming-date" aria-hidden="true">
+                <strong>{{ evento.data|date:"d" }}</strong>
+                <span>{{ evento.data|date:"M"|upper }}</span>
+              </span>
+              <div>
+                <strong>{{ evento.titulo }}</strong>
+                <span>
+                  {{ evento.data|date:"d/m/Y" }}
+                  {% if evento.horario %}· {{ evento.horario|time:"H:i" }}{% endif %}
+                  · {{ evento.get_tipo_display }}
+                </span>
+              </div>
+            </article>
+          {% empty %}
+            <p class="camp-profile-upcoming-empty">Nenhuma atividade próxima por enquanto.</p>
+          {% endfor %}
+        </div>
+        </div>
+      </aside>
+    </header>
+
+    <div class="camp-profile-panels">
+
+      {# ── Painel: Meus Projetos ─────────────────────────────────── #}
+      <section
+        class="camp-profile-panel"
+        id="painel-projetos"
+        role="tabpanel"
+        aria-labelledby="tab-projetos"
+        data-profile-panel="projetos"
+        {% if aba_ativa != 'projetos' %}hidden{% endif %}>
+
+        <section class="camp-profile-group" aria-labelledby="pessoais-perfil-titulo">
+          <div class="camp-profile-group-head">
+            <h2 id="pessoais-perfil-titulo">
+              <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-folder"/></svg></span>
+              Projetos Pessoais
+            </h2>
+            <a class="camp-inline-link" href="{% url 'camp:project_create' %}">
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+              Novo projeto
+            </a>
+          </div>
+
+          {% if meus_projetos %}
+            <div class="camp-profile-project-grid">
+              {% for projeto in meus_projetos %}
+                <article class="camp-profile-project-card">
+                  <div class="camp-profile-project-top">
+                    <span class="camp-profile-project-mark" aria-hidden="true">{{ projeto.inicial }}</span>
+                    <span class="camp-badge camp-badge--{{ projeto.status }}">{{ projeto.rotulo_status }}</span>
+                  </div>
+
+                  <h3 class="camp-profile-project-name">{{ projeto.title }}</h3>
+                  <p class="camp-profile-project-desc">{{ projeto.direction|default:"Sem descrição por enquanto."|truncatechars:120 }}</p>
+
+                  <div class="camp-profile-project-meta">
+                    <span>{{ projeto.category|default:"Sem categoria" }}</span>
+                    <span>{{ projeto.get_visibility_display }}</span>
+                    <span>{{ projeto.total_membros }} aluno{{ projeto.total_membros|pluralize }}</span>
+                  </div>
+
+                  <div class="camp-own-progress">
+                    <span class="camp-progress-label">{{ projeto.progresso }}%</span>
+                    <span class="camp-progress-track" aria-hidden="true">
+                      <span class="camp-progress-fill fill--{{ projeto.status }}" style="width: {{ projeto.progresso }}%"></span>
+                    </span>
+                  </div>
+
+                  <div class="camp-profile-project-foot">
+                    <span class="camp-profile-project-date">Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
+                    <div class="camp-profile-project-actions">
+                      <a class="camp-btn camp-btn--ghost camp-btn--sm" href="{% url 'camp:project_edit' projeto.pk %}">
+                        <svg class="camp-icon" aria-hidden="true"><use href="#i-edit"/></svg>
+                        Editar
+                      </a>
+                      <form method="post" action="{% url 'camp:project_delete' projeto.pk %}" data-confirm="Excluir o projeto “{{ projeto.title }}”? Essa ação não pode ser desfeita.">
+                        {% csrf_token %}
+                        <button class="camp-btn camp-btn--danger camp-btn--sm" type="submit">
+                          <svg class="camp-icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                          Excluir
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="camp-empty camp-empty--compact">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-folder"/></svg></span>
+              <strong>Você ainda não criou nenhum projeto.</strong>
+              <p>Crie seu primeiro projeto para começar a registrar ideias, contexto e andamento.</p>
+              <a class="camp-btn camp-btn--primary" href="{% url 'camp:project_create' %}">Criar meu primeiro projeto</a>
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="camp-profile-group" aria-labelledby="institucionais-perfil-titulo">
+          <div class="camp-profile-group-head">
+            <h2 id="institucionais-perfil-titulo">
+              <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
+              Projetos Institucionais
+            </h2>
+            <a class="camp-inline-link" href="{% url 'camp:explore' %}">
+              Explorar projetos
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </a>
+          </div>
+
+          {% if projetos_institucionais %}
+            <div class="camp-own-list">
+              {% for projeto in projetos_institucionais %}
+                <article class="camp-own-card">
+                  <div class="camp-own-main">
+                    <span class="camp-own-mark" aria-hidden="true">{{ projeto.inicial }}</span>
+                    <div class="camp-own-content">
+                      <div class="camp-own-head">
+                        <h3>{{ projeto.title }}</h3>
+                        <span class="camp-badge camp-badge--{{ projeto.status }}">{{ projeto.rotulo_status }}</span>
+                      </div>
+                      <p>{{ projeto.direction|default:"Sem descrição por enquanto."|truncatechars:160 }}</p>
+                      <div class="camp-own-meta">
+                        <span>{{ projeto.category|default:"Sem categoria" }}</span>
+                        <span>{{ projeto.total_membros }} aluno{{ projeto.total_membros|pluralize }}</span>
+                        <span>{{ projeto.total_estrelas }} estrela{{ projeto.total_estrelas|pluralize }}</span>
+                        <span>Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="camp-empty camp-empty--compact">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
+              <strong>Nenhum projeto institucional disponível.</strong>
+              <p>Quando outros alunos publicarem projetos abertos, eles aparecem aqui.</p>
+              <a class="camp-btn camp-btn--primary" href="{% url 'camp:explore' %}">Explorar projetos</a>
+            </div>
+          {% endif %}
+        </section>
+      </section>
+
+      {# ── Painel: Colaborações ──────────────────────────────────── #}
+      <section
+        class="camp-profile-panel"
+        id="painel-colaboracoes"
+        role="tabpanel"
+        aria-labelledby="tab-colaboracoes"
+        data-profile-panel="colaboracoes"
+        {% if aba_ativa != 'colaboracoes' %}hidden{% endif %}>
+
+        <section class="camp-profile-group" aria-labelledby="colaboracoes-titulo">
+          <div class="camp-profile-group-head">
+            <h2 id="colaboracoes-titulo">
+              <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+              Minhas colaborações
+            </h2>
+            <a class="camp-inline-link" href="{% url 'camp:explore' %}">
+              Encontrar mais
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </a>
+          </div>
+
+          {% if inscricoes %}
+            <div class="camp-activity-grid">
+              {% for inscricao in inscricoes %}
+                <article class="camp-activity-card">
+                  <span class="camp-activity-mark" aria-hidden="true">{{ inscricao.project.inicial }}</span>
+                  <div class="camp-activity-content">
+                    <div class="camp-activity-head">
+                      <h3>{{ inscricao.project.title }}</h3>
+                      <span class="camp-badge camp-badge--{{ inscricao.project.status }}">{{ inscricao.project.rotulo_status }}</span>
+                    </div>
+                    <p>{{ inscricao.project.direction|default:"Sem descrição por enquanto."|truncatechars:140 }}</p>
+                    <div class="camp-activity-meta">
+                      <span><svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg> Papel: {{ inscricao.role }}</span>
+                      <span>Projeto de {{ inscricao.project.owner.get_full_name|default:inscricao.project.owner.username }}</span>
+                      <span>Inscrito em {{ inscricao.joined_at|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="camp-activity-progress">
+                      <span class="camp-progress-label">{{ inscricao.project.progresso }}%</span>
+                      <span class="camp-progress-track" aria-hidden="true">
+                        <span class="camp-progress-fill fill--{{ inscricao.project.status }}" style="width: {{ inscricao.project.progresso }}%"></span>
+                      </span>
+                    </div>
+                    <div class="camp-activity-actions">
+                      <form method="post" action="{% url 'camp:leave_project' inscricao.project.pk %}" data-confirm="Sair da colaboração do projeto “{{ inscricao.project.title }}”?">
+                        {% csrf_token %}
+                        <button class="camp-btn camp-btn--ghost camp-btn--sm" type="submit">Sair da colaboração</button>
+                      </form>
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="camp-empty">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+              <strong>Nenhuma colaboração ainda.</strong>
+              <p>Explore projetos abertos e junte-se a uma equipe do CAMP.</p>
+              <a class="camp-btn camp-btn--primary" href="{% url 'camp:explore' %}">Explorar projetos</a>
+            </div>
+          {% endif %}
+        </section>
+      </section>
+
+      {# ── Painel: Configurações ─────────────────────────────────── #}
+      <section
+        class="camp-profile-panel"
+        id="painel-configuracoes"
+        role="tabpanel"
+        aria-labelledby="tab-configuracoes"
+        data-profile-panel="configuracoes"
+        {% if aba_ativa != 'configuracoes' %}hidden{% endif %}>
+
+        <div class="camp-settings-grid">
+          <form class="camp-settings-card" method="post" enctype="multipart/form-data" action="{% url 'camp:profile' %}?aba=configuracoes">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="perfil">
+
+            <div class="camp-settings-head">
+              <h2>Dados pessoais</h2>
+              <p>Atualize seu nome, e-mail de contato e foto de perfil.</p>
+            </div>
+
+            <div class="camp-settings-avatar">
+              {% if perfil_usuario.avatar %}
+                <img src="{{ perfil_usuario.avatar.url }}" alt="Foto de perfil atual de {{ nome_usuario }}">
+              {% else %}
+                <span aria-hidden="true">{{ inicial_usuario }}</span>
+              {% endif %}
+              <div>
+                <strong>Foto de perfil</strong>
+                <small>Uma imagem redonda ajuda as pessoas a reconhecer você no CAMP.</small>
+              </div>
+            </div>
+
+            {% if form_perfil.non_field_errors %}
+              <div class="camp-form-alert" role="alert">
+                {% for error in form_perfil.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+
+            {% for field in form_perfil %}
+              <div class="camp-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+              </div>
+            {% endfor %}
+
+            <div class="camp-settings-readonly">
+              <span>Nome de usuário</span>
+              <strong>@{{ request.user.username }}</strong>
+            </div>
+
+            <button class="camp-btn camp-btn--primary" type="submit">Salvar alterações</button>
+          </form>
+
+          <form class="camp-settings-card" method="post" action="{% url 'camp:profile' %}?aba=configuracoes">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="senha">
+
+            <div class="camp-settings-head">
+              <h2>Senha</h2>
+              <p>Troque sua senha periodicamente para manter a conta segura.</p>
+            </div>
+
+            {% if form_senha.non_field_errors %}
+              <div class="camp-form-alert" role="alert">
+                {% for error in form_senha.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+
+            {% for field in form_senha %}
+              <div class="camp-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+                {% if field.help_text %}<div class="camp-field-hint">{{ field.help_text|safe }}</div>{% endif %}
+              </div>
+            {% endfor %}
+
+            <button class="camp-btn camp-btn--primary" type="submit">Alterar senha</button>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const tabs = Array.from(document.querySelectorAll('[data-profile-tab]'));
+      const panels = Array.from(document.querySelectorAll('[data-profile-panel]'));
+      if (!tabs.length) return;
+
+      const activate = (name) => {
+        tabs.forEach((tab) => {
+          const active = tab.dataset.profileTab === name;
+          tab.classList.toggle('is-active', active);
+          tab.setAttribute('aria-selected', String(active));
+          tab.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          panel.hidden = panel.dataset.profilePanel !== name;
+        });
+      };
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activate(tab.dataset.profileTab));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          let target = index;
+          if (event.key === 'ArrowLeft') target = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === 'ArrowRight') target = (index + 1) % tabs.length;
+          if (event.key === 'Home') target = 0;
+          if (event.key === 'End') target = tabs.length - 1;
+          tabs[target].focus();
+          activate(tabs[target].dataset.profileTab);
+        });
+      });
+
+      const activeTab = tabs.find((tab) => tab.classList.contains('is-active')) || tabs[0];
+      activate(activeTab.dataset.profileTab);
+    })();
+
+    (() => {
+      const head = document.querySelector('.camp-profile-head');
+      const toggle = document.querySelector('[data-calendar-toggle]');
+      const body = document.querySelector('[data-calendar-body]');
+      if (!head || !toggle || !body) return;
+
+      const storageKey = 'camp:perfil-calendario-minimizado';
+
+      const setCollapsed = (collapsed) => {
+        head.classList.toggle('is-calendar-collapsed', collapsed);
+        body.hidden = collapsed;
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+        const label = collapsed ? 'Expandir calendário' : 'Minimizar calendário';
+        toggle.setAttribute('title', label);
+        const srLabel = toggle.querySelector('.camp-sr-only');
+        if (srLabel) srLabel.textContent = label;
+      };
+
+      let collapsed = false;
+      try {
+        collapsed = window.localStorage.getItem(storageKey) === '1';
+      } catch (error) {
+        collapsed = false;
+      }
+      setCollapsed(collapsed);
+
+      toggle.addEventListener('click', () => {
+        collapsed = !collapsed;
+        setCollapsed(collapsed);
+        try {
+          window.localStorage.setItem(storageKey, collapsed ? '1' : '0');
+        } catch (error) {
+          // Sem persistência quando o navegador bloqueia o armazenamento local.
+        }
+      });
+    })();
+  </script>
+
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "camp/base.html" %}
+
+{% block title %}{{ titulo_pagina }} · {{ organizacao.nome|default:"CAMP" }}{% endblock %}
+
+{% block content %}
+
+  <section class="camp-hero camp-form-hero" aria-labelledby="form-titulo">
+    <div class="camp-hero-copy">
+      <p class="camp-eyebrow">Meus projetos</p>
+      <h1 class="camp-hero-title" id="form-titulo">
+        {% if modo == "editar" %}Editar projeto{% else %}Criar novo projeto{% endif %}
+        <span>{% if modo == "editar" %}{{ projeto.title }}{% else %}Dê forma à sua próxima ideia.{% endif %}</span>
+      </h1>
+      <p class="camp-hero-subtitle">
+        {% if modo == "editar" %}
+          Atualize o título, o contexto e a visibilidade do seu projeto.
+        {% else %}
+          Preencha as informações principais. Você poderá ajustar tudo depois.
+        {% endif %}
+      </p>
+    </div>
+  </section>
+
+  <div class="camp-form-wrap">
+    <form class="camp-form" method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="camp-form-alert" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="camp-form-grid">
+        <div class="camp-field camp-field--full">
+          <label for="{{ form.title.id_for_label }}">Título do projeto</label>
+          {{ form.title }}
+          {% for error in form.title.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field camp-field--full">
+          <label for="{{ form.direction.id_for_label }}">Direção</label>
+          <span class="camp-field-hint">Por que este projeto existe? Que transformação você quer construir?</span>
+          {{ form.direction }}
+          {% for error in form.direction.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.category.id_for_label }}">Categoria</label>
+          {{ form.category }}
+          {% for error in form.category.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.tags.id_for_label }}">Tags</label>
+          <span class="camp-field-hint">Até 8 tags, separadas por vírgula.</span>
+          {{ form.tags }}
+          {% for error in form.tags.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.status.id_for_label }}">Status</label>
+          {{ form.status }}
+          {% for error in form.status.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.visibility.id_for_label }}">Visibilidade</label>
+          {{ form.visibility }}
+          {% for error in form.visibility.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field camp-field--full">
+          <label class="camp-check" for="{{ form.seeking_collaborators.id_for_label }}">
+            {{ form.seeking_collaborators }}
+            <span>Estou buscando colaboradores para este projeto</span>
+          </label>
+          {% for error in form.seeking_collaborators.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field camp-field--full">
+          <label for="{{ form.collaboration_description.id_for_label }}">O que você procura</label>
+          <span class="camp-field-hint">Aparece quando o projeto está aberto a colaborações.</span>
+          {{ form.collaboration_description }}
+          {% for error in form.collaboration_description.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="camp-form-actions">
+        <a class="camp-btn camp-btn--ghost" href="{% url 'camp:profile' %}">Cancelar</a>
+        <button class="camp-btn camp-btn--primary" type="submit">
+          {% if modo == "editar" %}Salvar alterações{% else %}Criar projeto{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+
+{% endblock %}

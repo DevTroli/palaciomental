@@ -1,7 +1,9 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseForbidden, HttpResponseNotFound
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from .models import MembroOrganizacao, Organizacao, DominioOrganizacao
 from .validators import CORES_SEMANTICAS
 
@@ -25,6 +27,16 @@ class TenantResolutionMiddleware:
         if organizacao is None:
             if self._is_tenant_host(hostname):
                 return HttpResponseNotFound("Ambiente institucional não encontrado.")
+            # Em desenvolvimento, /camp/ na raiz redireciona para a página de
+            # cadastro institucional do CAMP; subcaminhos (incluindo /camp/cadastro)
+            # seguem o fluxo público/público-auth normal.
+            if settings.DEBUG and self._is_camp_path(request.path):
+                if request.path in ("/camp", "/camp/"):
+                    return self._finish(
+                        request,
+                        redirect(f"/camp/cadastro/?next={request.get_full_path()}"),
+                        is_dev_tenant,
+                    )
             return self.get_response(request)
 
         request.organizacao = organizacao
@@ -34,6 +46,20 @@ class TenantResolutionMiddleware:
             return self._finish(request, self.get_response(request), is_dev_tenant)
 
         if not request.user.is_authenticated:
+            # Em desenvolvimento, abrir /camp/ na raiz entra na página de
+            # cadastro institucional do CAMP, sem exigir cadastro ou senha.
+            if settings.DEBUG and self._is_camp_path(request.path):
+                if request.path in ("/camp", "/camp/"):
+                    return self._finish(
+                        request,
+                        redirect(f"/camp/cadastro/?next={request.get_full_path()}"),
+                        is_dev_tenant,
+                    )
+                return self._finish(
+                    request,
+                    redirect(f"/entrar/camp/?{urlencode({'next': request.get_full_path()})}"),
+                    is_dev_tenant,
+                )
             return self._finish(request, redirect_to_login(request.get_full_path(), settings.LOGIN_URL), is_dev_tenant)
 
         affiliation = MembroOrganizacao.objects.filter(
@@ -113,7 +139,13 @@ class TenantResolutionMiddleware:
 
     @staticmethod
     def _is_public_auth_path(path):
-        return path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/"))
+        if path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/")):
+            return True
+        return path == "/camp/cadastro" or path.startswith("/camp/cadastro/")
+
+    @staticmethod
+    def _is_camp_path(path):
+        return path == "/camp" or path.startswith("/camp/")
 
 
 class RowLevelSecurityMiddleware:
