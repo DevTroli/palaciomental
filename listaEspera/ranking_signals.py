@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import Project, ProjectVote
+from .models import Project, ProjectComment, ProjectVote
 
 
 def _refresh(project_id):
@@ -43,3 +43,20 @@ def vote_deleted_from_ranking(sender, instance, **kwargs):
             instance.project_id, -1, occurred_at=instance.created_at
         )
     )
+
+
+def _publish_comment(event, instance):
+    from core.comment_events import publish_comment_event
+
+    publish_comment_event(event, instance.pk, instance.project_id)
+
+
+@receiver(post_save, sender=ProjectComment)
+def comment_saved_event(sender, instance, created, **kwargs):
+    event = "comment.created" if created else "comment.updated"
+    transaction.on_commit(lambda: _publish_comment(event, instance))
+
+
+@receiver(post_delete, sender=ProjectComment)
+def comment_deleted_event(sender, instance, **kwargs):
+    transaction.on_commit(lambda: _publish_comment("comment.deleted", instance))
