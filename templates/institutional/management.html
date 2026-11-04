@@ -8,11 +8,7 @@
   {% include "institutional/partials/theme.html" %}
 <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml"></head>
 <body>
-  <header class="tenant-header">
-    <a class="tenant-brand" href="{% url 'core:index' %}">{% if identidade and identidade.logo %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a>
-    <div class="tenant-context"><span>Painel administrativo do tenant</span><strong>{{ afiliacao.get_papel_display }}</strong></div>
-    {% include 'institutional/partials/shell_nav.html' %}
-  </header>
+  {% include "institutional/partials/project_header.html" %}
   <main id="main-content" class="tenant-container">
     <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'core:index' %}">{{ identidade.nome_exibicao|default:organizacao.nome }}</a><span aria-hidden="true">/</span><strong>Gestão</strong></nav>
     <section class="tenant-hero"><p class="tenant-eyebrow">Espaço de gestão · Governança institucional</p><h1>O que precisa de atenção hoje?</h1><p>Administre o ambiente de {{ identidade.nome_exibicao|default:organizacao.nome }} sem misturar suas tarefas ao Django Admin interno do Palácio Mental.</p></section>

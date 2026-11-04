@@ -42,3 +42,29 @@ body { background: var(--tenant-background); color: var(--tenant-ink); }
 .pcr-app .pcr-interaction .pcr-save { background: var(--tenant-accent); color: var(--tenant-accent-text); }
 .pcr-app .pcr-interaction .pcr-type.active { background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
 .pcr-app .pcr-interaction .pcr-cancel { background: #eeeeee; color: #222222; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tenant-project-header { gap: 16px; padding: 18px 4%; flex-wrap: wrap; }
+.tenant-project-header .tenant-brand { max-width: 220px; min-width: 0; }
+.tenant-project-header .tenant-brand span { overflow-wrap: anywhere; }
+.tenant-header-search { display: flex; gap: 4px; align-items: center; margin-left: auto; }
+.tenant-header-search input { width: 150px; min-width: 0; padding: 10px; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 8px; }
+.tenant-header-search button, .tenant-account button { color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 8px; padding: 10px; cursor: pointer; }
+.tenant-account { position: relative; }
+.tenant-account summary { cursor: pointer; padding: 10px; }
+.tenant-account > div { position: absolute; right: 0; top: 100%; z-index: 30; display: grid; gap: 12px; width: 220px; padding: 18px; background: var(--tenant-surface); color: var(--tenant-surface-ink); border: 1px solid currentColor; border-radius: 12px; box-shadow: 0 12px 30px #0002; }
+.tenant-account > div a { color: inherit; }
+.identity-cover-preview { display: block; width: 100%; max-height: 160px; object-fit: cover; }
+.identity-cover-preview[hidden] { display: none; }
+@media(max-width:600px) { .tenant-header-search { order: 4; width: 100%; margin: 0; } .tenant-header-search input { flex: 1; } .tenant-account-nav { margin-left: auto; } .tenant-project-header .tenant-context { font-size: 12px; } }
+@media(max-width:600px) { .tenant-project-header { flex-direction: row; align-items: center; } .tenant-project-header .tenant-nav { width: auto; } }
+.tenant-account .tenant-mobile-action { display: none; }
+@media(max-width:600px) {
+  .tenant-project-header { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+  .tenant-project-header .tenant-brand { grid-column: 1; grid-row: 1; max-width: none; font-size: 15px; }
+  .tenant-project-header > .tenant-nav:not(.tenant-account-nav) { grid-column: 1 / -1; grid-row: 2; }
+  .tenant-project-header .tenant-account-nav { grid-column: 2; grid-row: 1; margin: 0; }
+  .tenant-account-nav > a { display: none; }
+  .tenant-account .tenant-mobile-action { display: block; }
+  .tenant-account summary { max-width: 115px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tenant-header-search { grid-column: 1 / -1; grid-row: 3; }
+}

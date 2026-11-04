@@ -35,6 +35,8 @@ def organization_branding(organization):
         "tenant_display_name": getattr(identity, "nome_exibicao", "") or organization.nome,
         "tenant_identidade": identity,
         "tenant_logo_url": identity.logo.url if identity and identity.logo else "",
+        "tenant_cover_url": identity.capa.url if identity and getattr(identity, "capa", None) else "",
+        "tenant_presentation": getattr(identity, "apresentacao", ""),
         "tenant_primary_color": primary,
         "tenant_accent_color": accent,
         "tenant_primary_text_color": contrasting_text(primary),
@@ -56,6 +58,8 @@ def invitation_branding(request, organization):
     context = organization_branding(organization)
     if context["tenant_logo_url"]:
         context["tenant_logo_url"] = request.build_absolute_uri(context["tenant_logo_url"])
+    if context["tenant_cover_url"]:
+        context["tenant_cover_url"] = request.build_absolute_uri(context["tenant_cover_url"])
     context["pm_home_url"] = global_home_url(request)
     context["pm_logo_url"] = request.build_absolute_uri(static("img/mind_palace_logo.png"))
     return context

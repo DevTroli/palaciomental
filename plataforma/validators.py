@@ -3,7 +3,7 @@ from io import BytesIO
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 MAX_LOGO_BYTES = 2 * 1024 * 1024
@@ -58,11 +58,11 @@ def validar_logo(arquivo):
     arquivo.seek(0)
 
 
-def normalizar_logo(arquivo, nome):
+def normalizar_logo(arquivo, nome, max_dimension=NORMALIZED_LOGO_MAX_DIMENSION):
     """Reduz dimensões e remove metadados desnecessários antes do storage."""
     arquivo.seek(0)
-    imagem = Image.open(arquivo)
-    imagem.thumbnail((NORMALIZED_LOGO_MAX_DIMENSION, NORMALIZED_LOGO_MAX_DIMENSION), Image.Resampling.LANCZOS)
+    imagem = ImageOps.exif_transpose(Image.open(arquivo))
+    imagem.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
     extensao = Path(nome).suffix.lower()
     formato = "PNG" if extensao == ".png" else "WEBP" if extensao == ".webp" else "JPEG"
     if formato == "JPEG":
@@ -86,3 +86,38 @@ def normalizar_logo(arquivo, nome):
 def caminho_logo(instance, filename):
     organizacao_id = instance.organizacao_id or "pendente"
     return f"tenants/{organizacao_id}/branding/logo/{instance.id}{Path(filename).suffix.lower()}"
+
+
+def validar_capa(arquivo):
+    if not arquivo:
+        return
+    if arquivo.size > 5 * 1024 * 1024:
+        raise ValidationError("A capa deve ter no máximo 5 MB.")
+    if Path(arquivo.name).suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}:
+        raise ValidationError("Envie a capa em PNG, JPEG ou WebP.")
+    try:
+        image = Image.open(arquivo)
+        image.verify()
+        arquivo.seek(0)
+        image = Image.open(arquivo)
+        width, height = image.size
+        if image.getexif().get(274) in (5, 6, 7, 8):
+            width, height = height, width
+        if getattr(image, "n_frames", 1) != 1:
+            raise ValidationError("Use uma capa estática, sem animação.")
+    except ValidationError:
+        raise
+    except Exception as exc:
+        raise ValidationError("O arquivo da capa não é uma imagem válida.") from exc
+    finally:
+        arquivo.seek(0)
+    if width < 640 or height < 160 or width > 6000 or height > 3000:
+        raise ValidationError("Use uma capa de 640×160 até 6.000×3.000 pixels.")
+    if not 1.5 <= width / height <= 8:
+        raise ValidationError("Use uma imagem horizontal, com proporção entre 1,5:1 e 8:1.")
+
+
+def caminho_capa(instance, filename):
+    import uuid
+
+    return f"tenants/{instance.organizacao_id}/branding/cover/{uuid.uuid4().hex}{Path(filename).suffix.lower()}"

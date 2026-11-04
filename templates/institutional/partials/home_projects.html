@@ -1,0 +1,5 @@
+{% for projeto in items %}
+<article class="tenant-card"><p class="tenant-eyebrow">{{ projeto.get_status_display }} · {{ projeto.category }}</p><h3><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h3><p>{{ projeto.direction|truncatechars:110 }}</p>{% if ranked %}<span class="tenant-status">{{ projeto.relevance }} voto(s)</span>{% endif %}<a class="tenant-button tenant-button--secondary" href="{% url 'plataforma:project_detail' projeto.pk %}">Abrir projeto</a></article>
+{% empty %}
+<article class="tenant-card tenant-placeholder"><h3>Nenhum projeto publicado</h3><p>{{ empty_message }}</p></article>
+{% endfor %}

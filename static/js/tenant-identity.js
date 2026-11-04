@@ -71,4 +71,16 @@
     reader.readAsDataURL(file);
   });
   sync();
+  const cover = document.querySelector("[data-cover-input]");
+  cover?.addEventListener("change", () => {
+    const file = cover.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      const image = preview.querySelector("#cover-preview");
+      image.src = event.target.result;
+      image.hidden = false;
+    };
+    reader.readAsDataURL(file);
+  });
 })();

@@ -57,7 +57,7 @@ class IdentidadeOrganizacaoInline(admin.StackedInline):
     extra = 0
     max_num = 1
     fieldsets = (
-        ("Identidade exibida", {"fields": ("nome_exibicao", "logo")}),
+        ("Identidade exibida", {"fields": ("nome_exibicao", "logo", "capa", "apresentacao")}),
         ("Cores da organização", {"fields": ("cor_primaria", "cor_destaque", "cor_fundo")} ),
     )
 
@@ -145,7 +145,7 @@ class IdentidadeOrganizacaoAdmin(admin.ModelAdmin):
     list_select_related = ("organizacao",)
     autocomplete_fields = ("organizacao",)
     fieldsets = (
-        ("Organização", {"fields": ("organizacao", "nome_exibicao", "logo")} ),
+        ("Organização", {"fields": ("organizacao", "nome_exibicao", "logo", "capa", "apresentacao")} ),
         ("Cores", {"fields": ("cor_primaria", "cor_destaque", "cor_fundo")} ),
     )
 
