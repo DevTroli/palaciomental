@@ -28,7 +28,8 @@ def shade(cell, fill):
     tcPr = cell._tc.get_or_add_tcPr()
     shd = tcPr.find(qn('w:shd'))
     if shd is None:
-        shd = OxmlElement('w:shd'); tcPr.append(shd)
+        shd = OxmlElement('w:shd')
+        tcPr.append(shd)
     shd.set(qn('w:fill'), fill)
 
 
@@ -36,25 +37,32 @@ def margins(cell, top=90, start=100, bottom=90, end=100):
     tcPr = cell._tc.get_or_add_tcPr()
     tcMar = tcPr.first_child_found_in('w:tcMar')
     if tcMar is None:
-        tcMar = OxmlElement('w:tcMar'); tcPr.append(tcMar)
+        tcMar = OxmlElement('w:tcMar')
+        tcPr.append(tcMar)
     for tag, value in [('top', top), ('start', start), ('bottom', bottom), ('end', end)]:
         node = tcMar.find(qn('w:' + tag))
         if node is None:
-            node = OxmlElement('w:' + tag); tcMar.append(node)
-        node.set(qn('w:w'), str(value)); node.set(qn('w:type'), 'dxa')
+            node = OxmlElement('w:' + tag)
+            tcMar.append(node)
+        node.set(qn('w:w'), str(value))
+        node.set(qn('w:type'), 'dxa')
 
 
 def border(cell):
     tcPr = cell._tc.get_or_add_tcPr()
     borders = tcPr.first_child_found_in('w:tcBorders')
     if borders is None:
-        borders = OxmlElement('w:tcBorders'); tcPr.append(borders)
+        borders = OxmlElement('w:tcBorders')
+        tcPr.append(borders)
     for edge in ['top','left','bottom','right']:
         tag = qn('w:' + edge)
         el = borders.find(tag)
         if el is None:
-            el = OxmlElement('w:' + edge); borders.append(el)
-        el.set(qn('w:val'), 'single'); el.set(qn('w:sz'), '4'); el.set(qn('w:color'), 'D6CBDC')
+            el = OxmlElement('w:' + edge)
+            borders.append(el)
+        el.set(qn('w:val'), 'single')
+        el.set(qn('w:sz'), '4')
+        el.set(qn('w:color'), 'D6CBDC')
 
 
 def heading(doc, text, level=1):
@@ -63,28 +71,44 @@ def heading(doc, text, level=1):
     p.paragraph_format.space_before = Pt(14 if level == 1 else 9)
     p.paragraph_format.space_after = Pt(6)
     p.paragraph_format.line_spacing = 1.15
-    r = p.add_run(text); run_style(r, size=14 if level == 1 else 12, bold=True, color=PURPLE)
+    r = p.add_run(text)
+    run_style(r, size=14 if level == 1 else 12, bold=True, color=PURPLE)
     return p
 
 
 def paragraph(doc, text, align=WD_ALIGN_PARAGRAPH.JUSTIFY, after=6):
-    p = doc.add_paragraph(); p.alignment = align
-    p.paragraph_format.line_spacing = 1.5; p.paragraph_format.space_after = Pt(after)
+    p = doc.add_paragraph()
+    p.alignment = align
+    p.paragraph_format.line_spacing = 1.5
+    p.paragraph_format.space_after = Pt(after)
     run_style(p.add_run(text))
     return p
 
 
 def table(doc, headers, rows, widths):
-    t = doc.add_table(rows=1, cols=len(headers)); t.alignment = WD_TABLE_ALIGNMENT.CENTER; t.style = 'Table Grid'
+    t = doc.add_table(rows=1, cols=len(headers))
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t.style = 'Table Grid'
     for i, h in enumerate(headers):
-        c = t.rows[0].cells[i]; shade(c, PURPLE); margins(c); border(c); c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-        p = c.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.line_spacing = 1.0
+        c = t.rows[0].cells[i]
+        shade(c, PURPLE)
+        margins(c)
+        border(c)
+        c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+        p = c.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.line_spacing = 1.0
         run_style(p.add_run(h), size=9, bold=True, color='FFFFFF')
     for ri, row in enumerate(rows):
         cells = t.add_row().cells
         for i, value in enumerate(row):
-            c = cells[i]; shade(c, BEIGE if ri % 2 == 0 else 'FFFFFF'); margins(c); border(c); c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-            p = c.paragraphs[0]; p.paragraph_format.line_spacing = 1.0
+            c = cells[i]
+            shade(c, BEIGE if ri % 2 == 0 else 'FFFFFF')
+            margins(c)
+            border(c)
+            c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+            p = c.paragraphs[0]
+            p.paragraph_format.line_spacing = 1.0
             run_style(p.add_run(value), size=9)
     for row in t.rows:
         for i, w in enumerate(widths): row.cells[i].width = Inches(w)
@@ -94,22 +118,36 @@ def table(doc, headers, rows, widths):
 
 doc = Document()
 sec = doc.sections[0]
-sec.page_width = Inches(8.27); sec.page_height = Inches(11.69)
-sec.top_margin = Inches(1.18); sec.bottom_margin = Inches(0.79)
-sec.left_margin = Inches(1.18); sec.right_margin = Inches(0.79)
+sec.page_width = Inches(8.27)
+sec.page_height = Inches(11.69)
+sec.top_margin = Inches(1.18)
+sec.bottom_margin = Inches(0.79)
+sec.left_margin = Inches(1.18)
+sec.right_margin = Inches(0.79)
 normal = doc.styles['Normal']
-normal.font.name = 'Arial'; normal._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial'); normal.font.size = Pt(11); normal.paragraph_format.line_spacing = 1.5
+normal.font.name = 'Arial'
+normal._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+normal.font.size = Pt(11)
+normal.paragraph_format.line_spacing = 1.5
 
 # Capa
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(90)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(90)
 run_style(p.add_run('PALÁCIO MENTAL'), size=20, bold=True, color=PURPLE)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 run_style(p.add_run('SEÇÃO 7 — ODS E IMPACTO SOCIAL'), size=14, bold=True, color=GREEN)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(28)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(28)
 run_style(p.add_run('Texto final para o Contexto Mestre'), size=12, color=PURPLE)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(120)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(120)
 run_style(p.add_run('Versão para revisão da equipe'), size=11, color=GRAY)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 run_style(p.add_run('Outubro de 2026'), size=11, color=GRAY)
 doc.add_page_break()
 
@@ -126,7 +164,10 @@ table(doc, ['Meta', 'Relação com o Palácio Mental', 'Limite da contribuição
 
 heading(doc, '7.3 Forma de contribuição', 2)
 paragraph(doc, 'A contribuição esperada ocorre por meio do seguinte ciclo:')
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(4); p.paragraph_format.space_after = Pt(10)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(4)
+p.paragraph_format.space_after = Pt(10)
 run_style(p.add_run('projeto → prática → registro → reflexão → colaboração → continuidade'), size=12, bold=True, color=GREEN)
 paragraph(doc, 'No ambiente institucional, esse ciclo pode apoiar disciplinas, programas, grupos, laboratórios, projetos de extensão e iniciativas de organizações sociais. A autoria permanece com as pessoas e os projetos institucionais permanecem separados da vitrine global, conforme a arquitetura do produto.')
 
@@ -140,7 +181,11 @@ for item in [
     'projetos relacionados a sustentabilidade, inclusão ou desenvolvimento comunitário;',
     'percepção dos participantes sobre organização, aprendizado e continuidade.',
 ]:
-    p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.left_indent = Inches(0.35); p.paragraph_format.line_spacing = 1.5; p.paragraph_format.space_after = Pt(2); run_style(p.add_run(item))
+    p = doc.add_paragraph(style='List Bullet')
+    p.paragraph_format.left_indent = Inches(0.35)
+    p.paragraph_format.line_spacing = 1.5
+    p.paragraph_format.space_after = Pt(2)
+    run_style(p.add_run(item))
 paragraph(doc, 'Esses indicadores não medem sozinhos a qualidade da educação. Eles mostram se a plataforma está contribuindo para práticas de aprendizagem, colaboração e preservação do conhecimento.')
 
 heading(doc, '7.5 Síntese para comunicação', 2)
@@ -151,7 +196,8 @@ paragraph(doc, 'A ODS 4 busca assegurar educação inclusiva, equitativa e de qu
 paragraph(doc, 'Fonte: ONU Brasil. Objetivo de Desenvolvimento Sustentável 4 — Educação de qualidade. Disponível em: https://brasil.un.org/pt-br/sdgs/4. Acesso em: 27 out. 2026.')
 
 for section in doc.sections:
-    footer = section.footer.paragraphs[0]; footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    footer = section.footer.paragraphs[0]
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_style(footer.add_run('Palácio Mental — seção de revisão do Contexto Mestre'), size=8, color=GRAY)
 
 doc.save(DOCX)

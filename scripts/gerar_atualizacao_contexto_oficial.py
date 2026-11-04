@@ -77,8 +77,10 @@ def set_cell_margins(cell, top=90, start=100, bottom=90, end=100):
     for m, v in [('top', top), ('start', start), ('bottom', bottom), ('end', end)]:
         node = tcMar.find(qn('w:'+m))
         if node is None:
-            node = OxmlElement('w:'+m); tcMar.append(node)
-        node.set(qn('w:w'), str(v)); node.set(qn('w:type'), 'dxa')
+            node = OxmlElement('w:'+m)
+            tcMar.append(node)
+        node.set(qn('w:w'), str(v))
+        node.set(qn('w:type'), 'dxa')
 
 
 def style_run(run, size=11, bold=False, color='000000', italic=False):
@@ -132,7 +134,8 @@ def add_table(doc, headers, rows, widths=None):
         set_cell_shading(hdr[i], PURPLE)
         set_cell_margins(hdr[i])
         hdr[i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-        p = hdr[i].paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p = hdr[i].paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p.paragraph_format.line_spacing = 1.0
         style_run(p.add_run(h), size=9, bold=True, color='FFFFFF')
     for ridx, row in enumerate(rows):
@@ -141,7 +144,8 @@ def add_table(doc, headers, rows, widths=None):
             set_cell_shading(cells[i], BEIGE if ridx % 2 == 0 else 'FFFFFF')
             set_cell_margins(cells[i])
             cells[i].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-            p = cells[i].paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p = cells[i].paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.line_spacing = 1.0
             style_run(p.add_run(str(val)), size=9, color='000000')
     for row in table.rows:
@@ -163,27 +167,41 @@ def add_caption(doc, text):
 
 doc = Document()
 sec = doc.sections[0]
-sec.page_width = Inches(8.27); sec.page_height = Inches(11.69)
-sec.top_margin = Inches(1.18); sec.bottom_margin = Inches(0.79)
-sec.left_margin = Inches(1.18); sec.right_margin = Inches(0.79)
+sec.page_width = Inches(8.27)
+sec.page_height = Inches(11.69)
+sec.top_margin = Inches(1.18)
+sec.bottom_margin = Inches(0.79)
+sec.left_margin = Inches(1.18)
+sec.right_margin = Inches(0.79)
 
 styles = doc.styles
 normal = styles['Normal']
-normal.font.name = 'Arial'; normal._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial'); normal.font.size = Pt(11)
+normal.font.name = 'Arial'
+normal._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+normal.font.size = Pt(11)
 normal.paragraph_format.line_spacing = 1.5
 for name in ['Heading 1','Heading 2']:
-    styles[name].font.name = 'Arial'; styles[name]._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+    styles[name].font.name = 'Arial'
+    styles[name]._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
 
 # Capa
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(80)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(80)
 style_run(p.add_run('PALÁCIO MENTAL'), size=20, bold=True, color=PURPLE)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 style_run(p.add_run('ATUALIZAÇÃO ESTRATÉGICA DO CONTEXTO MESTRE'), size=14, bold=True, color=GREEN)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(28)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(28)
 style_run(p.add_run('Arquitetura de planos, sustentabilidade e ecossistema'), size=12, color=PURPLE)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before = Pt(120)
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.paragraph_format.space_before = Pt(120)
 style_run(p.add_run('Documento de apoio para revisão da equipe'), size=11, color=GRAY)
-p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 style_run(p.add_run('Outubro de 2026'), size=11, color=GRAY)
 doc.add_page_break()
 
