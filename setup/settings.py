@@ -93,7 +93,7 @@ STATUS_API_URL = config(
 STATUS_API_TIMEOUT = config("STATUS_API_TIMEOUT", cast=float, default=3.0)
 
 # E-mail transacional de convites. Em desenvolvimento, o conteúdo aparece no
-# terminal; em produção, as credenciais SMTP/provedor são obrigatórias.
+# terminal; em produção, selecionar explicitamente o backend do provedor.
 EMAIL_BACKEND = config(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
@@ -104,6 +104,8 @@ EMAIL_PORT = config("EMAIL_PORT", cast=int, default=587)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool, default=True)
+RESEND_API_KEY = config("RESEND_API_KEY", default="")
+RESEND_TIMEOUT = config("RESEND_TIMEOUT", cast=float, default=10.0)
 PUBLIC_APP_URL = config("PUBLIC_APP_URL", default="")
 
 MIDDLEWARE = [
@@ -246,15 +248,6 @@ else:
         "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
     }
 
-
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.console.EmailBackend",
-    },
-}
 
 # A suíte cria dados de teste fora de requisições; o runner usa escopo system
 # e cada requisição do client aplica tenant/global pelo middleware.

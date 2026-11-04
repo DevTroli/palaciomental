@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Convite institucional{% endblock %}
+{% block breadcrumb_label %}Convite institucional{% endblock %}
+{% block institutional_header %}
+<header class="tenant-header">
+  <span class="tenant-brand">{{ tenant_display_name }}</span>
+  <span>Convite institucional</span>
+</header>
+{% endblock %}
+{% block institutional_footer %}
+<footer class="tenant-footer">
+  <div class="tenant-footer-inner">
+    <a class="tenant-footer-brand" href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>Palácio Mental</span></a>
+  </div>
+</footer>
+{% endblock %}
+{% block content %}
+<section class="auth-section mvp-container">
+  <div class="form-card">
+    <span class="eyebrow">Entrada por convite</span>
+    <h1>{{ tenant_display_name }}</h1>
+    {% if grupo %}<p>Convite para participar do grupo {{ grupo.nome }}.</p>{% else %}<p>Convite para entrar como {{ convite.get_papel_display }}.</p>{% endif %}
+    <p>Destinatário: <strong>{{ convite.email }}</strong>. Válido até {{ convite.expira_em|date:"d/m/Y H:i" }}.</p>
+    {% if user.is_authenticated %}
+      <p>Sua conta está autenticada. Confirme abaixo para concluir sua entrada neste ambiente.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button class="button button-green" name="action" value="accept" type="submit">Aceitar convite e entrar</button>
+      </form>
+    {% else %}
+      <p>Já tem conta com este e-mail? <a href="{{ login_url }}">Entrar para continuar o convite</a>.</p>
+      <h2>Ainda não tem conta?</h2>
+      <p>Crie sua própria senha. A afiliação só será concluída após confirmar o aceite.</p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include 'partials/form_fields.html' with form=form %}
+        <button class="button button-green" name="action" value="register" type="submit">Criar conta e continuar</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

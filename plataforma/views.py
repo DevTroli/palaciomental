@@ -11,13 +11,12 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
-from django.http import Http404, HttpResponseForbidden, JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -33,6 +32,8 @@ from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grup
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 from .navigation import global_home_url as _global_home_url, project_notification_url
+from .invitations import invitation_accept, invitation_login_target
+from .invitation_delivery import deliver_invitation
 
 
 def _tenant_identity_context(organizacao):
@@ -81,12 +82,6 @@ def _safe_local_next(request, value):
     return value
 
 
-def _invite_belongs_to_host(request, organizacao_id):
-    """Convites só valem no endereço institucional da própria organização."""
-    organizacao_atual = getattr(request, "organizacao", None)
-    return organizacao_atual is not None and organizacao_atual.pk == organizacao_id
-
-
 def login_view(request):
     from django.contrib.auth.forms import AuthenticationForm
     form = AuthenticationForm(request, data=request.POST or None)
@@ -97,6 +92,9 @@ def login_view(request):
         if organizacao is not None:
             afiliacao = MembroOrganizacao.objects.filter(organizacao=organizacao, usuario=user, status=MembroOrganizacao.STATUS_ATIVA).first()
             if afiliacao is None:
+                next_url = _safe_local_next(request, request.GET.get("next", ""))
+                if next_url and invitation_login_target(request, next_url, user):
+                    return redirect(next_url)
                 context = _tenant_identity_context(organizacao)
                 context.update({"titulo": "Acesso pendente", "mensagem": "Sua conta foi autenticada, mas ainda não possui um convite ou afiliação ativa neste ambiente.", "global_home_url": _global_home_url(request)})
                 return render(
@@ -263,8 +261,9 @@ def _convidar_membro(request, organizacao, afiliacao, papeis):
     except ValidationError as exc:
         form.add_error(None, exc.message)
         return form, None
-    transaction.on_commit(lambda: _send_organization_invitation_email(request, convite, raw_token))
-    messages.success(request, f"Convite criado para {convite.email}.")
+    transaction.on_commit(
+        lambda: deliver_invitation(request, _send_organization_invitation_email, convite, raw_token)
+    )
     return form, redirect("plataforma:institutional_members")
 
 
@@ -359,6 +358,7 @@ def _send_organization_invitation_email(request, convite, raw_token):
         body=render_to_string("emails/organization_invitation.txt", contexto),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[convite.email],
+        headers={"Idempotency-Key": f"organization-invitation/{convite.pk}"},
     )
     email.attach_alternative(render_to_string("emails/organization_invitation.html", contexto), "text/html")
     email.send(fail_silently=False)
@@ -421,6 +421,7 @@ def _send_group_invitation_email(request, convite, raw_token):
         body=render_to_string("emails/institutional_invitation.txt", contexto),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[convite.email],
+        headers={"Idempotency-Key": f"group-invitation/{convite.pk}"},
     )
     email.attach_alternative(render_to_string("emails/institutional_invitation.html", contexto), "text/html")
     email.send(fail_silently=False)
@@ -603,9 +604,9 @@ def institutional_group_members(request, group_id):
                 convite.hash_token = hashlib.sha256(raw_token.encode()).hexdigest()
                 convite.expira_em = timezone.now() + timedelta(days=7)
                 convite.save()
-                link = request.build_absolute_uri(reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}))
-                transaction.on_commit(lambda: _send_group_invitation_email(request, convite, raw_token))
-                messages.success(request, f"Convite criado para {email}. Link para envio: {link}")
+                transaction.on_commit(
+                    lambda: deliver_invitation(request, _send_group_invitation_email, convite, raw_token)
+                )
                 return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
     membros = grupo.membros.select_related("usuario").filter(status=MembroGrupo.STATUS_ATIVO)
     convites = grupo.convites.filter(status=ConviteGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
@@ -669,9 +670,9 @@ def institutional_invite_revoke(request, invite_id):
     if organizacao is None or not _can_manage_institutional_structure(request):
         return JsonResponse({"detail": "Você não pode revogar convites neste ambiente."}, status=403)
     convite = get_object_or_404(ConviteGrupo, pk=invite_id, grupo__turma__programa__organizacao=organizacao)
-    if convite.status == ConviteGrupo.STATUS_PENDENTE:
-        convite.status = ConviteGrupo.STATUS_REVOGADO
-        convite.save(update_fields=["status"])
+    if ConviteGrupo.objects.filter(pk=convite.pk, status=ConviteGrupo.STATUS_PENDENTE).update(
+        status=ConviteGrupo.STATUS_REVOGADO,
+    ):
         messages.success(request, "Convite revogado.")
     return redirect("plataforma:institutional_group_members", group_id=convite.grupo_id)
 
@@ -683,70 +684,19 @@ def institutional_organization_invite_revoke(request, invite_id):
     if organizacao is None or not _can_manage_institutional_structure(request):
         return JsonResponse({"detail": "Você não pode revogar convites neste ambiente."}, status=403)
     convite = get_object_or_404(ConviteOrganizacao, pk=invite_id, organizacao=organizacao)
-    if convite.status == ConviteOrganizacao.STATUS_PENDENTE:
-        convite.status = ConviteOrganizacao.STATUS_REVOGADO
-        convite.save(update_fields=["status"])
+    if ConviteOrganizacao.objects.filter(pk=convite.pk, status=ConviteOrganizacao.STATUS_PENDENTE).update(
+        status=ConviteOrganizacao.STATUS_REVOGADO,
+    ):
         messages.success(request, "Convite institucional revogado.")
     return redirect("plataforma:institutional_members")
 
 
 def institutional_invite_accept(request, token):
-    digest = hashlib.sha256(token.encode()).hexdigest()
-    convite = get_object_or_404(ConviteGrupo.objects.select_related("grupo__turma__programa__organizacao"), hash_token=digest)
-    if not _invite_belongs_to_host(request, convite.grupo.turma.programa.organizacao_id):
-        raise Http404
-    if convite.status != ConviteGrupo.STATUS_PENDENTE or convite.expira_em <= timezone.now():
-        return HttpResponseForbidden("Este convite não está mais disponível.")
-    if not request.user.is_authenticated:
-        return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
-    if request.user.email.lower() != convite.email.lower():
-        return HttpResponseForbidden("Este convite foi emitido para outro endereço de e-mail.")
-    organizacao = convite.grupo.turma.programa.organizacao
-    with transaction.atomic():
-        MembroOrganizacao.objects.get_or_create(
-            organizacao=organizacao,
-            usuario=request.user,
-            defaults={"papel": MembroOrganizacao.PAPEL_MEMBRO},
-        )
-        MembroTurma.objects.get_or_create(turma=convite.grupo.turma, usuario=request.user)
-        membro, _ = MembroGrupo.objects.get_or_create(grupo=convite.grupo, usuario=request.user)
-        if membro.status != MembroGrupo.STATUS_ATIVO:
-            membro.status = MembroGrupo.STATUS_ATIVO
-            membro.save(update_fields=["status"])
-        convite.status = ConviteGrupo.STATUS_ACEITO
-        convite.aceito_em = timezone.now()
-        convite.save(update_fields=["status", "aceito_em"])
-    return redirect("plataforma:institutional_program_detail", programa_id=convite.grupo.turma.programa_id)
+    return invitation_accept(request, token, "group")
 
 
 def institutional_organization_invite_accept(request, token):
-    digest = hashlib.sha256(token.encode()).hexdigest()
-    convite = get_object_or_404(ConviteOrganizacao.objects.select_related("organizacao"), hash_token=digest)
-    if not _invite_belongs_to_host(request, convite.organizacao_id):
-        raise Http404
-    if convite.status != ConviteOrganizacao.STATUS_PENDENTE or convite.expira_em <= timezone.now():
-        return HttpResponseForbidden("Este convite não está mais disponível.")
-    if not request.user.is_authenticated:
-        return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
-    if request.user.email.lower() != convite.email.lower():
-        return HttpResponseForbidden("Este convite foi emitido para outro endereço de e-mail.")
-    with transaction.atomic():
-        afiliacao, criada = MembroOrganizacao.objects.get_or_create(
-            organizacao=convite.organizacao,
-            usuario=request.user,
-            defaults={"papel": convite.papel},
-        )
-        if not criada:
-            if afiliacao.status != MembroOrganizacao.STATUS_ATIVA:
-                afiliacao.status = MembroOrganizacao.STATUS_ATIVA
-                afiliacao.papel = convite.papel
-                afiliacao.save(update_fields=["status", "papel"])
-            elif afiliacao.papel != convite.papel:
-                return HttpResponseForbidden("Sua conta já possui outro papel neste ambiente.")
-        convite.status = ConviteOrganizacao.STATUS_ACEITO
-        convite.aceito_em = timezone.now()
-        convite.save(update_fields=["status", "aceito_em"])
-    return redirect("plataforma:projects")
+    return invitation_accept(request, token, "organization")
 
 
 def _project_scope(request):
