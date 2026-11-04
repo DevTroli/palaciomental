@@ -27,8 +27,14 @@ class InternalAdminAccessMiddleware:
         )
 
     def _is_internal_admin(self, user):
-        if not user.is_active or not user.is_staff:
-            return False
-        if user.is_superuser:
-            return True
-        return user.groups.filter(name__in=self.internal_groups).exists()
+        return is_internal_admin(user, self.internal_groups)
+
+
+def is_internal_admin(user, internal_groups=None):
+    """Equipe operacional do PM: staff ativo, superusuário ou grupo interno."""
+    if not user.is_active or not user.is_staff:
+        return False
+    if user.is_superuser:
+        return True
+    groups = internal_groups if internal_groups is not None else set(getattr(settings, "PM_INTERNAL_ADMIN_GROUPS", ("Equipe PM",)))
+    return user.groups.filter(name__in=groups).exists()

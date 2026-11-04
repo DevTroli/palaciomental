@@ -155,9 +155,18 @@ class ProjectBasicsForm(forms.ModelForm):
         title = self.cleaned_data["title"].strip()
         if len(title) < 3:
             raise forms.ValidationError("Use um título com pelo menos 3 caracteres.")
-        if self.project_owner and Project.objects.filter(owner=self.project_owner, title__iexact=title).exclude(pk=self.instance.pk).exists():
+        if self.project_owner and self._owner_has_title(title):
             raise forms.ValidationError("Você já possui um projeto com este título. Escolha outro nome para não confundir os projetos.")
         return title
+
+    def _owner_has_title(self, title):
+        # A unicidade (autor, título) vale entre espaço pessoal e instituições.
+        # Com RLS, o escopo da requisição esconde os outros projetos do autor;
+        # esta consulta auditada só olha títulos do próprio autor.
+        from .rls import system_context
+
+        with system_context():
+            return Project.objects.filter(owner=self.project_owner, title__iexact=title).exclude(pk=self.instance.pk).exists()
 
 class ProjectContextForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
