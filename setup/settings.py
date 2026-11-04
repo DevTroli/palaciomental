@@ -45,6 +45,18 @@ DEV_TENANT_QUERY_PARAM = config("DEV_TENANT_QUERY_PARAM", default="tenant")
 # Proxy SSL header for Railway/Reverse proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Endurecimento de produção (DEBUG=False). O redirect HTTPS e o HSTS ficam
+# opt-in porque dependem do proxy/healthcheck e afetam todos os subdomínios.
+if not DEBUG:
+    SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool, default=True)
+    CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool, default=True)
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", cast=bool, default=False)
+SECURE_REDIRECT_EXEMPT = [r"^saude$"]
+SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", cast=int, default=0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool, default=False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+
 
 # Application definition
 
@@ -96,6 +108,7 @@ PUBLIC_APP_URL = config("PUBLIC_APP_URL", default="")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -225,12 +238,12 @@ if R2_ENABLED:
                 "object_parameters": {"CacheControl": "public, max-age=31536000, immutable"},
             },
         },
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
     }
 else:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
     }
 
 
