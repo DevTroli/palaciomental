@@ -37,6 +37,7 @@
       <aside class="identity-preview-panel" aria-labelledby="identity-preview-title">
         <p class="tenant-eyebrow">Antes de salvar</p><h2 id="identity-preview-title">Pré-visualização</h2>
         <div class="identity-preview" id="identity-preview">
+          <img class="identity-cover-preview" id="cover-preview" src="{{ tenant_cover_url }}" alt="Prévia da capa" {% if not tenant_cover_url %}hidden{% endif %}>
           <div class="identity-preview-header"><img id="logo-preview" src="{% if tenant_logo_url %}{{ tenant_logo_url }}{% else %}{% static 'img/mind_palace_logo.png' %}{% endif %}" alt="Prévia da logo"><strong id="name-preview">{{ tenant_display_name }}</strong></div>
           <div class="identity-preview-body"><h3>Seu ambiente institucional</h3><p>Contexto, autoria e evolução dos projetos, com a marca da sua organização.</p><button type="button">Ação principal</button></div>
         </div>

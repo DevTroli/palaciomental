@@ -58,6 +58,8 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
             self.fields[name].widget = forms.HiddenInput()
         self.fields["nome_exibicao"].help_text = "Nome curto que aparecerá no cabeçalho e no rodapé do ambiente."
         self.fields["logo"].help_text = "PNG, JPEG ou WebP. Até 2 MB, com pelo menos 64 px e proporção de até 8:1."
+        self.fields["capa"].help_text = "Imagem horizontal PNG, JPEG ou WebP, até 5 MB. Recomendado: 1.920×640 px. O centro será exibido conforme a tela."
+        self.fields["apresentacao"].help_text = "Até 600 caracteres para apresentar a organização na home."
         self.fields["cor_primaria"].help_text = "Identidade principal usada em cabeçalhos, títulos e ações seguras."
         self.fields["cor_destaque"].help_text = "Cor de apoio para detalhes visuais; o sistema garante contraste nas ações."
         self.fields["cor_fundo"].help_text = "Fundo geral do ambiente, sempre aplicado com texto legível."
@@ -78,7 +80,7 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
 
     class Meta:
         model = IdentidadeOrganizacao
-        fields = ("nome_exibicao", "logo", "cor_primaria", "cor_destaque", "cor_fundo")
+        fields = ("nome_exibicao", "logo", "capa", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo")
         labels = {
             "nome_exibicao": "Nome mostrado no ambiente",
             "logo": "Logo da organização",
@@ -86,7 +88,11 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
             "cor_destaque": "Cor de destaque",
             "cor_fundo": "Cor de fundo",
         }
-        widgets = {"logo": BrandingUploadWidget(attrs={"accept": ".png,.jpg,.jpeg,.webp", "data-logo-input": "true"})}
+        widgets = {
+            "logo": BrandingUploadWidget(attrs={"accept": ".png,.jpg,.jpeg,.webp", "data-logo-input": "true"}),
+            "capa": BrandingUploadWidget(attrs={"accept": ".png,.jpg,.jpeg,.webp", "data-cover-input": "true"}),
+            "apresentacao": forms.Textarea(attrs={"rows": 3, "maxlength": 600}),
+        }
 
 
 class ProjectForm(forms.ModelForm):
