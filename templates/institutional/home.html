@@ -29,9 +29,10 @@
       <div class="tenant-section-heading"><p class="tenant-eyebrow">Próximos passos</p><h2 id="quick-actions-title">Acesso rápido</h2></div>
       <div class="tenant-flow-grid tenant-flow-grid--compact">
         <a class="tenant-card tenant-card--link" href="{% url 'plataforma:projects' %}"><p class="tenant-eyebrow">Explorar</p><h3>Projetos institucionais</h3><p>Veja os projetos publicados dentro deste ambiente.</p></a>
-        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:profile' request.user.username %}"><p class="tenant-eyebrow">Meu Espaço</p><h3>Criar projeto autoral</h3><p>Projetos pessoais começam fora do ambiente institucional, no seu espaço.</p></a>
+        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:project_create' %}"><p class="tenant-eyebrow">Neste ambiente</p><h3>Criar projeto institucional</h3><p>Inicie um projeto autônomo ou vinculado a um programa desta organização.</p></a>
+        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:profile' request.user.username %}"><p class="tenant-eyebrow">Neste ambiente</p><h3>Meus projetos institucionais</h3><p>Reabra seus projetos desta organização, incluindo os privados.</p></a>
         {% if afiliacao.papel == 'proprietario' or afiliacao.papel == 'gestor' %}<a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_management' %}"><p class="tenant-eyebrow">Operar</p><h3>Gestão institucional</h3><p>Administre membros, convites, programas e estruturas.</p></a>{% endif %}
-        <a class="tenant-card tenant-card--link" href="{% url 'plataforma:profile' request.user.username %}"><p class="tenant-eyebrow">Pessoal</p><h3>Meu Espaço</h3><p>Acesse seus projetos autorais fora deste tenant.</p></a>
+        <a class="tenant-card tenant-card--link" href="{{ personal_workspace_url }}"><p class="tenant-eyebrow">Fora deste ambiente</p><h3>Meu espaço pessoal</h3><p>Acesse seus projetos pessoais no domínio principal do Palácio Mental.</p></a>
       </div>
     </section>
 

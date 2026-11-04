@@ -32,6 +32,7 @@ from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, Conv
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
+from .navigation import global_home_url as _global_home_url, project_notification_url
 
 
 def _tenant_identity_context(organizacao):
@@ -44,15 +45,6 @@ def _tenant_identity_context(organizacao):
         "tenant_background_color": CORES_SEMANTICAS.get(getattr(identidade, "cor_fundo", ""), CORES_SEMANTICAS["bege-claro"]),
     }
 
-
-def _global_home_url(request):
-    host = request.get_host().split(":", 1)[0].lower()
-    if host.endswith(".app.github.dev"):
-        return f"{request.scheme}://{request.get_host()}/"
-    public_url = getattr(settings, "PUBLIC_APP_URL", "").strip().rstrip("/")
-    if public_url and "localhost" not in public_url:
-        return f"{public_url}/"
-    return f"{request.scheme}://{settings.PALACIO_BASE_DOMAIN}/"
 
 def register(request):
     if getattr(request, "organizacao", None) is not None:
@@ -1008,7 +1000,7 @@ def request_collaboration(request, pk):
     if form.is_valid():
         collaboration, created = CollaborationRequest.objects.get_or_create(project=project, requester=request.user, defaults={"message": form.cleaned_data["message"]})
         if created:
-            Notification.objects.create(recipient=project.owner, kind="collaboration_request", message=f"{request.user.get_username()} quer colaborar em {project.title}.", url=f"/projetos/{project.pk}/")
+            Notification.objects.create(recipient=project.owner, kind="collaboration_request", message=f"{request.user.get_username()} quer colaborar em {project.title}.", url=project_notification_url(request, project))
     return redirect("plataforma:project_detail", pk=pk)
 
 
@@ -1024,11 +1016,11 @@ def decide_collaboration(request, request_id):
     decision = request.POST.get("decision")
     if decision not in (CollaborationRequest.ACCEPTED, CollaborationRequest.REJECTED):
         return redirect("plataforma:project_detail", pk=collaboration.project_id)
-    project_title, project_pk, requester = collaboration.project.title, collaboration.project.pk, collaboration.requester
+    project_title, requester = collaboration.project.title, collaboration.requester
     status_label = "aceito" if decision == CollaborationRequest.ACCEPTED else "recusado"
     if decision == CollaborationRequest.ACCEPTED:
         ProjectMember.objects.get_or_create(project=collaboration.project, user=collaboration.requester, defaults={"role": "Colaborador"})
-    Notification.objects.create(recipient=requester, kind="collaboration_decision", message=f"Seu pedido para {project_title} foi {status_label}.", url=f"/projetos/{project_pk}/")
+    Notification.objects.create(recipient=requester, kind="collaboration_decision", message=f"Seu pedido para {project_title} foi {status_label}.", url=project_notification_url(request, collaboration.project))
     collaboration.delete()
     return redirect("plataforma:project_detail", pk=collaboration.project_id)
 

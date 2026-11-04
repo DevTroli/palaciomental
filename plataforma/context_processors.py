@@ -1,4 +1,6 @@
 from .validators import CORES_SEMANTICAS
+from .navigation import global_home_url
+from django.urls import reverse
 
 
 def inbox_unread_count(request):
@@ -14,6 +16,13 @@ def tenant_branding(request):
         return {}
     identidade = getattr(organizacao, "identidade", None)
     return {
+        "global_home_url": global_home_url(request),
+        "personal_workspace_url": (
+            global_home_url(request).rstrip("/")
+            + reverse("plataforma:profile", args=[request.user.username])
+            if request.user.is_authenticated else global_home_url(request)
+        ),
+        "tenant_display_name": getattr(identidade, "nome_exibicao", "") or organizacao.nome,
         "tenant_identidade": identidade,
         "tenant_logo_url": identidade.logo.url if identidade and identidade.logo else "",
         "tenant_primary_color": CORES_SEMANTICAS.get(

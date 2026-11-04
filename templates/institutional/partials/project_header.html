@@ -1,0 +1,16 @@
+<header class="tenant-header tenant-project-header">
+  <a class="tenant-brand" href="{% url 'core:index' %}" aria-label="Início de {{ tenant_display_name }}">
+    {% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}
+    <span>{{ tenant_display_name }}</span>
+  </a>
+  <div class="tenant-context"><span>Ambiente institucional</span><strong>{{ request.membro_organizacao.get_papel_display }}</strong></div>
+  {% include 'institutional/partials/shell_nav.html' %}
+  {% if request.user.is_authenticated %}
+  <nav class="tenant-nav" aria-label="Ações da conta">
+    <a href="{% url 'plataforma:project_create' %}">Criar projeto institucional</a>
+    <a href="{% url 'plataforma:inbox' %}">Caixa de entrada{% if inbox_unread_count %} ({{ inbox_unread_count }}){% endif %}</a>
+    <a href="{% url 'plataforma:profile_edit' %}">Editar perfil</a>
+    <form method="post" action="{% url 'plataforma:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form>
+  </nav>
+  {% endif %}
+</header>

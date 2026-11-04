@@ -1,7 +1,7 @@
 {% load static %}
 <footer class="tenant-footer">
   <div class="tenant-footer-inner">
-    <a class="tenant-footer-brand" href="{% url 'core:index' %}"><img src="{% if identidade and identidade.logo %}{{ identidade.logo }}{% else %}{% static 'img/mind_palace_logo.png' %}{% endif %}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}"><span>{{ identidade.nome_exibicao|default:organizacao.nome }}</span></a>
-    <nav aria-label="Links do rodapé"><a href="{% url 'plataforma:profile' request.user.username %}">Meu Espaço</a><a href="{% url 'core:index' %}">Início do ambiente</a></nav>
+    <a class="tenant-footer-brand" href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt="Palácio Mental"><span>Palácio Mental</span></a>
+    <nav aria-label="Links do rodapé">{% if request.user.is_authenticated %}<a href="{% url 'plataforma:profile' request.user.username %}">Meus projetos neste ambiente</a><a href="{{ personal_workspace_url }}">Meu espaço pessoal</a>{% endif %}<a href="{% url 'core:index' %}">Início do ambiente</a></nav>
   </div>
 </footer>
