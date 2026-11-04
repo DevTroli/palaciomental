@@ -36,7 +36,7 @@ PALACIO_BASE_DOMAIN = config('PALACIO_BASE_DOMAIN', default='palaciomental.com.b
 TENANT_RESERVED_HOSTS = config(
     'TENANT_RESERVED_HOSTS',
     cast=Csv(),
-    default='www,api,status,admin,app',
+    default='www,api,status,admin,app,media',
 )
 # Somente para desenvolvimento local/Codespaces; nunca resolve tenant por
 # query string quando DEBUG estiver desativado.
