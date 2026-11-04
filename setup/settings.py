@@ -56,6 +56,7 @@ SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", cast=int, default=0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool, default=False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
+CSRF_FAILURE_VIEW = "plataforma.error_views.csrf_failure"
 
 
 # Application definition

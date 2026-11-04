@@ -7,6 +7,7 @@ from django.conf.urls.static import static
 from plataforma.sitemaps import StaticViewSitemap
 
 sitemaps = {"static": StaticViewSitemap}
+handler403 = "plataforma.error_views.permission_denied"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
