@@ -4,6 +4,7 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta
 from urllib.error import URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from django.conf import settings
@@ -249,6 +250,76 @@ def institutional_identity(request):
     return render(request, "institutional/identity.html", context)
 
 
+def _ultimo_proprietario_ativo(organizacao, membro):
+    return (
+        membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO
+        and organizacao.afiliacoes.filter(
+            papel=MembroOrganizacao.PAPEL_PROPRIETARIO, status=MembroOrganizacao.STATUS_ATIVA
+        ).count() <= 1
+    )
+
+
+def _convidar_membro(request, organizacao, afiliacao, papeis):
+    """Retorna (form, response). response só existe quando o convite foi criado."""
+    form = ConviteOrganizacaoForm(request.POST, papeis_permitidos=papeis)
+    if not form.is_valid():
+        return form, None
+    try:
+        convite, raw_token = emitir_convite_organizacao(
+            organizacao, afiliacao, form.cleaned_data["email"], form.cleaned_data["papel"]
+        )
+    except ValidationError as exc:
+        form.add_error(None, exc.message)
+        return form, None
+    transaction.on_commit(lambda: _send_organization_invitation_email(request, convite, raw_token))
+    messages.success(request, f"Convite criado para {convite.email}.")
+    return form, redirect("plataforma:institutional_members")
+
+
+def _alterar_status_membro(request, organizacao, membro, acao):
+    if acao in {"suspender", "remover"}:
+        if membro.usuario_id == request.user.pk:
+            return JsonResponse({"detail": "Você não pode remover ou suspender sua própria afiliação."}, status=400)
+        if _ultimo_proprietario_ativo(organizacao, membro):
+            return JsonResponse({"detail": "A organização precisa manter pelo menos um proprietário ativo."}, status=400)
+        membro.status = MembroOrganizacao.STATUS_SUSPENSA
+        membro.save(update_fields=["status"])
+        messages.success(request, "Afiliação suspensa.")
+    else:
+        membro.status = MembroOrganizacao.STATUS_ATIVA
+        membro.save(update_fields=["status"])
+        messages.success(request, "Afiliação reativada.")
+    return None
+
+
+def _alterar_papel_membro(request, organizacao, membro):
+    novo_papel = request.POST.get("papel")
+    if novo_papel not in dict(MembroOrganizacao.PAPEL_CHOICES):
+        return JsonResponse({"detail": "Papel institucional inválido."}, status=400)
+    if novo_papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.membro_organizacao.papel != MembroOrganizacao.PAPEL_PROPRIETARIO:
+        return JsonResponse({"detail": "Somente o proprietário pode conceder o papel de proprietário."}, status=403)
+    if novo_papel != MembroOrganizacao.PAPEL_PROPRIETARIO and _ultimo_proprietario_ativo(organizacao, membro):
+        return JsonResponse({"detail": "A organização precisa manter pelo menos um proprietário ativo."}, status=400)
+    membro.papel = novo_papel
+    membro.save(update_fields=["papel"])
+    messages.success(request, "Papel institucional atualizado.")
+    return None
+
+
+def _gerenciar_membro(request, organizacao):
+    membro = get_object_or_404(MembroOrganizacao, pk=request.POST.get("membro_id"), organizacao=organizacao)
+    acao = request.POST.get("acao")
+    if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.user != membro.usuario:
+        return JsonResponse({"detail": "Apenas o proprietário pode alterar outro proprietário."}, status=403)
+    if acao in {"suspender", "remover", "ativar"}:
+        erro = _alterar_status_membro(request, organizacao, membro, acao)
+    elif acao == "papel":
+        erro = _alterar_papel_membro(request, organizacao, membro)
+    else:
+        erro = None
+    return erro or redirect("plataforma:institutional_members")
+
+
 @login_required
 def institutional_members(request):
     organizacao = getattr(request, "organizacao", None)
@@ -256,50 +327,16 @@ def institutional_members(request):
     if organizacao is None or afiliacao is None or not _can_manage_affiliations(request):
         return JsonResponse({"detail": "Você não pode administrar afiliações neste ambiente."}, status=403)
     papeis = papeis_convidaveis(afiliacao.papel)
+    convite_form = None
     if request.method == "POST" and request.POST.get("acao") == "convidar":
-        form = ConviteOrganizacaoForm(request.POST, papeis_permitidos=papeis)
-        if form.is_valid():
-            try:
-                convite, raw_token = emitir_convite_organizacao(
-                    organizacao, afiliacao, form.cleaned_data["email"], form.cleaned_data["papel"]
-                )
-            except ValidationError as exc:
-                form.add_error(None, exc.message)
-            else:
-                transaction.on_commit(lambda: _send_organization_invitation_email(request, convite, raw_token))
-                messages.success(request, f"Convite criado para {convite.email}.")
-                return redirect("plataforma:institutional_members")
+        convite_form, response = _convidar_membro(request, organizacao, afiliacao, papeis)
+        if response is not None:
+            return response
     elif request.method == "POST":
-        membro = get_object_or_404(MembroOrganizacao, pk=request.POST.get("membro_id"), organizacao=organizacao)
-        acao = request.POST.get("acao")
-        if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.user != membro.usuario:
-            return JsonResponse({"detail": "Apenas o proprietário pode alterar outro proprietário."}, status=403)
-        if acao in {"suspender", "remover"}:
-            if membro.usuario_id == request.user.pk:
-                return JsonResponse({"detail": "Você não pode remover ou suspender sua própria afiliação."}, status=400)
-            if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and organizacao.afiliacoes.filter(papel=MembroOrganizacao.PAPEL_PROPRIETARIO, status=MembroOrganizacao.STATUS_ATIVA).count() <= 1:
-                return JsonResponse({"detail": "A organização precisa manter pelo menos um proprietário ativo."}, status=400)
-            membro.status = MembroOrganizacao.STATUS_SUSPENSA
-            membro.save(update_fields=["status"])
-            messages.success(request, "Afiliação suspensa.")
-        elif acao == "ativar":
-            membro.status = MembroOrganizacao.STATUS_ATIVA
-            membro.save(update_fields=["status"])
-            messages.success(request, "Afiliação reativada.")
-        elif acao == "papel":
-            novo_papel = request.POST.get("papel")
-            if novo_papel not in dict(MembroOrganizacao.PAPEL_CHOICES):
-                return JsonResponse({"detail": "Papel institucional inválido."}, status=400)
-            if novo_papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.membro_organizacao.papel != MembroOrganizacao.PAPEL_PROPRIETARIO:
-                return JsonResponse({"detail": "Somente o proprietário pode conceder o papel de proprietário."}, status=403)
-            if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and novo_papel != MembroOrganizacao.PAPEL_PROPRIETARIO and organizacao.afiliacoes.filter(papel=MembroOrganizacao.PAPEL_PROPRIETARIO, status=MembroOrganizacao.STATUS_ATIVA).count() <= 1:
-                return JsonResponse({"detail": "A organização precisa manter pelo menos um proprietário ativo."}, status=400)
-            membro.papel = novo_papel
-            membro.save(update_fields=["papel"])
-            messages.success(request, "Papel institucional atualizado.")
-        return redirect("plataforma:institutional_members")
+        return _gerenciar_membro(request, organizacao)
+    if convite_form is None:
+        convite_form = ConviteOrganizacaoForm(papeis_permitidos=papeis)
     membros = organizacao.afiliacoes.select_related("usuario").order_by("papel", "usuario__username")
-    convite_form = locals().get("form") if request.method == "POST" and request.POST.get("acao") == "convidar" else ConviteOrganizacaoForm(papeis_permitidos=papeis)
     convites = organizacao.convites.filter(status=ConviteOrganizacao.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por").order_by("expira_em")
     return render(request, "institutional/members.html", {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "membros": membros, "papeis": MembroOrganizacao.PAPEL_CHOICES, "convite_form": convite_form, "convites": convites, "papeis_convidaveis": papeis})
 
@@ -1036,11 +1073,13 @@ def _service_status(raw_status):
 
 def _fetch_status_api():
     """Busca o payload da status_api sem deixar uma falha externa quebrar a página."""
+    if urlparse(settings.STATUS_API_URL).scheme not in {"http", "https"}:
+        return None
     request = Request(
         settings.STATUS_API_URL,
         headers={"Accept": "application/json", "User-Agent": "PalacioMentalStatus/1.0"},
     )
-    with urlopen(request, timeout=settings.STATUS_API_TIMEOUT) as response:
+    with urlopen(request, timeout=settings.STATUS_API_TIMEOUT) as response:  # nosec B310: esquema validado acima
         if response.status < 200 or response.status >= 300:
             return None
         payload = json.loads(response.read().decode("utf-8"))
