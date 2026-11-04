@@ -20,7 +20,9 @@ SECRET_KEY = config('DJANGO_SECRET_KEY')
 DEBUG = config(
     "DJANGO_DEBUG",
     cast=bool,
-    default=config("DEBUG", cast=bool, default=True),
+    # Padrão seguro: DEBUG só liga quando o ambiente pede explicitamente.
+    # Com DEBUG ligado, o tenant pode ser escolhido por ?tenant= ou cookie.
+    default=config("DEBUG", cast=bool, default=False),
 )
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='localhost,127.0.0.1')
@@ -100,6 +102,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "plataforma.middleware.TenantResolutionMiddleware",
     "plataforma.admin_access.InternalAdminAccessMiddleware",
+    "plataforma.middleware.RowLevelSecurityMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -128,6 +131,11 @@ WSGI_APPLICATION = "setup.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+
+# RLS: escopo aplicado a conexões novas, antes de qualquer requisição.
+# "deny" (padrão) falha fechado em comandos e jobs sem contexto. Para um
+# comando administrativo auditado use PM_RLS_DEFAULT_MODE=system.
+PM_RLS_DEFAULT_MODE = config("PM_RLS_DEFAULT_MODE", default="deny")
 
 DATABASES = {
     "default": dj_database_url.config(
@@ -234,3 +242,7 @@ MAILERS = {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+# A suíte cria dados de teste fora de requisições; o runner usa escopo system
+# e cada requisição do client aplica tenant/global pelo middleware.
+TEST_RUNNER = "setup.test_runner.PalacioTestRunner"

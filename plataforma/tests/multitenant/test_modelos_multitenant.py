@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
-from ..models import (
+from plataforma.models import (
     ConviteOrganizacao,
     DominioOrganizacao,
     IdentidadeOrganizacao,

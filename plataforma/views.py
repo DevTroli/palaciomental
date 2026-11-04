@@ -75,6 +75,25 @@ def register(request):
     return render(request, "auth/register.html", {"form": form})
 
 
+def _safe_local_next(request, value):
+    """Aceita apenas caminho local ("/..."), nunca outro host ou esquema.
+
+    Decisão aprovada: "next" aceita só caminho local, com fallback fixo.
+    """
+    value = (value or "").strip()
+    if not value.startswith("/") or value.startswith(("//", "/\\")):
+        return ""
+    if not url_has_allowed_host_and_scheme(value, allowed_hosts=set(), require_https=request.is_secure()):
+        return ""
+    return value
+
+
+def _invite_belongs_to_host(request, organizacao_id):
+    """Convites só valem no endereço institucional da própria organização."""
+    organizacao_atual = getattr(request, "organizacao", None)
+    return organizacao_atual is not None and organizacao_atual.pk == organizacao_id
+
+
 def login_view(request):
     from django.contrib.auth.forms import AuthenticationForm
     form = AuthenticationForm(request, data=request.POST or None)
@@ -93,16 +112,16 @@ def login_view(request):
                     context,
                     status=403,
                 )
-            next_url = request.GET.get("next", "")
-            if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            next_url = _safe_local_next(request, request.GET.get("next", ""))
+            if next_url:
                 if next_url.startswith("/gestao/") and afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
                     return redirect("core:index")
                 return redirect(next_url)
             if afiliacao.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
                 return redirect("plataforma:institutional_management")
             return redirect("core:index")
-j        next_url = request.GET.get("next", "")
-        if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        next_url = _safe_local_next(request, request.GET.get("next", ""))
+        if next_url:
             return redirect(next_url)
         return redirect("plataforma:projects")
     context = {"form": form}
@@ -645,6 +664,8 @@ def institutional_organization_invite_revoke(request, invite_id):
 def institutional_invite_accept(request, token):
     digest = hashlib.sha256(token.encode()).hexdigest()
     convite = get_object_or_404(ConviteGrupo.objects.select_related("grupo__turma__programa__organizacao"), hash_token=digest)
+    if not _invite_belongs_to_host(request, convite.grupo.turma.programa.organizacao_id):
+        raise Http404
     if convite.status != ConviteGrupo.STATUS_PENDENTE or convite.expira_em <= timezone.now():
         return HttpResponseForbidden("Este convite não está mais disponível.")
     if not request.user.is_authenticated:
@@ -672,6 +693,8 @@ def institutional_invite_accept(request, token):
 def institutional_organization_invite_accept(request, token):
     digest = hashlib.sha256(token.encode()).hexdigest()
     convite = get_object_or_404(ConviteOrganizacao.objects.select_related("organizacao"), hash_token=digest)
+    if not _invite_belongs_to_host(request, convite.organizacao_id):
+        raise Http404
     if convite.status != ConviteOrganizacao.STATUS_PENDENTE or convite.expira_em <= timezone.now():
         return HttpResponseForbidden("Este convite não está mais disponível.")
     if not request.user.is_authenticated:
@@ -878,8 +901,8 @@ def toggle_vote(request, pk):
     vote, created = ProjectVote.objects.get_or_create(project=project, user=request.user)
     if not created:
         vote.delete()
-    next_url = request.POST.get("next", "")
-    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+    next_url = _safe_local_next(request, request.POST.get("next", ""))
+    if next_url:
         return redirect(next_url)
     access = request.POST.get("access", "")
     return redirect(f"/projetos/{pk}/?access={access}" if access else f"/projetos/{pk}/")

@@ -114,3 +114,30 @@ class TenantResolutionMiddleware:
     @staticmethod
     def _is_public_auth_path(path):
         return path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/"))
+
+
+class RowLevelSecurityMiddleware:
+    """Define o escopo de RLS da requisição e o restaura ao terminar.
+
+    Deve ficar depois de TenantResolutionMiddleware e de
+    InternalAdminAccessMiddleware: usa ``request.organizacao`` e só concede o
+    escopo ``system`` ao Django Admin da equipe interna no host global.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from . import rls
+        from .admin_access import is_internal_admin
+
+        organizacao = getattr(request, "organizacao", None)
+        if organizacao is not None:
+            mode, tenant_id = rls.MODE_TENANT, organizacao.pk
+        elif request.path.startswith("/admin/") and request.user.is_authenticated and is_internal_admin(request.user):
+            mode, tenant_id = rls.MODE_SYSTEM, None
+        else:
+            mode, tenant_id = rls.MODE_GLOBAL, None
+
+        with rls.rls_context(mode, tenant_id):
+            return self.get_response(request)
