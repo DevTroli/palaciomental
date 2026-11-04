@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}Convite institucional{% endblock %}
 {% block breadcrumb_label %}Convite institucional{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/invitation.css' %}">{% endblock %}
 {% block institutional_header %}
 <header class="tenant-header">
   <span class="tenant-brand">{{ tenant_display_name }}</span>
@@ -16,28 +17,50 @@
 </footer>
 {% endblock %}
 {% block content %}
-<section class="auth-section mvp-container">
-  <div class="form-card">
+<section class="auth-section mvp-container invitation-section">
+  <div class="form-card invitation-card">
     <span class="eyebrow">Entrada por convite</span>
-    <h1>{{ tenant_display_name }}</h1>
-    {% if grupo %}<p>Convite para participar do grupo {{ grupo.nome }}.</p>{% else %}<p>Convite para entrar como {{ convite.get_papel_display }}.</p>{% endif %}
-    <p>Destinatário: <strong>{{ convite.email }}</strong>. Válido até {{ convite.expira_em|date:"d/m/Y H:i" }}.</p>
+    <h1>{% if user.is_authenticated %}Confirme sua entrada{% else %}Crie sua conta{% endif %}</h1>
+    <ol class="invitation-progress" aria-label="Etapas de entrada">
+      <li {% if not user.is_authenticated %}aria-current="step"{% endif %}><span>1</span> Sua conta</li>
+      <li {% if user.is_authenticated %}aria-current="step"{% endif %}><span>2</span> Confirmar entrada</li>
+    </ol>
+    <div class="invitation-summary">
+      {% if grupo %}<p>Grupo <strong>{{ grupo.nome }}</strong></p>{% else %}<p>Papel: <strong>{{ convite.get_papel_display }}</strong></p>{% endif %}
+      <p>Convite para <strong>{{ convite.email }}</strong></p>
+    </div>
     {% if user.is_authenticated %}
-      <p>Sua conta está autenticada. Confirme abaixo para concluir sua entrada neste ambiente.</p>
+      <p>Você está na conta <strong>{{ user.username }}</strong>. O aceite vincula esta conta somente ao ambiente e ao papel deste convite.</p>
       <form method="post">
         {% csrf_token %}
         <button class="button button-green" name="action" value="accept" type="submit">Aceitar convite e entrar</button>
       </form>
     {% else %}
-      <p>Já tem conta com este e-mail? <a href="{{ login_url }}">Entrar para continuar o convite</a>.</p>
-      <h2>Ainda não tem conta?</h2>
-      <p>Crie sua própria senha. A afiliação só será concluída após confirmar o aceite.</p>
-      <form method="post" novalidate>
+      <p class="form-foot invitation-login">Já tem conta? <a href="{{ login_url }}" aria-label="Entrar para continuar o convite">Entrar</a>.</p>
+      <form method="post">
         {% csrf_token %}
-        {% include 'partials/form_fields.html' with form=form %}
+        {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        {% for error in form.email.errors %}<p class="form-errors" role="alert">{{ error }}</p>{% endfor %}
+        <div class="field">
+          {{ form.username.label_tag }}{{ form.username }}
+          <small id="{{ form.username.auto_id }}_helptext">{{ form.username.help_text }}</small>
+          {% if form.username.errors %}<div class="field-error" role="alert">{{ form.username.errors }}</div>{% endif %}
+        </div>
+        <div class="invitation-passwords">
+          <div class="field">{{ form.password1.label_tag }}{{ form.password1 }}
+            {% if form.password1.errors %}<div class="field-error" role="alert">{{ form.password1.errors }}</div>{% endif %}
+          </div>
+          <div class="field">{{ form.password2.label_tag }}{{ form.password2 }}
+            {% if form.password2.errors %}<div class="field-error" role="alert">{{ form.password2.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <details class="invitation-password-help" {% if form.password2.errors or form.password1.errors %}open{% endif %}>
+          <summary>Requisitos da senha</summary><div id="{{ form.password1.auto_id }}_helptext">{{ form.password1.help_text }}</div>
+        </details>
         <button class="button button-green" name="action" value="register" type="submit">Criar conta e continuar</button>
       </form>
     {% endif %}
+    <p class="form-foot invitation-note">Válido até {{ convite.expira_em|date:"d/m/Y H:i" }}. A afiliação exige aceite na etapa 2 e vale somente para este ambiente.</p>
   </div>
 </section>
 {% endblock %}

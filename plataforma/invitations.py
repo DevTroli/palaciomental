@@ -27,6 +27,11 @@ class InvitationRegistrationForm(MemberCreationForm):
         self.fields["email"].initial = invited_email
         self.fields["email"].disabled = True
         self.fields["email"].help_text = "Este convite é exclusivo deste endereço."
+        self.fields["first_name"].required = False
+        self.fields["username"].help_text = "Será usado para entrar e identificar seu perfil."
+        self.fields["username"].widget.attrs["autocomplete"] = "username"
+        self.fields["username"].widget.attrs.pop("autofocus", None)
+        self.fields["password2"].help_text = ""
 
 
 def _organization(invitation, kind):
@@ -141,5 +146,7 @@ def invitation_accept(request, token, kind):
         "form": form,
         "login_url": reverse("plataforma:login") + "?" + urlencode({"next": request.path}),
     })
-    response["Referrer-Policy"] = "no-referrer"
+    # Mantém somente a origem: não vaza o token e permite o fallback Referer
+    # do CSRF em HTTPS quando o navegador não enviar Origin.
+    response["Referrer-Policy"] = "strict-origin"
     return response

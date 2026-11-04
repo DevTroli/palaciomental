@@ -74,7 +74,7 @@ class OnboardingConvitesTests(PortalInstitucionalBase):
                 invitation, path = self.make_invitation(kind, email=email)
                 response = self.client.get(path, HTTP_HOST=HOST)
                 self.assertContains(response, "Criar conta e continuar")
-                self.assertEqual(response["Referrer-Policy"], "no-referrer")
+                self.assertEqual(response["Referrer-Policy"], "strict-origin")
                 self.assertIn("no-store", response["Cache-Control"])
                 self.assertNotContains(response, "Criar projeto institucional")
                 username = f"novo-{kind}"
