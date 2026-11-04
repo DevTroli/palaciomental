@@ -197,7 +197,7 @@
  }
 
  .page-hero {
-   padding: 76px 0 42px
+   padding: 58px 0 42px
  }
 
  .page-hero h1,
@@ -339,7 +339,7 @@
  }
 
  .status-pausado {
-   background: var(--pm-white)1d8;
+   background: #f5e3bc;
    color: #8b5a00
  }
 
@@ -386,14 +386,14 @@
  }
 
  .auth-section {
-   padding: 76px 0 100px
+   padding: 58px 0 100px
  }
 
  .form-card {
    background: var(--pm-white);
    border: 1px solid var(--pm-border);
    border-radius: 20px;
-   padding: 34px;
+   padding: 42px 44px;
    max-width: 560px;
    margin: 0 auto;
    box-shadow: var(--pm-shadow)
@@ -405,7 +405,7 @@
 
  .form-card h1 {
    font-size: 42px;
-   margin: 12px 0
+   margin: 0 0 14px
  }
 
  .field {
@@ -656,10 +656,6 @@
      font-size: 14px
    }
 
-   .page-hero {
-     padding-top: 48px
-   }
-
    .project-grid {
      grid-template-columns: 1fr
    }
@@ -729,25 +725,6 @@
  textarea:focus-visible {
    outline: 3px solid rgba(31, 174, 109, .45);
    outline-offset: 3px
- }
-
- .page-hero {
-   padding-top: 58px
- }
-
- .auth-section {
-   padding-top: 58px
- }
-
- .status-pausado {
-   background: #f5e3bc;
-   color: #8b5a00
- }
-
- /* Shared MVP navigation: the same visual language as the homepage. */
- .mvp-header {
-   background: rgba(247, 244, 238, .94);
-   border-bottom: 1px solid var(--pm-border)
  }
 
  .mvp-nav {
@@ -1011,10 +988,6 @@
    padding-top: 3px
  }
 
- .form-card {
-   padding: 42px 44px
- }
-
  .form-card .back-link {
    display: inline-flex;
    margin-bottom: 24px
@@ -1023,10 +996,6 @@
  .form-card .eyebrow {
    display: block;
    margin-bottom: 12px
- }
-
- .form-card h1 {
-   margin: 0 0 14px
  }
 
  .form-card .lead {
@@ -1148,15 +1117,19 @@
  .mvp-create {
    display: grid;
    place-items: center;
-   width: 32px;
+   width: auto;
    height: 32px;
+   min-height: 34px;
+   padding: 0 12px;
+   gap: 6px;
    border: 1px solid var(--pm-green);
-   border-radius: 50%;
+   border-radius: 18px;
    background: var(--pm-green);
    color: #fff;
-   font-size: 23px;
-   font-weight: 400;
+   font-size: 13px;
+   font-weight: 700;
    line-height: 1;
+   text-decoration: none;
    transition: transform .2s, background .2s
  }
 
@@ -1247,17 +1220,6 @@
    .mvp-footer nav {
      gap: 14px
    }
- }
-
- .mvp-create {
-   width: auto;
-   min-height: 34px;
-   padding: 0 12px;
-   gap: 6px;
-   border-radius: 18px;
-   font-size: 13px;
-   font-weight: 700;
-   text-decoration: none
  }
 
  .mvp-create>span:first-child {

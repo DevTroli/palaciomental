@@ -80,7 +80,7 @@ body {
 
 .tenant-eyebrow {
   margin: 0 0 7px;
-  color: var(--tenant-accent);
+  color: var(--tenant-primary);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .12em;
@@ -185,7 +185,7 @@ body {
   margin-top: auto;
   padding: 10px 15px;
   border-radius: 6px;
-  background: var(--tenant-accent);
+  background: var(--tenant-primary);
   color: #fff;
   font-weight: 750;
   text-decoration: none;
@@ -230,9 +230,7 @@ body {
 }
 
 /* Acessibilidade do shell compartilhado */
-.tenant-eyebrow { color: var(--tenant-primary); }
 .tenant-overview-hero .tenant-eyebrow { color: #c6f2d8; }
-.tenant-button { background: var(--tenant-primary); }
 .tenant-nav { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .tenant-nav a { padding: 7px 10px; border-radius: 6px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
 .tenant-nav a:hover { background: rgba(255,255,255,.14); }
