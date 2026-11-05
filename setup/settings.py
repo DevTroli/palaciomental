@@ -161,6 +161,32 @@ DATABASES = {
     )
 }
 
+# Redis é uma camada de aceleração; o PostgreSQL continua sendo a fonte oficial.
+# Fora do Compose, REDIS_URL pode ser omitida e o cache local será utilizado.
+REDIS_URL = config("REDIS_URL", default="")
+TENANT_CACHE_TTL = config("TENANT_CACHE_TTL", cast=int, default=300)
+TENANT_BRANDING_CACHE_TTL = config("TENANT_BRANDING_CACHE_TTL", cast=int, default=300)
+TENANT_PUBLIC_CONFIG_CACHE_TTL = config("TENANT_PUBLIC_CONFIG_CACHE_TTL", cast=int, default=120)
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            "TIMEOUT": 300,
+            "KEY_PREFIX": config("CACHE_KEY_PREFIX", default="pm"),
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "palacio-mental-local",
+            "TIMEOUT": 300,
+        }
+    }
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_CACHE_ALIAS = "default"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators

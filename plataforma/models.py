@@ -343,6 +343,15 @@ class ProjectComment(models.Model):
         verbose_name = "Comentário de projeto"
         verbose_name_plural = "Comentários de projetos"
         ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["project", "created_at"], name="comment_project_date_idx"),
+            models.Index(fields=["parent", "created_at"], name="comment_parent_date_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.parent_id and self.project_id and self.parent.project_id != self.project_id:
+            raise ValidationError({"parent": "O comentário pai deve pertencer ao mesmo projeto."})
 
     def __str__(self):
         return f"Comentário de {self.author} em {self.project}"

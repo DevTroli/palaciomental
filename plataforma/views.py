@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Case, Count, Exists, OuterRef, Q, When
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -35,6 +35,7 @@ from .navigation import global_home_url as _global_home_url, project_notificatio
 from .invitations import invitation_accept, invitation_login_target
 from .invitation_delivery import deliver_invitation
 from .branding import invitation_branding
+from core.rankings import public_ranking_ids
 
 
 def _tenant_identity_context(organizacao):
@@ -166,7 +167,16 @@ def projects(request):
     if tag:
         queryset = queryset.filter(tags__icontains=tag)
     if ordering == "relevance":
-        queryset = queryset.order_by("-relevance", "-updated_at")
+        tenant_id = getattr(getattr(request, "organizacao", None), "pk", None)
+        ranking_ids = public_ranking_ids(tenant_id=tenant_id, limit=500)
+        if ranking_ids:
+            ranking_order = Case(
+                *[When(pk=project_id, then=position) for position, project_id in enumerate(ranking_ids)],
+                default=len(ranking_ids),
+            )
+            queryset = queryset.order_by(ranking_order, "-relevance", "-updated_at")
+        else:
+            queryset = queryset.order_by("-relevance", "-updated_at")
     categories = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
     organizacao = getattr(request, "organizacao", None)
     context = {

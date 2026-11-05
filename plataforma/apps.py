@@ -10,3 +10,4 @@ class PlataformaConfig(AppConfig):
     def ready(self):
         # Registra o sinal que aplica o escopo padrão de RLS em conexões novas.
         from . import rls  # noqa: F401
+        from . import ranking_signals  # noqa: F401
