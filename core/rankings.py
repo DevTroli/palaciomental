@@ -12,7 +12,7 @@ import redis
 from django.conf import settings
 from django.utils import timezone
 
-from listaEspera.models import Project, ProjectVote
+from plataforma.models import Project, ProjectVote
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +71,8 @@ def project_is_public(project_id: int) -> bool:
 
 
 def project_tenant_id(project_id: int) -> Optional[str]:
-    """Ponto de integração da futura camada de multi-tenancy.
-
-    O modelo atual ainda não possui organização. Retornar None evita colocar
-    projetos sem tenant conhecido em um ranking institucional incorreto.
-    """
-    return None
+    """Resolve o tenant oficial do projeto sem usar Redis como autorização."""
+    return Project.objects.filter(pk=project_id).values_list("organizacao_id", flat=True).first()
 
 
 def update_project_projection(

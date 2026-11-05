@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from listaEspera.models import Project, ProjectVote
+from plataforma.models import Project, ProjectVote
 
 from .rankings import (
     public_ranking_ids,

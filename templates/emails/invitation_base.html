@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Convite institucional</title>
+<style>@media only screen and (max-width:420px){.pm-footer-logo,.pm-footer-copy{display:block!important;width:100%!important;box-sizing:border-box}.pm-footer-logo{padding:0 0 12px!important}}</style></head>
+<body style="margin:0;background:{{ tenant_background_color }};color:{{ tenant_surface_text_color }};font-family:Arial,Helvetica,sans-serif;line-height:1.5">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:{{ tenant_background_color }}">
+    <tr><td align="center" style="padding:24px 12px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:{{ tenant_surface_color }};border-radius:16px;overflow:hidden">
+        <tr><td style="padding:28px 24px;background:{{ tenant_primary_color }};color:{{ tenant_primary_text_color }}">
+          {% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}" width="160" style="display:block;width:160px;max-width:100%;height:auto;margin-bottom:16px;background:#ffffff;padding:8px;border-radius:8px">{% endif %}
+          <p style="margin:0;font-size:13px;letter-spacing:.05em;text-transform:uppercase">Ambiente institucional</p>
+          <p style="margin:8px 0 0;font-size:22px;font-weight:bold">{{ tenant_display_name }}</p>
+        </td></tr>
+        {% if tenant_cover_url %}<tr><td><img src="{{ tenant_cover_url }}" alt="" width="600" style="display:block;width:100%;height:auto"></td></tr>{% endif %}
+        <tr><td style="padding:28px 24px">
+          <h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">Seu convite para participar</h1>
+          {% block invitation_description %}{% endblock %}
+          <p>Seu papel inicial será <strong>{{ convite.get_papel_display }}</strong>. O acesso fica limitado aos vínculos autorizados desta organização.</p>
+          <p style="margin:28px 0"><a href="{{ invite_url }}" style="display:inline-block;background:{{ tenant_accent_color }};color:{{ tenant_accent_text_color }};padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Aceitar convite</a></p>
+          <p style="font-size:13px;color:{{ tenant_surface_text_color }}">Convite individual para <strong>{{ convite.email }}</strong>, válido até {{ convite.expira_em|date:"d/m/Y H:i" }}. Abrir o link não confirma sua afiliação: você precisará entrar ou criar sua conta e aceitar o convite.</p>
+          <p style="font-size:12px;color:{{ tenant_surface_text_color }};word-break:break-all">Se o botão não funcionar, copie este endereço:<br><a href="{{ invite_url }}" style="color:{{ tenant_surface_text_color }}">{{ invite_url }}</a></p>
+          <p style="font-size:13px;color:{{ tenant_surface_text_color }}">Se você não esperava este convite, ignore esta mensagem.</p>
+        </td></tr>
+        <tr><td style="padding:24px;background:{{ tenant_secondary_color }};color:{{ tenant_secondary_text_color }}">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+            <td class="pm-footer-logo" width="88" valign="middle" style="padding-right:20px"><a href="{{ pm_home_url }}"><img src="{{ pm_logo_url }}" alt="Palácio Mental" width="68" style="display:block;width:68px;height:auto"></a></td>
+            <td class="pm-footer-copy" valign="middle" style="font-size:12px;color:{{ tenant_secondary_text_color }};line-height:1.5"><p style="margin:0 0 4px;font-weight:bold">Ambiente institucional no Palácio Mental</p><p style="margin:0">Uma plataforma para preservar o contexto, a autoria e a evolução dos seus projetos.</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

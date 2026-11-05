@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Acesso interrompido — Palácio Mental{% endblock %}
+{% block institutional_header %}
+<header class="tenant-header"><span class="tenant-brand">{{ tenant_display_name }}</span><span>Ambiente institucional</span></header>
+{% endblock %}
+{% block institutional_footer %}<footer class="tenant-footer"><div class="tenant-footer-inner"><a href="{{ global_home_url }}">Palácio Mental</a></div></footer>{% endblock %}
+{% block content %}
+<section class="auth-section mvp-container">
+  <div class="form-card">
+    <span class="eyebrow">Envio ou acesso interrompido · 403</span>
+    <h1>{{ error_title }}</h1>
+    <p>{{ error_message }}</p>
+    {% if recovery_url %}<p><a class="button button-green" href="{{ recovery_url }}">{{ recovery_label }}</a></p>{% endif %}
+    <p><a href="{{ global_home_url }}">Ir para o Palácio Mental</a></p>
+    <p class="muted">Nenhuma afiliação é concedida por esta tela.</p>
+  </div>
+</section>
+{% endblock %}

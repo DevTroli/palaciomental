@@ -1,0 +1,135 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/palacio-admin.css' %}">
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard palacio-admin-home{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+<div id="content-main" class="palacio-admin-content">
+  <header class="palacio-admin-intro">
+    <p class="palacio-admin-eyebrow">Operação orientada</p>
+    <h1>O que você precisa fazer?</h1>
+    <p>Esta área é exclusiva da equipe do Palácio Mental. Escolha um fluxo para provisionar, manter ou auditar a plataforma; gestores institucionais usam o portal do próprio tenant.</p>
+  </header>
+
+  <section class="palacio-flow-grid" aria-label="Fluxos principais da plataforma">
+    <article class="palacio-flow-card palacio-flow-card--primary">
+      <div class="palacio-flow-number">01</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Equipe PM · Provisionamento</p>
+        <h2>Provisionar um tenant</h2>
+        <p>Use este fluxo ao preparar uma nova organização, como o CAMPPG, antes de entregar o ambiente ao cliente.</p>
+        <ol>
+          <li>Crie a organização e defina a situação do ambiente.</li>
+          <li>Configure identidade visual e domínio institucional.</li>
+          <li>Valide o isolamento antes de liberar o tenant.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button default" href="{% url 'admin:listaEspera_organizacao_add' %}">Criar organização</a>
+          <a href="{% url 'admin:listaEspera_organizacao_changelist' %}">Ver organizações</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="palacio-flow-card">
+      <div class="palacio-flow-number">02</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Equipe PM · Acesso</p>
+        <h2>Preparar acessos institucionais</h2>
+        <p>Use este fluxo para apoiar a implantação e revisar acessos sem abrir o ambiente para visitantes não afiliados.</p>
+        <ol>
+          <li>Registre afiliações confirmadas.</li>
+          <li>Gere e acompanhe convites institucionais.</li>
+          <li>Revise papel e situação com o responsável do tenant.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button" href="{% url 'admin:listaEspera_membroorganizacao_changelist' %}">Afiliações</a>
+          <a href="{% url 'admin:listaEspera_conviteorganizacao_changelist' %}">Convites</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="palacio-flow-card">
+      <div class="palacio-flow-number">03</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Equipe PM · Operação técnica</p>
+        <h2>Manter a plataforma</h2>
+        <p>Use este fluxo para suporte técnico e diagnóstico, sem substituir a gestão cotidiana feita no portal institucional.</p>
+        <ol>
+          <li>Filtre projetos por organização e status.</li>
+          <li>Consulte links, membros e marcos para investigar incidentes.</li>
+          <li>Não use esta área para orientar o trabalho diário do tenant.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button" href="{% url 'admin:listaEspera_project_changelist' %}">Ver projetos</a>
+          <a href="{% url 'admin:listaEspera_projectmilestone_changelist' %}">Ver marcos</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="palacio-flow-card">
+      <div class="palacio-flow-number">04</div>
+      <div>
+        <p class="palacio-admin-eyebrow">Equipe PM · Governança</p>
+        <h2>Auditar e dar suporte</h2>
+        <p>Use este fluxo quando houver uma inconsistência, incidente, troca de responsável ou necessidade de auditoria.</p>
+        <ol>
+          <li>Confira o status da organização e do domínio.</li>
+          <li>Revise afiliações, convites e permissões.</li>
+          <li>Consulte o histórico antes de alterar dados ou intervir.</li>
+        </ol>
+        <div class="palacio-flow-actions">
+          <a class="button" href="{% url 'admin:listaEspera_dominioorganizacao_changelist' %}">Revisar domínios</a>
+          <a href="{% url 'admin:auth_user_changelist' %}">Ver usuários</a>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="palacio-admin-guidance" aria-label="Regra de segurança">
+    <strong>Regra de fronteira:</strong> o `/admin/` pertence à equipe PM. O gestor do CAMPPG administra seu ambiente em <code>camppg.palaciomental.com.br/gestao/</code>, sem acesso aos dados gerais da plataforma.
+  </section>
+
+  <details class="palacio-advanced-models">
+    <summary>Ver todos os modelos técnicos</summary>
+    <p>Use esta lista somente quando o fluxo guiado acima não atender à tarefa. Os modelos continuam disponíveis para manutenção avançada.</p>
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+  </details>
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+  <div class="module" id="recent-actions-module">
+    <h2>Atividade recente</h2>
+    <h3>Suas ações</h3>
+    {% load log %}
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+      <p>Nenhuma ação registrada ainda.</p>
+    {% else %}
+      <ul class="actionlist">
+        {% for entry in admin_log %}
+          <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+            <span class="visually-hidden">{% if entry.is_addition %}Adicionado:{% elif entry.is_change %}Alterado:{% elif entry.is_deletion %}Removido:{% endif %}</span>
+            {% if entry.is_deletion or not entry.get_admin_url %}
+              {{ entry.object_repr }}
+            {% else %}
+              <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+            {% endif %}
+            <br><span class="mini quiet">{{ entry.content_type.name|capfirst }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ tenant_display_name }} — início</title>
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  {% include "institutional/partials/theme.html" %}
+  <link rel="stylesheet" href="{% static 'css/tenant-home.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+</head>
+<body>
+  {% include "institutional/partials/project_header.html" %}
+  <main id="main-content" class="tenant-container tenant-home">
+    <section class="tenant-home-intro" aria-labelledby="tenant-home-title">
+      <div class="tenant-cover{% if not tenant_cover_url %} tenant-cover--empty{% endif %}">{% if tenant_cover_url %}<img src="{{ tenant_cover_url }}" alt="" fetchpriority="high">{% else %}<span>Ambiente institucional</span>{% endif %}</div>
+      <div class="tenant-home-intro-grid">
+        <div class="tenant-home-presentation">
+          <div class="tenant-home-logo">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% else %}<span aria-hidden="true">{{ tenant_display_name|first }}</span>{% endif %}</div>
+          <p class="tenant-eyebrow">Seu ambiente institucional</p><h1 id="tenant-home-title">{{ tenant_display_name }}</h1>
+          <p class="tenant-home-description">{% if tenant_presentation %}{{ tenant_presentation|linebreaksbr }}{% else %}Um espaço para acompanhar o que está em movimento. Explore os programas, encontre grupos e acompanhe os projetos institucionais deste ambiente.{% endif %}</p>
+        </div>
+        <nav class="tenant-home-shortcuts" aria-label="Acesso rápido">
+          <a href="{% url 'plataforma:projects' %}"><strong>Projetos institucionais</strong><span>Explore o ambiente</span></a>
+          <a href="{% url 'plataforma:project_create' %}"><strong>Criar projeto institucional</strong><span>Comece uma iniciativa</span></a>
+          <a href="{% url 'plataforma:profile' request.user.username %}"><strong>Meus projetos institucionais</strong><span>Retome seu trabalho</span></a>
+          <a href="#programas"><strong>Programas e turmas</strong><span>Encontre sua estrutura</span></a>
+          <a href="{% url 'plataforma:inbox' %}"><strong>Caixa de entrada</strong><span>Acompanhe solicitações</span></a>
+          {% if afiliacao.papel == 'proprietario' or afiliacao.papel == 'gestor' %}<a href="{% url 'plataforma:institutional_management' %}"><strong>Gestão institucional</strong><span>Cuide deste ambiente</span></a>{% else %}<a href="#projetos-publicados"><strong>Projetos em destaque</strong><span>Descubra iniciativas</span></a>{% endif %}
+        </nav>
+      </div>
+      <a class="tenant-home-scroll" href="#projetos-publicados">Explore os projetos abaixo <span aria-hidden="true">↓</span></a>
+    </section>
+    <section id="projetos-publicados" aria-labelledby="projects-title">
+      <div class="tenant-section-heading"><p class="tenant-eyebrow">Vitrine interna</p><h2 id="projects-title">Projetos publicados</h2><p>Projetos visíveis dentro desta organização. Seus projetos privados continuam em “Meus projetos neste ambiente”.</p></div>
+      <div class="tenant-project-columns">
+        <section aria-labelledby="autonomous-title"><h3 id="autonomous-title">Projetos autônomos</h3><p>Iniciativas sem vínculo com uma turma.</p>{% include "institutional/partials/home_projects.html" with items=projetos_autonomos empty_message="As iniciativas autônomas aparecerão aqui." %}</section>
+        <section aria-labelledby="linked-title"><h3 id="linked-title">Projetos vinculados</h3><p>Conectados a programas e turmas.</p>{% include "institutional/partials/home_projects.html" with items=projetos_vinculados empty_message="Os projetos vinculados aparecerão aqui." %}</section>
+        <section aria-labelledby="ranking-title"><h3 id="ranking-title">Projetos em destaque</h3><p>Votos e atualização recente. Classificação provisória, não é a projeção oficial baseada em Redis.</p>{% include "institutional/partials/home_projects.html" with items=projetos ranked=True empty_message="Os destaques deste ambiente aparecerão aqui." %}</section>
+      </div>
+    </section>
+    <section id="programas" aria-labelledby="programs-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Em andamento</p><h2 id="programs-title">Programas ativos</h2></div><div class="tenant-flow-grid">{% for programa in programas %}<article class="tenant-card"><h3>{{ programa.nome }}</h3><p>{{ programa.descricao|default:"Programa institucional em andamento."|truncatechars:150 }}</p><a class="tenant-button" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Ver programa</a></article>{% empty %}<article class="tenant-card tenant-placeholder"><h3>Nenhum programa ativo</h3><p>Ainda não há programas publicados neste ambiente.</p></article>{% endfor %}</div></section>
+    <section aria-labelledby="classes-title"><div class="tenant-section-heading"><p class="tenant-eyebrow">Participação</p><h2 id="classes-title">Turmas elegíveis</h2></div><div class="tenant-flow-grid">{% for turma in turmas %}<article class="tenant-card"><h3>{{ turma.nome }}</h3><p>{{ turma.programa.nome }}</p><span class="tenant-status">{{ turma.membros_count }} participante(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_program_detail' turma.programa.pk %}">Ver turma</a></article>{% empty %}<article class="tenant-card tenant-placeholder"><h3>Nenhuma turma disponível</h3><p>As turmas elegíveis para seu papel aparecerão aqui.</p></article>{% endfor %}</div></section>
+  </main>
+  {% include "institutional/partials/shell_footer.html" %}
+</body>
+</html>

@@ -1,0 +1,22 @@
+.invitation-section{padding:12px 0 48px}
+.invitation-card{width:100%;max-width:560px;padding:24px 28px}
+.invitation-card .eyebrow{margin-bottom:8px}
+.invitation-card .field{margin:12px 0}
+.invitation-card .field label{margin-bottom:4px}
+.invitation-card .invitation-login{margin:12px 0;font-size:.875rem}
+.invitation-card .invitation-note{margin:16px 0 0;font-size:.8rem;color:#514959;line-height:1.5}
+.invitation-card h1{font-size:clamp(1.4rem,4vw,2rem);line-height:1.2;overflow-wrap:anywhere}
+.invitation-progress{display:flex;gap:1rem;list-style:none;padding:0;margin:1rem 0;color:#514959;font-size:.9rem}
+.invitation-progress li{display:flex;align-items:center;gap:.5rem;flex:1}
+.invitation-progress span{display:inline-grid;place-items:center;width:1.7rem;height:1.7rem;border:1px solid currentColor;border-radius:50%;flex-shrink:0}
+.invitation-progress [aria-current=step]{font-weight:700;color:#30243f}
+.invitation-progress [aria-current=step] span{background:#30243f;color:#fff;border-color:#30243f}
+.invitation-summary{border-left:3px solid var(--tenant-primary,#6E4AA3);padding:.5rem .85rem;background:#f7f5fa;overflow-wrap:anywhere;font-size:.875rem}
+.invitation-summary p{margin:.25rem 0}
+.invitation-passwords{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.invitation-passwords .field{min-width:0}
+.invitation-password-help{font-size:.85rem;margin:.5rem 0 1rem;color:#514959}
+.invitation-password-help summary{cursor:pointer;padding:.4rem 0}
+.invitation-password-help ul{padding-left:1.2rem}
+.invitation-card .field-error{display:block}
+@media(max-width:480px){.invitation-card{padding:16px}.invitation-passwords{grid-template-columns:1fr;gap:0}.invitation-progress{gap:.5rem;font-size:.8rem}}

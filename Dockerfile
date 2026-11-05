@@ -12,4 +12,4 @@ RUN chmod +x entrypoint.sh
 EXPOSE 8000
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["sh", "-c", "python manage.py runserver 0.0.0.0:${PORT:-8000}"]
+CMD ["sh", "-c", "exec sh scripts/start.sh gunicorn setup.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3} --access-logfile - --timeout 60"]

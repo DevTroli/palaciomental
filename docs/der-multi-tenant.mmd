@@ -1,0 +1,137 @@
+erDiagram
+    USER ||--o{ ORGANIZATION_MEMBERSHIP : participates
+    ORGANIZATION ||--o{ ORGANIZATION_MEMBERSHIP : has
+    ORGANIZATION ||--o{ ORGANIZATION_DOMAIN : owns
+    ORGANIZATION ||--|| ORGANIZATION_BRANDING : configures
+    ORGANIZATION ||--o{ ORGANIZATION_INVITATION : sends
+    USER ||--o{ ORGANIZATION_INVITATION : creates
+    USER ||--o| MEMBER_PROFILE : owns
+    USER ||--o{ PROJECT : owns
+    ORGANIZATION o|--o{ PROJECT : scopes
+    PROJECT ||--o{ PROJECT_LINK : gathers
+    PROJECT ||--o{ PROJECT_MEMBER : includes
+    USER ||--o{ PROJECT_MEMBER : joins
+    PROJECT ||--o{ PROJECT_COMMENT : receives
+    USER ||--o{ PROJECT_COMMENT : writes
+    PROJECT ||--o{ PROJECT_VOTE : receives
+    USER ||--o{ PROJECT_VOTE : casts
+    PROJECT ||--o{ PROJECT_MILESTONE : summarizes
+    USER ||--o{ PROJECT_MILESTONE : authors
+    PROJECT ||--o{ PROJECT_EVENT : records
+    USER ||--o{ PROJECT_EVENT : triggers
+    PROJECT ||--o{ COLLABORATION_REQUEST : receives
+    USER ||--o{ COLLABORATION_REQUEST : requests
+    USER ||--o{ NOTIFICATION : receives
+    ORGANIZATION o|--o{ NOTIFICATION : scopes
+
+    USER {
+        uuid id PK
+        string username
+        string email
+    }
+    ORGANIZATION {
+        uuid id PK
+        string slug
+        string name
+        string status
+        string created_at
+    }
+    ORGANIZATION_DOMAIN {
+        uuid id PK
+        uuid organization_id FK
+        string hostname
+        string kind
+        boolean is_primary
+        string verification_status
+    }
+    ORGANIZATION_BRANDING {
+        uuid id PK
+        uuid organization_id FK
+        string logo
+        string primary_color
+        string accent_color
+        string background_color
+    }
+    ORGANIZATION_MEMBERSHIP {
+        uuid id PK
+        uuid organization_id FK
+        uuid user_id FK
+        string role
+        string status
+        string joined_at
+    }
+    ORGANIZATION_INVITATION {
+        uuid id PK
+        uuid organization_id FK
+        string email
+        string role
+        string expires_at
+    }
+    MEMBER_PROFILE {
+        bigint id PK
+        uuid user_id FK
+        string bio
+    }
+    PROJECT {
+        bigint id PK
+        uuid owner_id FK
+        uuid organization_id FK
+        string title
+        string status
+        string visibility
+        string updated_at
+    }
+    PROJECT_MEMBER {
+        bigint id PK
+        bigint project_id FK
+        uuid user_id FK
+        string role
+        boolean can_manage_milestones
+    }
+    PROJECT_LINK {
+        bigint id PK
+        bigint project_id FK
+        string label
+        string url
+    }
+    PROJECT_COMMENT {
+        bigint id PK
+        bigint project_id FK
+        uuid author_id FK
+        bigint parent_id FK
+        string content
+    }
+    PROJECT_VOTE {
+        bigint id PK
+        bigint project_id FK
+        uuid user_id FK
+    }
+    PROJECT_MILESTONE {
+        bigint id PK
+        bigint project_id FK
+        uuid author_id FK
+        string milestone_type
+        string title
+    }
+    PROJECT_EVENT {
+        uuid id PK
+        bigint project_id FK
+        uuid actor_id FK
+        string event_type
+        string payload
+        string occurred_at
+    }
+    COLLABORATION_REQUEST {
+        bigint id PK
+        bigint project_id FK
+        uuid requester_id FK
+        string status
+        string decided_at
+    }
+    NOTIFICATION {
+        bigint id PK
+        uuid recipient_id FK
+        uuid organization_id FK
+        string kind
+        string read_at
+    }
