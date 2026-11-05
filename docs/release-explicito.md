@@ -32,13 +32,18 @@ python -m unittest discover -s scripts/tests -p 'test_release_contract.py' -v
 
 O nome do arquivo foi mantido para compatibilidade com o comando atual do CI; os testes agora verificam o boot restaurado. Usam comandos simulados: nao comprovam Docker, PostgreSQL, backup, Redis ou Railway reais.
 
-## Riscos e pendencias antes de promover
+## Evidencias registradas
+
+O PR #121 foi mergeado na main. Os checks test e CodeFactor desse PR concluiram com sucesso. Referencias: https://github.com/DevTroli/palaciomental/pull/121 e https://github.com/DevTroli/palaciomental/actions/runs/41945176310/job/126975489072 . Esses resultados nao comprovam build Docker, boot real do container ou deploy Railway, nem substituem os checks de commits posteriores.
+
+Os scripts scripts/release.sh e scripts/start.sh foram removidos no PR #121. A verificacao de configuracoes externas que possam chama-los permanece pendente.
+
+## Riscos e pendencias operacionais
 
 - Migrations voltam a executar em cada boot, inclusive reinicios e comandos administrativos via entrypoint.
 - O fluxo nao implementa lock distribuido para migrations concorrentes; coordenar deploys e replicas.
 - Falha de migration, RLS estrita ou collectstatic bloqueia o servidor.
 - Rollback de codigo nao desfaz migrations; nao reverter schema ou restaurar dados sem plano e autorizacao.
-- Conferir no Railway eventual pre-deploy scripts/release.sh e overrides de start antes de promover. Nao presumir que estejam configurados ou removidos. Alteracoes de producao exigem autorizacao separada.
-- Remover scripts/release.sh e scripts/start.sh e conferir referencias restantes antes de concluir a limpeza.
-- Validar CI, build Docker, boot em banco descartavel e restart. Nao considerar esta lista executada pela existencia do documento.
+- Conferir no Railway eventual pre-deploy scripts/release.sh e overrides de start, incluindo referencias a scripts/start.sh. Nao presumir que estejam configurados ou removidos. Alteracoes de producao exigem autorizacao separada.
+- Validar build Docker, boot em banco descartavel e restart. Nao considerar esta lista executada pela existencia do documento.
 - Preservar Redis, tenants, roles, volumes e historico de migrations.
