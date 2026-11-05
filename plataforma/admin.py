@@ -7,6 +7,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
+from .admin_tenant_access import TenantAccessAdminMixin
 from .models import (
     CollaborationRequest,
     ConviteOrganizacao,
@@ -89,7 +90,7 @@ def suspender_organizacoes(modeladmin, request, queryset):
 
 
 @admin.register(Organizacao)
-class OrganizacaoAdmin(admin.ModelAdmin):
+class OrganizacaoAdmin(TenantAccessAdminMixin, admin.ModelAdmin):
     list_display = ("nome", "slug", "status_legivel", "quantidade_dominios", "quantidade_membros", "atualizado_em")
     list_display_links = ("nome",)
     list_filter = ("status",)
