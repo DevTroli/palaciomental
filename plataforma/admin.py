@@ -7,6 +7,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
+from .admin_tenant_access import TenantAccessAdminMixin
 from .models import (
     CollaborationRequest,
     ConviteOrganizacao,
@@ -89,7 +90,7 @@ def suspender_organizacoes(modeladmin, request, queryset):
 
 
 @admin.register(Organizacao)
-class OrganizacaoAdmin(admin.ModelAdmin):
+class OrganizacaoAdmin(TenantAccessAdminMixin, admin.ModelAdmin):
     list_display = ("nome", "slug", "status_legivel", "quantidade_dominios", "quantidade_membros", "atualizado_em")
     list_display_links = ("nome",)
     list_filter = ("status",)
@@ -312,7 +313,7 @@ class TurmaAdmin(admin.ModelAdmin):
     list_display = ("nome", "programa", "professor_responsavel", "status", "atualizado_em")
     list_filter = ("status", "programa__organizacao")
     search_fields = ("nome", "programa__nome", "programa__organizacao__nome", "professor_responsavel__username")
-    list_select_related = ("programa", "programa__organizacao", "professor_responsavel")
+    list_select_related = ("programa", "professor_responsavel")
     autocomplete_fields = ("programa", "professor_responsavel", "criado_por")
     readonly_fields = ("id", "criado_em", "atualizado_em", "legado_id")
 
