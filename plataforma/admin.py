@@ -313,7 +313,7 @@ class TurmaAdmin(admin.ModelAdmin):
     list_display = ("nome", "programa", "professor_responsavel", "status", "atualizado_em")
     list_filter = ("status", "programa__organizacao")
     search_fields = ("nome", "programa__nome", "programa__organizacao__nome", "professor_responsavel__username")
-    list_select_related = ("programa", "professor_responsavel")
+    list_select_related = ("programa", "programa__organizacao", "professor_responsavel")
     autocomplete_fields = ("programa", "professor_responsavel", "criado_por")
     readonly_fields = ("id", "criado_em", "atualizado_em", "legado_id")
 
