@@ -4,7 +4,7 @@ Atualização de 6 de novembro de 2026. Recorte: estabilização institucional, 
 
 ## Resumo executivo
 
-As entregas de tema e capa/home foram integradas pelo responsável nos PRs #117 e #118. A coleção Postman cobre os formulários HTTP reais e vem bloqueada para escrita por padrão. A regressão local sobre a `main` atualizada passou com 214 testes Django, 15 contratos independentes e 52 asserções no fluxo Newman. Nenhum merge automático, deploy ou e-mail real foi feito nesta etapa de documentação/testes.
+As entregas de tema e capa/home foram integradas pelo responsável nos PRs #117 e #118. A coleção Postman cobre os formulários HTTP reais e vem bloqueada para escrita por padrão. A regressão local sobre a `main` atualizada passou com 215 testes Django, 15 contratos independentes, 3 testes do parser e 55 asserções no fluxo Newman. Nenhum merge automático, deploy ou e-mail real foi feito nesta etapa de documentação/testes.
 
 O fechamento de desenvolvimento é distinto do aceite operacional. Os gates de e-mail real, mídia após redeploy, runtime RLS atual e matriz visual/papéis em produção continuam explícitos na issue #116.
 
@@ -31,10 +31,12 @@ Milestone: [#12](https://github.com/DevTroli/palaciomental/milestone/12). Os PRs
 
 | Camada | Execução | Resultado |
 |---|---|---|
-| Django/PostgreSQL | `manage.py test` | 214 testes, sem falha |
+| Django/PostgreSQL | `manage.py test` | 215 testes, sem falha |
 | Boot | `unittest` de `test_release_contract.py` | 7 testes, sem falha |
 | Links Admin | `unittest` de `test_tenant_admin_links.py` | 8 testes, sem falha |
-| Newman 6.2.1 | Sessão, branding, multipart, projeto/contexto, comentário, marco, bordas, cadastro/aceite | 31 requests, 52 asserções, sem falha |
+| Parser de identidade | `node --test tools/test_postman_identity.mjs` | 3 testes, sem falha; executados também no CI |
+| Newman 6.2.1 | Sessão, branding, multipart, projeto/contexto, comentário, marco, bordas, cadastro/aceite | 31 requests, 55 asserções, sem falha |
+| Upload sem branding | `allow_branding=false`, uploads habilitados | 30 requests, 53 asserções; nome/apresentação/cores preservados |
 | Modo padrão | Flags de mutação desligados | 1 GET, 2 asserções; nenhum POST |
 | Host não aprovado | Teste negativo deliberado | 1 GET; nenhum POST; falha de proteção esperada |
 | RLS local | `pm_rls_status --strict` | `pm_app`, superuser=False, bypassrls=False; ENABLE/FORCE e política presentes; comando aprovado |
@@ -78,4 +80,4 @@ A issue #116 permanece aberta até o aceite desses gates ou decisão explícita 
 
 ## Resumo para o chat original
 
-Foram integrados os PRs #117/#118 de tema flexível e capa/home institucional. A branch `test/pm-14-postman-auditoria` contém a coleção Postman segura por padrão, environment sem segredos, fixtures, inventário e auditoria. A regressão foi refeita sobre a main com #123: 214 testes Django + 15 contratos independentes passaram; Newman executou 31 requests/52 asserções sem falha. O strict de RLS passou localmente com role comum; o atual em produção e mídia após redeploy continuam gates explícitos. Preservar as alterações paralelas #119–#123; em particular o boot atual mantém migrations no entrypoint e a home ainda sinaliza ranking provisório. Não houve merge automático, novo deploy, e-mail real ou exclusão de fixtures nesta etapa.
+Foram integrados os PRs #117/#118 de tema flexível e capa/home institucional. A branch `test/pm-14-postman-auditoria` contém a coleção Postman segura por padrão, environment sem segredos, fixtures, inventário e auditoria. A regressão foi refeita sobre a main com #123: 215 testes Django + 15 contratos independentes + 3 testes do parser passaram; Newman executou 31 requests/55 asserções sem falha. O strict de RLS passou localmente com role comum; o atual em produção e mídia após redeploy continuam gates explícitos. Preservar as alterações paralelas #119–#123; em particular o boot atual mantém migrations no entrypoint e a home ainda sinaliza ranking provisório. Não houve merge automático, novo deploy, e-mail real ou exclusão de fixtures nesta etapa.

@@ -40,3 +40,13 @@ class PostmanContractTests(SimpleTestCase):
         for required in ("allow_writes", "approved_write_host", "skipRequest", "setNextRequest"):
             self.assertIn(required, guard)
         self.assertNotIn("Cookie", json.dumps(self.collection))
+
+    def test_multipart_preserves_non_upload_identity_fields(self):
+        items = self.collection["item"][1]["item"]
+        upload = next(item for item in items if item["name"].startswith("02.3a"))
+        fields = {entry["key"]: entry for entry in upload["request"]["body"]["formdata"]}
+        for key in ("nome_exibicao", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo"):
+            self.assertEqual(fields[key]["value"], "{{identity_" + key + "}}")
+        self.assertNotIn("theme_primary", fields)
+        self.assertEqual(fields["logo"]["type"], "file")
+        self.assertEqual(fields["capa"]["type"], "file")

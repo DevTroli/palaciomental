@@ -42,12 +42,14 @@ As dependências são intencionais: se não houve login, itens protegidos são p
 | Variável | Habilita | Condições / limites |
 |---|---|---|
 | `allow_branding` | POST das cinco cores, nome e apresentação | Sobrescreve esses valores em tenant descartável |
-| `allow_uploads` | Multipart de logo e capa | Arquivos sintéticos em `fixtures/`; substitui imagens existentes |
+| `allow_uploads` | Multipart de logo e capa | Substitui apenas imagens; preserva os demais valores lidos no GET anterior |
 | `allow_media_fetch` | GET das imagens públicas extraídas do upload | Exige upload anterior na mesma execução; desativar se Gunicorn local não serve `/media/` |
 | `allow_email` | Convite de Membro para `invite_email` | Destinatário controlado e emissor Gestor; 302 não prova entrega |
 | `allow_invite_accept` | Consome `invite_path` e cria conta nova | Convite de Membro, `new_username` inédito e `new_password` forte |
 
 Todos os POSTs ainda exigem `allow_writes` e host aprovado, mesmo quando outro flag está ligado. O caminho do convite deve ser `/convites/organizacao/TOKEN/aceitar/`, sem domínio; mantenha-o privado.
+
+O upload reenvia nome, apresentação e três cores legadas exatamente como foram lidos no formulário, sem usar `branding_name`. Não envia os novos campos de tema, preservando o JSON existente. Uma asserção posterior compara todos os campos não relacionados às imagens com o snapshot anterior. Isso também é testado com `allow_branding=false` e caracteres escapados no HTML.
 
 O envio e o aceite têm uma fronteira manual: o token chega ao destinatário, não é exposto pelo painel administrativo. Para testar entrega real, habilite somente o envio, verifique caixa/eventos do provedor e use um convite novo na execução de aceite. Como esta última sai do gestor, não a rode com uma sessão de trabalho importante.
 
@@ -78,6 +80,7 @@ python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py pm_rls_status --strict
 python manage.py test
+node --test tools/test_postman_identity.mjs
 python -m unittest discover -s scripts/tests -p 'test_release_contract.py' -v
 python -m unittest discover -s scripts/tests -p 'test_tenant_admin_links.py' -v
 ```
@@ -94,6 +97,6 @@ python manage.py shell --no-imports \
 
 ## Evidência local desta entrega
 
-Com Newman 6.2.1 e fixtures descartáveis: fluxo funcional executou 31 requests e 52 asserções sem falhas; envio real e GET externo de mídia ficaram desativados. Modo padrão fez somente um GET e duas asserções. Host não aprovado produziu a falha esperada de proteção e nenhum POST: apenas o GET inicial foi enviado.
+Com Newman 6.2.1 e fixtures descartáveis: fluxo funcional executou 31 requests e 55 asserções sem falhas; envio real e GET externo de mídia ficaram desativados. O cenário com uploads e `allow_branding=false` passou com 30 requests/53 asserções, preservando nome, apresentação e cores. Modo padrão fez somente um GET e duas asserções. Host não aprovado produziu a falha esperada de proteção e nenhum POST: apenas o GET inicial foi enviado.
 
 Esses resultados são de homologação local, não de produção. Não reutilize o convite consumido nem interprete itens pulados como cobertura executada. O inventário e os resultados completos de regressão estão resumidos em `../auditoria-bifurcacao.md`.

@@ -13,6 +13,14 @@
         "exec": [
           "(function guard() {",
           "  const enabled = name => pm.environment.get(name) === \"true\";",
+          "  const identityWrite = (pm.info.requestName.startsWith(\"02.2\") && enabled(\"allow_branding\")) ||",
+          "    (pm.info.requestName.startsWith(\"02.3a\") && enabled(\"allow_uploads\"));",
+          "  if (enabled(\"allow_writes\") && identityWrite && !pm.variables.get(\"identity_snapshot\")) {",
+          "    pm.execution.setNextRequest(null);",
+          "    pm.test(\"Upload exige snapshot prévio\", () => pm.expect.fail(\"Identidade anterior não foi lida.\"));",
+          "    pm.execution.skipRequest();",
+          "    return;",
+          "  }",
           "  if (pm.info.requestName.startsWith(\"02.3c\") && !pm.variables.get(pm.request.url.toString().includes(\"cover\") ? \"media_cover_url\" : \"media_logo_url\")) {",
           "    pm.execution.skipRequest();",
           "    return;",
@@ -266,6 +274,35 @@
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
                   "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "",
+                  "pm.variables.unset(\"identity_snapshot\");",
+                  "const identity = (function readIdentity(html) {",
+                  "  const decode = value => value.replace(/&(#x[0-9a-f]+|#\\d+|amp|lt|gt|quot|apos);/gi, (entity, key) => {",
+                  "    if (key[0] === \"#\") {",
+                  "      const number = key[1].toLowerCase() === \"x\" ? parseInt(key.slice(2), 16) : parseInt(key.slice(1), 10);",
+                  "      return number <= 0x10ffff ? String.fromCodePoint(number) : entity;",
+                  "    }",
+                  "    return {amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\"}[key.toLowerCase()];",
+                  "  });",
+                  "  const names = [",
+                  "    \"nome_exibicao\", \"cor_primaria\", \"cor_destaque\", \"cor_fundo\",",
+                  "    \"theme_primary\", \"theme_secondary\", \"theme_accent\", \"theme_background\", \"theme_surface\",",
+                  "  ];",
+                  "  const inputs = html.match(/<input\\b[^>]*>/gi) || [];",
+                  "  const result = {};",
+                  "  for (const name of names) {",
+                  "    const input = inputs.find(tag => tag.match(/\\sname=([\"'])(.*?)\\1/i)?.[2] === name);",
+                  "    if (!input) throw new Error(`Campo de identidade ausente: ${name}`);",
+                  "    result[name] = decode(input.match(/\\svalue=([\"'])(.*?)\\1/i)?.[2] || \"\");",
+                  "  }",
+                  "  const textarea = html.match(/<textarea\\b(?=[^>]*\\sname=[\"']apresentacao[\"'])[^>]*>([\\s\\S]*?)<\\/textarea>/i);",
+                  "  if (!textarea) throw new Error(\"Campo de apresentação ausente.\");",
+                  "  result.apresentacao = decode(textarea[1].replace(/^\\r?\\n/, \"\"));",
+                  "  return result;",
+                  "})(pm.response.text());",
+                  "pm.variables.set(\"identity_snapshot\", JSON.stringify(identity));",
+                  "for (const [key, value] of Object.entries(identity)) pm.variables.set(\"identity_\" + key, value);",
+                  "pm.test(\"Snapshot de identidade completo\", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));",
                   "pm.test(\"Cinco campos de tema\", () => { for (const role of [\"primary\",\"secondary\",\"accent\",\"background\",\"surface\"]) pm.expect(pm.response.text()).to.include('data-theme-color=\"'+role+'\"'); });"
                 ]
               }
@@ -294,11 +331,6 @@
               "mode": "urlencoded",
               "urlencoded": [
                 {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
-                  "type": "text"
-                },
-                {
                   "key": "nome_exibicao",
                   "value": "{{branding_name}}",
                   "type": "text"
@@ -306,6 +338,26 @@
                 {
                   "key": "apresentacao",
                   "value": "Ambiente de homologação descartável.",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_primaria",
+                  "value": "{{identity_cor_primaria}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_destaque",
+                  "value": "{{identity_cor_destaque}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_fundo",
+                  "value": "{{identity_cor_fundo}}",
+                  "type": "text"
+                },
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
                   "type": "text"
                 },
                 {
@@ -393,6 +445,35 @@
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
                   "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "",
+                  "pm.variables.unset(\"identity_snapshot\");",
+                  "const identity = (function readIdentity(html) {",
+                  "  const decode = value => value.replace(/&(#x[0-9a-f]+|#\\d+|amp|lt|gt|quot|apos);/gi, (entity, key) => {",
+                  "    if (key[0] === \"#\") {",
+                  "      const number = key[1].toLowerCase() === \"x\" ? parseInt(key.slice(2), 16) : parseInt(key.slice(1), 10);",
+                  "      return number <= 0x10ffff ? String.fromCodePoint(number) : entity;",
+                  "    }",
+                  "    return {amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\"}[key.toLowerCase()];",
+                  "  });",
+                  "  const names = [",
+                  "    \"nome_exibicao\", \"cor_primaria\", \"cor_destaque\", \"cor_fundo\",",
+                  "    \"theme_primary\", \"theme_secondary\", \"theme_accent\", \"theme_background\", \"theme_surface\",",
+                  "  ];",
+                  "  const inputs = html.match(/<input\\b[^>]*>/gi) || [];",
+                  "  const result = {};",
+                  "  for (const name of names) {",
+                  "    const input = inputs.find(tag => tag.match(/\\sname=([\"'])(.*?)\\1/i)?.[2] === name);",
+                  "    if (!input) throw new Error(`Campo de identidade ausente: ${name}`);",
+                  "    result[name] = decode(input.match(/\\svalue=([\"'])(.*?)\\1/i)?.[2] || \"\");",
+                  "  }",
+                  "  const textarea = html.match(/<textarea\\b(?=[^>]*\\sname=[\"']apresentacao[\"'])[^>]*>([\\s\\S]*?)<\\/textarea>/i);",
+                  "  if (!textarea) throw new Error(\"Campo de apresentação ausente.\");",
+                  "  result.apresentacao = decode(textarea[1].replace(/^\\r?\\n/, \"\"));",
+                  "  return result;",
+                  "})(pm.response.text());",
+                  "pm.variables.set(\"identity_snapshot\", JSON.stringify(identity));",
+                  "for (const [key, value] of Object.entries(identity)) pm.variables.set(\"identity_\" + key, value);",
+                  "pm.test(\"Snapshot de identidade completo\", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));",
                   "if (pm.environment.get(\"allow_branding\") === \"true\") pm.test(\"Cor salva\", () => pm.expect(pm.response.text()).to.include(\"#315A76\"));"
                 ]
               }
@@ -402,11 +483,11 @@
         {
           "id": "09adc5af-619f-42f0-a85e-7de6a1084f45",
           "name": "02.3a · Upload de logo e capa opcional",
-          "description": "Substitui logo e capa no tenant descartável. Requer allow_uploads e allow_writes explícitos. Arquivos de fixture relativos à raiz do repositório. Não restaura automaticamente a identidade anterior.",
+          "description": "Substitui somente logo/capa no tenant descartável, preservando nome, apresentação, cores legadas e tema lidos no GET anterior. Requer allow_uploads e allow_writes explícitos. Arquivos relativos à raiz do repositório. Não restaura imagens anteriores.",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/gestao/identidade/",
-            "description": "Substitui logo e capa no tenant descartável. Requer allow_uploads e allow_writes explícitos. Arquivos de fixture relativos à raiz do repositório. Não restaura automaticamente a identidade anterior.",
+            "description": "Substitui somente logo/capa no tenant descartável, preservando nome, apresentação, cores legadas e tema lidos no GET anterior. Requer allow_uploads e allow_writes explícitos. Arquivos relativos à raiz do repositório. Não restaura imagens anteriores.",
             "header": [
               {
                 "key": "Origin",
@@ -427,7 +508,27 @@
                 },
                 {
                   "key": "nome_exibicao",
-                  "value": "{{branding_name}}",
+                  "value": "{{identity_nome_exibicao}}",
+                  "type": "text"
+                },
+                {
+                  "key": "apresentacao",
+                  "value": "{{identity_apresentacao}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_primaria",
+                  "value": "{{identity_cor_primaria}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_destaque",
+                  "value": "{{identity_cor_destaque}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_fundo",
+                  "value": "{{identity_cor_fundo}}",
                   "type": "text"
                 },
                 {
@@ -502,6 +603,30 @@
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
                   "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
                   "const html = pm.response.text();",
+                  "pm.test(\"Upload preservou os demais campos de identidade\", () => pm.expect((function readIdentity(html) {",
+                  "  const decode = value => value.replace(/&(#x[0-9a-f]+|#\\d+|amp|lt|gt|quot|apos);/gi, (entity, key) => {",
+                  "    if (key[0] === \"#\") {",
+                  "      const number = key[1].toLowerCase() === \"x\" ? parseInt(key.slice(2), 16) : parseInt(key.slice(1), 10);",
+                  "      return number <= 0x10ffff ? String.fromCodePoint(number) : entity;",
+                  "    }",
+                  "    return {amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\"}[key.toLowerCase()];",
+                  "  });",
+                  "  const names = [",
+                  "    \"nome_exibicao\", \"cor_primaria\", \"cor_destaque\", \"cor_fundo\",",
+                  "    \"theme_primary\", \"theme_secondary\", \"theme_accent\", \"theme_background\", \"theme_surface\",",
+                  "  ];",
+                  "  const inputs = html.match(/<input\\b[^>]*>/gi) || [];",
+                  "  const result = {};",
+                  "  for (const name of names) {",
+                  "    const input = inputs.find(tag => tag.match(/\\sname=([\"'])(.*?)\\1/i)?.[2] === name);",
+                  "    if (!input) throw new Error(`Campo de identidade ausente: ${name}`);",
+                  "    result[name] = decode(input.match(/\\svalue=([\"'])(.*?)\\1/i)?.[2] || \"\");",
+                  "  }",
+                  "  const textarea = html.match(/<textarea\\b(?=[^>]*\\sname=[\"']apresentacao[\"'])[^>]*>([\\s\\S]*?)<\\/textarea>/i);",
+                  "  if (!textarea) throw new Error(\"Campo de apresentação ausente.\");",
+                  "  result.apresentacao = decode(textarea[1].replace(/^\\r?\\n/, \"\"));",
+                  "  return result;",
+                  "})(html)).to.deep.equal(JSON.parse(pm.variables.get(\"identity_snapshot\"))));",
                   "pm.test(\"Logo e capa vinculadas\", () => { pm.expect(html).to.include(\"/branding/logo/\"); pm.expect(html).to.include(\"/branding/cover/\"); pm.expect(html).to.include(\"Ver imagem atual\"); });",
                   "const logo = html.match(/href=[\"']([^\"']+\\/branding\\/logo\\/[^\"']+)/);",
                   "const cover = html.match(/id=[\"']cover-preview[\"'][^>]*src=[\"']([^\"']+)/);",

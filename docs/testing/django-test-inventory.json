@@ -1,5 +1,5 @@
 {
-  "total": 214,
+  "total": 215,
   "tests": [
     "core.test_rankings.RankingProjectionTests.test_confirmed_vote_uses_increment_without_duplicate_score",
     "core.test_rankings.RankingProjectionTests.test_global_and_institutional_sets_are_separate",
@@ -214,6 +214,7 @@
     "plataforma.tests.test_email_resend.ResendBackendTests.test_timeout_is_reported_as_delivery_error",
     "plataforma.tests.test_email_resend.ResendBackendTests.test_unsupported_attachment_is_not_silently_dropped",
     "plataforma.tests.test_postman_contract.PostmanContractTests.test_collection_routes_and_request_ids",
-    "plataforma.tests.test_postman_contract.PostmanContractTests.test_export_is_safe_by_default"
+    "plataforma.tests.test_postman_contract.PostmanContractTests.test_export_is_safe_by_default",
+    "plataforma.tests.test_postman_contract.PostmanContractTests.test_multipart_preserves_non_upload_identity_fields"
   ]
 }

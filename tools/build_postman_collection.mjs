@@ -1,6 +1,7 @@
 // Geração determinística. Execute: node tools/build_postman_collection.mjs
 import {createHash} from "node:crypto";
 import {mkdirSync, writeFileSync} from "node:fs";
+import {readIdentity} from "./postman_identity.mjs";
 
 const out = "docs/testing/postman";
 mkdirSync(out, {recursive: true});
@@ -48,6 +49,13 @@ const csrf = `const match = pm.response.text().match(/name=["']csrfmiddlewaretok
 pm.test("CSRF presente", () => pm.expect(match).not.to.equal(null));
 if (!match) pm.execution.setNextRequest(null); else pm.variables.set("csrf", match[1]);`;
 const token = "{{csrf}}";
+const captureIdentity = `
+pm.variables.unset("identity_snapshot");
+const identity = (${readIdentity.toString()})(pm.response.text());
+pm.variables.set("identity_snapshot", JSON.stringify(identity));
+for (const [key, value] of Object.entries(identity)) pm.variables.set("identity_" + key, value);
+pm.test("Snapshot de identidade completo", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));`;
+const preserved = Object.fromEntries(["nome_exibicao", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo"].map(key => [key, "{{identity_" + key + "}}"]));
 
 group("01 · Sessão e entrada", "Execute a coleção inteira no Runner/Newman, em ordem. A senha fica no environment local e não é exportada neste repositório.");
 add("01.1 · Login institucional e CSRF", "/entrar/", {
@@ -64,30 +72,31 @@ add("01.3 · Home autenticada e marca", "/", {
 add("01.4 · Projetos deste host", "/projetos/", {code: ok});
 
 group("02 · Gestão e identidade", "Requer conta ativa Proprietário/Gestor. GETs não alteram dados. O POST opcional sobrescreve nome/apresentação/cores: use somente tenant descartável.");
-add("02.1 · Identidade e novo CSRF", "/gestao/identidade/", {code: `${ok}\n${csrf}\npm.test("Cinco campos de tema", () => { for (const role of ["primary","secondary","accent","background","surface"]) pm.expect(pm.response.text()).to.include('data-theme-color="'+role+'"'); });`});
+add("02.1 · Identidade e novo CSRF", "/gestao/identidade/", {code: `${ok}\n${csrf}\n${captureIdentity}\npm.test("Cinco campos de tema", () => { for (const role of ["primary","secondary","accent","background","surface"]) pm.expect(pm.response.text()).to.include('data-theme-color="'+role+'"'); });`});
 add("02.2 · Salvar tema opcional", "/gestao/identidade/", {
   method: "POST", gate: "allow_branding",
   fields: {
-    csrfmiddlewaretoken: token, nome_exibicao: "{{branding_name}}", apresentacao: "Ambiente de homologação descartável.",
+    ...preserved, csrfmiddlewaretoken: token, nome_exibicao: "{{branding_name}}", apresentacao: "Ambiente de homologação descartável.",
     theme_primary: "#315A76", theme_secondary: "#6E4AA3", theme_accent: "#5C9F63",
     theme_background: "#F3ECDF", theme_surface: "#FFFFFF",
   },
   code: redirect,
 });
 add("02.3 · Releitura de identidade", "/gestao/identidade/", {
-  code: `${ok}\n${csrf}\nif (pm.environment.get("allow_branding") === "true") pm.test("Cor salva", () => pm.expect(pm.response.text()).to.include("#315A76"));`,
+  code: `${ok}\n${csrf}\n${captureIdentity}\nif (pm.environment.get("allow_branding") === "true") pm.test("Cor salva", () => pm.expect(pm.response.text()).to.include("#315A76"));`,
 });
 add("02.3a · Upload de logo e capa opcional", "/gestao/identidade/", {
   gate: "allow_uploads", method: "POST",
-  fields: {csrfmiddlewaretoken: token, nome_exibicao: "{{branding_name}}"},
+  fields: {csrfmiddlewaretoken: token, ...preserved},
   files: {logo: `${out}/fixtures/logo.png`, capa: `${out}/fixtures/cover.png`},
   code: redirect,
-  description: "Substitui logo e capa no tenant descartável. Requer allow_uploads e allow_writes explícitos. Arquivos de fixture relativos à raiz do repositório. Não restaura automaticamente a identidade anterior.",
+  description: "Substitui somente logo/capa no tenant descartável, preservando nome, apresentação, cores legadas e tema lidos no GET anterior. Requer allow_uploads e allow_writes explícitos. Arquivos relativos à raiz do repositório. Não restaura imagens anteriores.",
 });
 add("02.3b · URLs e rótulos de mídia", "/gestao/identidade/", {
   gate: "allow_uploads",
   code: `${ok}\n${csrf}
 const html = pm.response.text();
+pm.test("Upload preservou os demais campos de identidade", () => pm.expect((${readIdentity.toString()})(html)).to.deep.equal(JSON.parse(pm.variables.get("identity_snapshot"))));
 pm.test("Logo e capa vinculadas", () => { pm.expect(html).to.include("/branding/logo/"); pm.expect(html).to.include("/branding/cover/"); pm.expect(html).to.include("Ver imagem atual"); });
 const logo = html.match(/href=["']([^"']+\\/branding\\/logo\\/[^"']+)/);
 const cover = html.match(/id=["']cover-preview["'][^>]*src=["']([^"']+)/);
@@ -182,6 +191,14 @@ add("05.8 · Membro não altera identidade por POST direto", "/gestao/identidade
 
 function guard() {
   const enabled = name => pm.environment.get(name) === "true";
+  const identityWrite = (pm.info.requestName.startsWith("02.2") && enabled("allow_branding")) ||
+    (pm.info.requestName.startsWith("02.3a") && enabled("allow_uploads"));
+  if (enabled("allow_writes") && identityWrite && !pm.variables.get("identity_snapshot")) {
+    pm.execution.setNextRequest(null);
+    pm.test("Upload exige snapshot prévio", () => pm.expect.fail("Identidade anterior não foi lida."));
+    pm.execution.skipRequest();
+    return;
+  }
   if (pm.info.requestName.startsWith("02.3c") && !pm.variables.get(pm.request.url.toString().includes("cover") ? "media_cover_url" : "media_logo_url")) {
     pm.execution.skipRequest();
     return;
