@@ -3,14 +3,13 @@
     {% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}
     <span>{{ tenant_display_name }}</span>
   </a>
-  <div class="tenant-context"><span>Ambiente institucional</span><strong>{{ request.membro_organizacao.get_papel_display }}</strong></div>
   {% include 'institutional/partials/shell_nav.html' %}
   {% if request.user.is_authenticated %}
-  <nav class="tenant-nav" aria-label="Ações da conta">
-    <a href="{% url 'plataforma:project_create' %}">Criar projeto institucional</a>
+  <form class="tenant-header-search" method="get" action="{% url 'plataforma:projects' %}" role="search"><label class="visually-hidden" for="tenant-search">Buscar projetos neste ambiente</label><input id="tenant-search" name="q" type="search" placeholder="Buscar projetos" value="{{ request.GET.q }}"><button type="submit" aria-label="Buscar projetos">Buscar</button></form>
+  <nav class="tenant-nav tenant-account-nav" aria-label="Ações da conta">
+    <a href="{% url 'plataforma:project_create' %}" aria-label="Criar projeto institucional">+ Criar</a>
     <a href="{% url 'plataforma:inbox' %}">Caixa de entrada{% if inbox_unread_count %} ({{ inbox_unread_count }}){% endif %}</a>
-    <a href="{% url 'plataforma:profile_edit' %}">Editar perfil</a>
-    <form method="post" action="{% url 'plataforma:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form>
+    <details class="tenant-account"><summary>{{ request.user.get_short_name|default:request.user.username }}</summary><div><p>Ambiente institucional · {{ request.membro_organizacao.get_papel_display }}</p><a class="tenant-mobile-action" href="{% url 'plataforma:project_create' %}">Criar projeto institucional</a><a class="tenant-mobile-action" href="{% url 'plataforma:inbox' %}">Caixa de entrada</a><a href="{% url 'plataforma:profile' request.user.username %}">Meus projetos neste ambiente</a><a href="{% url 'plataforma:profile_edit' %}">Editar perfil</a><a href="{{ personal_workspace_url }}">Meu espaço pessoal</a><form method="post" action="{% url 'plataforma:logout' %}">{% csrf_token %}<button type="submit">Sair</button></form></div></details>
   </nav>
   {% endif %}
 </header>

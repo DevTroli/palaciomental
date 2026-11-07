@@ -6,6 +6,7 @@ import uuid
 
 from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, normalizar_logo, validar_logo
 from .theme import validate_theme
+from .validators import caminho_capa, validar_capa
 
 
 class Organizacao(models.Model):
@@ -51,6 +52,8 @@ class IdentidadeOrganizacao(models.Model):
     )
     nome_exibicao = models.CharField("Nome de exibição", max_length=160, blank=True)
     tema = models.JSONField("Cores personalizadas", default=dict, blank=True, validators=[validate_theme])
+    capa = models.ImageField("Capa", upload_to=caminho_capa, validators=[validar_capa], blank=True)
+    apresentacao = models.TextField("Apresentação do ambiente", max_length=600, blank=True)
     logo = models.ImageField("Logo", upload_to=caminho_logo, validators=[validar_logo], blank=True)
     cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
     cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
@@ -63,6 +66,8 @@ class IdentidadeOrganizacao(models.Model):
     def save(self, *args, **kwargs):
         if self.logo and (not self.logo._committed or self.logo.name != self._logo_original_name):
             self.logo = normalizar_logo(self.logo.file, self.logo.name)
+        if self.capa and not self.capa._committed:
+            self.capa = normalizar_logo(self.capa.file, self.capa.name, max_dimension=2400)
         result = super().save(*args, **kwargs)
         self._logo_original_name = self.logo.name
         return result
@@ -339,6 +344,15 @@ class ProjectComment(models.Model):
         verbose_name = "Comentário de projeto"
         verbose_name_plural = "Comentários de projetos"
         ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["project", "created_at"], name="comment_project_date_idx"),
+            models.Index(fields=["parent", "created_at"], name="comment_parent_date_idx"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.parent_id and self.project_id and self.parent.project_id != self.project_id:
+            raise ValidationError({"parent": "O comentário pai deve pertencer ao mesmo projeto."})
 
     def __str__(self):
         return f"Comentário de {self.author} em {self.project}"

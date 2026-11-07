@@ -2,7 +2,6 @@ from django.shortcuts import redirect, render
 from django.db.models import Count, Q
 
 from plataforma.models import Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, Turma
-from plataforma.validators import CORES_SEMANTICAS
 
 
 def index(request):
@@ -19,9 +18,12 @@ def index(request):
             turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
             status=Grupo.STATUS_ATIVO,
         ).select_related("turma__programa", "turma__professor_responsavel").annotate(membros_count=Count("membros", distinct=True))
-        projetos = organizacao.projetos.filter(
+        projetos_base = organizacao.projetos.filter(
             visibility=Project.VISIBILITY_PUBLIC,
-        ).select_related("owner").annotate(relevance=Count("votes", distinct=True)).order_by("-relevance", "-updated_at")[:6]
+        ).select_related("owner").annotate(relevance=Count("votes", distinct=True))
+        projetos = projetos_base.order_by("-relevance", "-updated_at")[:6]
+        autonomos = projetos_base.filter(vinculo_institucional__isnull=True).order_by("-updated_at")[:6]
+        vinculados = projetos_base.filter(vinculo_institucional__turma__programa__organizacao=organizacao).order_by("-updated_at")[:6]
         grupos = grupos_base[:8]
         turmas = Turma.objects.filter(
             programa__organizacao=organizacao,
@@ -53,6 +55,8 @@ def index(request):
                 "turmas": turmas,
                 "grupos_abertos": grupos,
                 "projetos": projetos,
+                "projetos_autonomos": autonomos,
+                "projetos_vinculados": vinculados,
                 "ranking_provisorio": True,
             },
         )

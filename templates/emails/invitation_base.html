@@ -11,6 +11,7 @@
           <p style="margin:0;font-size:13px;letter-spacing:.05em;text-transform:uppercase">Ambiente institucional</p>
           <p style="margin:8px 0 0;font-size:22px;font-weight:bold">{{ tenant_display_name }}</p>
         </td></tr>
+        {% if tenant_cover_url %}<tr><td><img src="{{ tenant_cover_url }}" alt="" width="600" style="display:block;width:100%;height:auto"></td></tr>{% endif %}
         <tr><td style="padding:28px 24px">
           <h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">Seu convite para participar</h1>
           {% block invitation_description %}{% endblock %}

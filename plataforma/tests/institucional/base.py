@@ -58,4 +58,3 @@ class PortalInstitucionalBase(TestCase):
         mode = "RGB" if image_format.upper() in {"JPEG", "JPG"} else "RGBA"
         Image.new(mode, size, (110, 74, 163, 255) if mode == "RGBA" else (110, 74, 163)).save(buffer, format=image_format)
         return SimpleUploadedFile(name, buffer.getvalue(), content_type=f"image/{image_format.lower()}")
-

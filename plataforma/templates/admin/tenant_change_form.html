@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  {% if tenant_access_url %}
+    <li><a href="{{ tenant_access_url }}" target="_blank" rel="noopener noreferrer">Abrir ambiente</a></li>
+  {% endif %}
+{% endblock %}
+
+{% block form_top %}
+  {{ block.super }}
+  <p class="help">{{ tenant_access_message }}</p>
+{% endblock %}

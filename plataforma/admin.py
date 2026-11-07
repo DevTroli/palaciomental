@@ -7,6 +7,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
+from .admin_tenant_access import TenantAccessAdminMixin
 from .models import (
     CollaborationRequest,
     ConviteOrganizacao,
@@ -57,7 +58,7 @@ class IdentidadeOrganizacaoInline(admin.StackedInline):
     extra = 0
     max_num = 1
     fieldsets = (
-        ("Identidade exibida", {"fields": ("nome_exibicao", "logo")}),
+        ("Identidade exibida", {"fields": ("nome_exibicao", "logo", "capa", "apresentacao")}),
         ("Cores da organização", {"fields": ("cor_primaria", "cor_destaque", "cor_fundo")} ),
     )
 
@@ -89,7 +90,7 @@ def suspender_organizacoes(modeladmin, request, queryset):
 
 
 @admin.register(Organizacao)
-class OrganizacaoAdmin(admin.ModelAdmin):
+class OrganizacaoAdmin(TenantAccessAdminMixin, admin.ModelAdmin):
     list_display = ("nome", "slug", "status_legivel", "quantidade_dominios", "quantidade_membros", "atualizado_em")
     list_display_links = ("nome",)
     list_filter = ("status",)
@@ -145,7 +146,7 @@ class IdentidadeOrganizacaoAdmin(admin.ModelAdmin):
     list_select_related = ("organizacao",)
     autocomplete_fields = ("organizacao",)
     fieldsets = (
-        ("Organização", {"fields": ("organizacao", "nome_exibicao", "logo")} ),
+        ("Organização", {"fields": ("organizacao", "nome_exibicao", "logo", "capa", "apresentacao")} ),
         ("Cores", {"fields": ("cor_primaria", "cor_destaque", "cor_fundo")} ),
     )
 
