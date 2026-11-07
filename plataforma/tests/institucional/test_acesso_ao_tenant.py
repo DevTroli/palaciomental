@@ -1,3 +1,6 @@
+from typing import cast
+from django.db.models.fields.files import ImageFieldFile
+
 import hashlib
 from io import BytesIO
 import secrets
@@ -245,10 +248,10 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         self.assertContains(response, "tenant-identity.js")
         self.assertContains(response, 'data-theme-color="primary"')
         self.assertContains(response, 'data-theme-color="surface"')
-        self.assertContains(response, identidade.logo.url)
+        self.assertContains(response, cast(ImageFieldFile, identidade.logo).url)
 
         programs_response = self.client.get(reverse("plataforma:institutional_programs"), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(programs_response, identidade.logo.url)
+        self.assertContains(programs_response, cast(ImageFieldFile, identidade.logo).url)
 
     def test_regular_member_cannot_update_tenant_identity(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)

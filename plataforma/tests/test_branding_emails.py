@@ -1,3 +1,9 @@
+from plataforma.tests.email_helpers import html_alternative
+
+from typing import cast
+from django.core.handlers.wsgi import WSGIRequest
+from django.contrib.auth.models import AnonymousUser
+
 from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -12,6 +18,10 @@ from plataforma.context_processors import tenant_branding
 from plataforma.views import _send_group_invitation_email, _send_organization_invitation_email
 
 
+class BrandingRequest(WSGIRequest):
+    organizacao: SimpleNamespace
+
+
 @override_settings(
     ALLOWED_HOSTS=["campus.palaciomental.com.br"],
     PUBLIC_APP_URL="https://palaciomental.com.br",
@@ -19,8 +29,8 @@ from plataforma.views import _send_group_invitation_email, _send_organization_in
 )
 class BrandingEmailTests(SimpleTestCase):
     def setUp(self):
-        self.request = RequestFactory().get("/", secure=True, HTTP_HOST="campus.palaciomental.com.br")
-        self.request.user = SimpleNamespace(is_authenticated=False)
+        self.request = cast(BrandingRequest, RequestFactory().get("/", secure=True, HTTP_HOST="campus.palaciomental.com.br"))
+        self.request.user = AnonymousUser()
         self.identity = SimpleNamespace(
             nome_exibicao="Campus & Projetos", cor_primaria="azul-sobrio",
             cor_destaque="verde-institucional", cor_fundo="bege-claro",
@@ -115,7 +125,7 @@ class BrandingEmailTests(SimpleTestCase):
     def test_organization_sender_passes_branding_to_actual_html(self, reverse):
         _send_organization_invitation_email(self.request, self.invitation, "token")
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("https://media.palaciomental.com.br/", mail.outbox[0].alternatives[0].content)
+        self.assertIn("https://media.palaciomental.com.br/", html_alternative(mail.outbox[0]))
         self.assertIn("recipient@example.com", mail.outbox[0].body)
 
     @patch("plataforma.views.reverse", return_value="/convites/token/")
@@ -124,5 +134,5 @@ class BrandingEmailTests(SimpleTestCase):
         self.invitation.grupo = SimpleNamespace(nome="Grupo", turma=SimpleNamespace(programa=program))
         _send_group_invitation_email(self.request, self.invitation, "token")
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("https://media.palaciomental.com.br/", mail.outbox[0].alternatives[0].content)
-        self.assertIn("Programa", mail.outbox[0].alternatives[0].content)
+        self.assertIn("https://media.palaciomental.com.br/", html_alternative(mail.outbox[0]))
+        self.assertIn("Programa", html_alternative(mail.outbox[0]))

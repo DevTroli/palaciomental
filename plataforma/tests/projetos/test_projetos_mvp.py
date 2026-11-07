@@ -16,7 +16,9 @@ class MvpAuthenticationTests(TestCase):
         self.assertRedirects(response, reverse("plataforma:profile", kwargs={"username": "pablo"}))
         user = User.objects.get(username="pablo")
         self.assertTrue(MemberProfile.objects.filter(user=user).exists())
-        self.assertEqual(int(self.client.session.get("_auth_user_id")), user.pk)
+        session_user_id = self.client.session.get("_auth_user_id")
+        assert session_user_id is not None
+        self.assertEqual(int(session_user_id), user.pk)
 
     def test_duplicate_email_is_rejected(self):
         User.objects.create_user(username="one", email="same@example.com", password="Senha-forte-123")

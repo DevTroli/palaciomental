@@ -89,11 +89,11 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         for path in paths:
             with self.subTest(path=path):
                 response = self.client.get(path, HTTP_HOST=HOST)
-                self.assertContains(response, 'class="tenant-header tenant-project-header"')
+                self.assertContains(response, 'class="camp-topbar"')
                 self.assertNotContains(response, 'class="mvp-brand"')
                 self.assertContains(response, "Instituição de teste")
                 self.assertContains(response, 'id="main-content"')
-                header = response.content.decode().split('<header class="tenant-header tenant-project-header">', 1)[1].split("</header>", 1)[0]
+                header = response.content.decode().split('<header class="camp-topbar">', 1)[1].split("</header>", 1)[0]
                 self.assertNotIn("mind_palace_logo.png", header)
 
     def test_global_mantem_marca_e_criacao_pessoal(self):

@@ -32,7 +32,7 @@ class IdentidadeEAtivacaoTests(PortalInstitucionalBase):
             cor_fundo="bege-claro",
         )
         self.assertTrue(identidade.completa)
-        self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", identidade.logo.name)
+        self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", str(identidade.logo.name))
 
     def test_logo_is_normalized_before_storage(self):
         identidade = IdentidadeOrganizacao.objects.create(

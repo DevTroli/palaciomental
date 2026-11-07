@@ -1,3 +1,5 @@
+from email.message import Message
+
 import json
 from io import BytesIO
 from unittest.mock import patch
@@ -54,7 +56,7 @@ class ResendBackendTests(SimpleTestCase):
         for status in (401, 429, 500):
             transport.side_effect = HTTPError(
                 "https://api.resend.com/emails", status,
-                "sensitive-provider-response", {}, None,
+                "sensitive-provider-response", Message(), None,
             )
             with self.subTest(status=status), self.assertRaises(EmailDeliveryError) as caught:
                 self.email().send()

@@ -1,3 +1,6 @@
+from typing import cast
+from django.db.models.fields.files import ImageFieldFile
+
 from tempfile import TemporaryDirectory
 
 from django.core.exceptions import ValidationError
@@ -31,8 +34,9 @@ class CapaHomeTests(PortalInstitucionalBase):
     def test_cover_normalization_unique_key_and_removal(self):
         self.identity.capa = self.logo_file("capa.png", (3200, 1000))
         self.identity.save()
-        self.assertEqual(self.identity.capa.width, 2400)
+        self.assertEqual(cast(ImageFieldFile, self.identity.capa).width, 2400)
         key = self.identity.capa.name
+        assert key is not None
         self.assertIn(f"tenants/{self.organization.pk}/branding/cover/", key)
         self.identity.capa = self.logo_file("nova.png", (1000, 400))
         self.identity.save()
@@ -92,7 +96,7 @@ class CapaHomeTests(PortalInstitucionalBase):
         DominioOrganizacao.objects.create(organizacao=other, hostname="outro.palaciomental.com.br", principal=True)
         MembroOrganizacao.objects.create(organizacao=other, usuario=self.user)
         response = self.client.get("/", HTTP_HOST="outro.palaciomental.com.br")
-        self.assertNotContains(response, self.identity.capa.url)
+        self.assertNotContains(response, cast(ImageFieldFile, self.identity.capa).url)
         self.assertNotContains(response, "#ABCDEF")
 
     def test_email_uses_absolute_cover_and_shared_colors(self):
@@ -115,3 +119,14 @@ class CapaHomeTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 403)
         self.identity.refresh_from_db()
         self.assertFalse(self.identity.capa)
+
+    def test_logo_replacement_uses_new_key_for_immutable_cache(self):
+        self.identity.logo = self.logo_file("marca.png")
+        self.identity.save()
+        original = self.identity.logo.name
+        self.identity.logo = self.logo_file("marca.png")
+        self.identity.save()
+        self.assertNotEqual(self.identity.logo.name, original)
+        key = self.identity.logo.name
+        assert key is not None
+        self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", key)

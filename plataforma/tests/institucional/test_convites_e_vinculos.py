@@ -1,3 +1,8 @@
+from plataforma.tests.email_helpers import html_alternative
+
+from typing import cast
+from django.core.mail import EmailMultiAlternatives
+
 import hashlib
 from io import BytesIO
 import secrets
@@ -132,9 +137,9 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to[0], "email@example.com")
-        self.assertEqual(mail.outbox[0].alternatives[0][1], "text/html")
+        self.assertEqual(cast(EmailMultiAlternatives, mail.outbox[0]).alternatives[0][1], "text/html")
         self.assertIn("Grupo de convite", mail.outbox[0].body)
-        self.assertIn("camppg.palaciomental.com.br", mail.outbox[0].alternatives[0][0])
+        self.assertIn("camppg.palaciomental.com.br", html_alternative(mail.outbox[0]))
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_owner_and_manager_invite_only_allowed_roles(self):
@@ -151,7 +156,7 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         convite = ConviteOrganizacao.objects.get(email="gestor@example.com")
         self.assertEqual(convite.papel, MembroOrganizacao.PAPEL_GESTOR)
         self.assertEqual(mail.outbox[0].to, ["gestor@example.com"])
-        self.assertIn("Aceitar convite", mail.outbox[0].alternatives[0][0])
+        self.assertIn("Aceitar convite", html_alternative(mail.outbox[0]))
 
         manager = User.objects.create_user(username="gestor-convidado", email="gestor@example.com", password="Senha-forte-123")
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel=MembroOrganizacao.PAPEL_GESTOR)
