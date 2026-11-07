@@ -176,7 +176,7 @@ class ProjectBasicsForm(forms.ModelForm):
         widgets = {"direction": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o rumo deste projeto? Comece com uma frase clara."})}
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned = super().clean() or {}
         if "tipo_projeto" not in self.fields or cleaned.get("tipo_projeto") == "autonomo":
             cleaned["turma"], cleaned["grupo"], cleaned["orientador"] = None, None, None
             return cleaned

@@ -5,9 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>{% block title %}{{ organizacao.nome|default:"CAMP" }} · CAMP-PG{% endblock %}</title>
+  <title>{% block title %}{{ tenant_display_name }} · Palácio Mental{% endblock %}</title>
   <link rel="icon" href="{% static 'img/favicon.svg' %}">
-  <link rel="stylesheet" href="{% static 'css/camp.css' %}">
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  <link rel="stylesheet" href="{% static 'css/institutional-experience.css' %}">
+  {% include "institutional/partials/theme.html" %}
+  <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}">
+  {% block extra_css %}{% endblock %}
 </head>
 <body class="camp-body">
 
@@ -36,7 +40,7 @@
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
   </svg>
 
-  <a class="camp-skip" href="#conteudo">Pular para o conteúdo</a>
+  <a class="camp-skip" href="#main-content">Pular para o conteúdo principal</a>
 
   <div class="camp-app">
 
@@ -46,22 +50,22 @@
         <svg class="camp-icon" aria-hidden="true"><use href="#i-menu"/></svg>
       </button>
 
-      <a class="camp-brand" href="{% url 'camp:dashboard' %}" aria-label="Ir para a página inicial do CAMP-PG">
-        <img class="camp-brand-logo" src="{% static 'img/logo_camp2.png' %}" alt="">
-        <span class="camp-brand-name">CAMP-PG</span>
+      <a class="camp-brand" href="{% url 'core:index' %}" aria-label="Início de {{ tenant_display_name }}">
+        {% if tenant_logo_url %}<img class="camp-brand-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}
+        <span class="camp-brand-name">{{ tenant_display_name }}</span>
       </a>
 
       <div class="camp-topbar-actions">
-        <a class="camp-icon-btn" href="{% url 'camp:inbox' %}" aria-label="Caixa de entrada{% if inbox_novas %} — {{ inbox_novas }} novidade{{ inbox_novas|pluralize }}{% endif %}" title="Caixa de entrada">
+        <a class="camp-icon-btn" href="{% url 'plataforma:inbox' %}" aria-label="Caixa de entrada{% if inbox_novas %} — {{ inbox_novas }} novidade{{ inbox_novas|pluralize }}{% endif %}" title="Caixa de entrada">
           <svg class="camp-icon" aria-hidden="true"><use href="#i-inbox"/></svg>
-          {% if inbox_novas %}<span class="camp-icon-badge">{{ inbox_novas }}</span>{% endif %}
+          <span class="camp-icon-badge" data-inbox-count hidden></span>
         </a>
 
-        <a class="camp-icon-btn camp-icon-btn--add" href="{% url 'camp:project_create' %}" aria-label="Criar novo projeto" title="Novo projeto">
+        <a class="camp-icon-btn camp-icon-btn--add" href="{% url 'plataforma:project_create' %}" aria-label="Criar novo projeto" title="Novo projeto">
           <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
         </a>
 
-        <button class="camp-icon-btn" type="button" aria-label="Buscar no CAMP" aria-expanded="false" aria-controls="camp-topbar-search" data-search-toggle>
+        <button class="camp-icon-btn" type="button" aria-label="Buscar neste ambiente" aria-expanded="false" aria-controls="camp-topbar-search" data-search-toggle>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
         </button>
 
@@ -81,25 +85,27 @@
               <span>{{ papel_usuario }}{% if organizacao %} · {{ organizacao.nome }}{% endif %}</span>
             </div>
 
-            <a class="camp-account-item" href="{% url 'camp:profile' %}">
+            <a class="camp-account-item" href="{% url 'plataforma:institutional_profile' %}">
               <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
-              <span>MEU ESPAÇO</span>
+              <span>Meus projetos neste ambiente</span>
             </a>
 
-            <a class="camp-account-item" href="{% url 'camp:inbox' %}">
+            <a class="camp-account-item" href="{% url 'plataforma:inbox' %}">
               <svg class="camp-icon" aria-hidden="true"><use href="#i-inbox"/></svg>
               <span>Caixa de entrada</span>
-              {% if inbox_novas %}<span class="camp-account-badge">{{ inbox_novas }}</span>{% endif %}
+              <span class="camp-account-badge" data-inbox-count hidden></span>
             </a>
 
             {% if pode_gerenciar %}
-              <a class="camp-account-item camp-account-item--manager" href="{% url 'camp:manage' %}">
+              <a class="camp-account-item camp-account-item--manager" href="{% url 'plataforma:institutional_management' %}">
                 <svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg>
                 <span>Painel do gestor</span>
               </a>
             {% endif %}
 
-            <form class="camp-account-logout" method="post" action="{% url 'camp:logout' %}">
+            <a class="camp-account-item" href="{{ personal_workspace_url }}">Meu espaço pessoal</a>
+
+            <form class="camp-account-logout" method="post" action="{% url 'plataforma:logout' %}">
               {% csrf_token %}
               <button class="camp-account-item" type="submit">
                 <svg class="camp-icon" aria-hidden="true"><use href="#i-logout"/></svg>
@@ -111,7 +117,7 @@
       </div>
 
       <div class="camp-topbar-search" id="camp-topbar-search" hidden>
-        <form method="get" action="{% url 'camp:explore' %}" role="search">
+        <form method="get" action="{% url 'plataforma:projects' %}" role="search">
           <label class="camp-sr-only" for="camp-topbar-busca">Buscar projetos e alunos</label>
           <span class="camp-topbar-search-field">
             <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
@@ -127,28 +133,28 @@
       <div class="camp-sidebar-brand">
         <span class="camp-sidebar-mark" aria-hidden="true">{% if organizacao %}{{ organizacao.nome|first|upper }}{% else %}C{% endif %}</span>
         <div class="camp-sidebar-brand-text">
-          <strong>CAMP</strong>
-          <span>Espaço exclusivo do CAMP</span>
+          <strong>{{ tenant_display_name }}</strong>
+          <span>Ambiente institucional</span>
         </div>
       </div>
 
-      <nav class="camp-nav" aria-label="Navegação do CAMP">
-        <a class="camp-nav-link" href="{% url 'camp:dashboard' %}" aria-label="Início"{% if nav_ativo == 'inicio' %} aria-current="page"{% endif %}>
+      <nav class="camp-nav" aria-label="Navegação do ambiente">
+        <a class="camp-nav-link" href="{% url 'core:index' %}" aria-label="Início"{% if nav_ativo == 'inicio' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-home"/></svg>
           <span>Início</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'camp:profile' %}#meus-projetos" aria-label="Meus Projetos">
+        <a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}#meus-projetos" aria-label="Meus Projetos">
           <svg class="camp-icon" aria-hidden="true"><use href="#i-folder"/></svg>
-          <span>Meus Projetos</span>
+          <span>Meus projetos neste ambiente</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'camp:explore' %}" aria-label="Explorar Projetos"{% if nav_ativo == 'explorar' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'plataforma:projects' %}" aria-label="Explorar Projetos"{% if nav_ativo == 'explorar' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg>
           <span>Explorar Projetos</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'camp:explore' %}?vista=alunos" aria-label="Alunos"{% if nav_ativo == 'alunos' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'plataforma:projects' %}?vista=alunos" aria-label="Alunos"{% if nav_ativo == 'alunos' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
           <span>Alunos</span>
           {% if total_membros %}<span class="camp-nav-badge">{{ total_membros }}</span>{% endif %}
@@ -159,7 +165,7 @@
           <span>Equipes</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'camp:calendar' %}" aria-label="Calendário"{% if nav_ativo == 'calendario' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'plataforma:calendar' %}" aria-label="Calendário"{% if nav_ativo == 'calendario' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
           <span>Calendário</span>
         </a>
@@ -169,13 +175,13 @@
           <span>Recursos</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'camp:profile' %}" aria-label="Perfil"{% if nav_ativo == 'perfil' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}" aria-label="Perfil"{% if nav_ativo == 'perfil' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
           <span>Perfil</span>
         </a>
 
         {% if pode_gerenciar %}
-          <a class="camp-nav-link" href="{% url 'camp:manage' %}" aria-label="Gestão"{% if nav_ativo == 'gestao' %} aria-current="page"{% endif %}>
+          <a class="camp-nav-link" href="{% url 'plataforma:institutional_management' %}" aria-label="Gestão"{% if nav_ativo == 'gestao' %} aria-current="page"{% endif %}>
             <svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg>
             <span>Gestão</span>
           </a>
@@ -184,17 +190,17 @@
 
       <div class="camp-sidebar-foot">
         <span class="camp-sidebar-foot-mark" aria-hidden="true">
-          <img src="{% static 'img/palacio_camp_logo.png' %}" alt="">
+          <img src="{% static 'img/mind_palace_logo.png' %}" alt="">
         </span>
         <div>
-          <strong>CAMP</strong>
+          <strong>{{ tenant_display_name }}</strong>
           <span>Conhecimento que transforma</span>
         </div>
       </div>
     </aside>
 
     {# ── Conteúdo ──────────────────────────────────────────────────── #}
-    <main class="camp-main" id="conteudo">
+    <main class="camp-main" id="main-content">
       {% if messages %}
         <div class="camp-messages" aria-live="polite">
           {% for message in messages %}
@@ -208,8 +214,8 @@
 
       {% block content %}{% endblock %}
 
-      <footer class="camp-footer">
-        <span>CAMP · Conhecimento que transforma · criado por Palácio Mental</span>
+      <footer class="camp-footer tenant-footer">
+        <span>{{ tenant_display_name }} · criado por Palácio Mental</span>
       </footer>
 
     </main>
@@ -220,6 +226,15 @@
 
   <script>
     (() => {
+      fetch("{% url 'plataforma:notification_summary' %}", {credentials: 'same-origin'})
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (!data || !Number.isInteger(data.count)) return;
+          document.querySelectorAll('[data-inbox-count]').forEach(badge => {
+            badge.textContent = String(data.count);
+            badge.hidden = data.count === 0;
+          });
+        }).catch(() => {});
       const body = document.body;
       const sidebar = document.querySelector('.camp-sidebar');
       const toggle = document.querySelector('.camp-menu-toggle');
@@ -332,7 +347,7 @@
       document.querySelectorAll('.camp-message').forEach((message) => {
         const close = message.querySelector('.camp-message-close');
         if (close) close.addEventListener('click', () => message.remove());
-        setTimeout(() => message.remove(), 7000);
+
       });
 
       /* Confirmação de exclusão */
@@ -344,5 +359,6 @@
     })();
   </script>
 
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

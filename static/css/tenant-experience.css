@@ -1,0 +1,39 @@
+/* Layout e fluxo CAMP preservados; marca e dados pertencem ao tenant do host. */
+.camp-body { --camp-bg: var(--tenant-background); --camp-card: var(--tenant-surface); --camp-ink: var(--tenant-surface-ink); --camp-muted: var(--tenant-surface-ink); --camp-navy: var(--tenant-primary); --camp-yellow: var(--tenant-accent); --camp-blue: var(--tenant-primary); }
+.camp-topbar, .camp-sidebar, .camp-hero { background: var(--tenant-primary); color: var(--tenant-primary-text); }
+.camp-hero::after { display: none; }
+.camp-brand-name, .camp-sidebar-brand-text strong, .camp-nav-link, .camp-hero-title, .camp-hero-subtitle, .camp-account-trigger, .camp-account-menu-head, .camp-sidebar-brand-text span { color: inherit; }
+.camp-nav-link:hover, .camp-nav-link[aria-current=page] { background: color-mix(in srgb,currentColor 15%,transparent); color: inherit; }
+.camp-main { min-width: 0; }
+.camp-main > .tenant-experience-content { max-width: 1300px; margin: 0 auto; }
+.camp-main .camp-panel, .camp-history, .camp-home-panel { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-home-panel h2, .camp-history-title, .camp-history-lead, .camp-history-text { color: inherit; }
+.camp-hero-cta, .camp-btn--primary { background: var(--tenant-accent); color: var(--tenant-accent-text); }
+.camp-brand { min-width: 0; }
+.camp-brand-name { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.camp-brand-logo { object-fit: contain; }
+.tenant-experience-cover { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; }
+.camp-footer.tenant-footer { background: transparent; }
+.camp-main .mvp-container { width: 100%; }
+.camp-main .tenant-hero h1 { color: inherit; }
+.camp-main .identity-layout { margin-top: 20px; }
+.camp-main .camp-panel { margin-top: 24px; }
+.camp-main .camp-project-name a { color: inherit; }
+@media(max-width:600px) { .camp-brand-name { max-width: 120px; font-size: 14px; } }
+@media(prefers-reduced-motion:reduce) { .camp-body *, .camp-body *::before, .camp-body *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.camp-main .camp-stats { grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); }
+.camp-main .tenant-hero { color: var(--tenant-ink); }
+.camp-main .camp-account-menu { color: var(--tenant-surface-ink); background: var(--tenant-surface); }
+/* Contraste do cabeçalho acompanha o token principal, não o texto dos cartões. */
+.camp-topbar .camp-brand, .camp-topbar .camp-brand-name,
+.camp-topbar .camp-account-text strong, .camp-topbar .camp-account-text small,
+.camp-topbar .camp-account-chevron, .camp-topbar .camp-icon-btn { color: var(--tenant-primary-text); }
+.camp-topbar .camp-icon-btn--add { background: var(--tenant-accent); color: var(--tenant-accent-text); }
+.camp-hero-emblem { display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 800; color: var(--tenant-primary); }
+.camp-stat, .camp-open-project, .camp-person, .camp-profile-project, .camp-inbox-panel,
+.camp-manage-panel, .camp-settings-card, .camp-form, .camp-calendar-card, .camp-calendar-panel {
+  background: var(--tenant-surface); color: var(--tenant-surface-ink);
+}
+.camp-stat strong, .camp-stat span, .camp-panel-title, .camp-block-title,
+.camp-open-title, .camp-profile-name, .camp-person h2, .camp-field label { color: inherit; }
+.camp-icon-badge[hidden], .camp-account-badge[hidden] { display: none; }

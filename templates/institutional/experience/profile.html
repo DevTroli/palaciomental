@@ -1,6 +1,6 @@
-{% extends "camp/base.html" %}
+{% extends "institutional/experience/base.html" %}
 
-{% block title %}Meu perfil · {{ organizacao.nome|default:"CAMP" }}{% endblock %}
+{% block title %}Meu perfil · {{ tenant_display_name }}{% endblock %}
 
 {% block content %}
 
@@ -19,7 +19,7 @@
             <p class="camp-eyebrow">Meu perfil</p>
             <h1 class="camp-profile-name" id="perfil-titulo">{{ nome_usuario }}</h1>
             <p class="camp-profile-role-line">
-              {{ organizacao.nome|default:"CAMP"|upper }} - {{ papel_usuario|upper }}
+              {{ tenant_display_name|upper }} - {{ papel_usuario|upper }}
             </p>
             <p class="camp-profile-handle">@{{ request.user.username }}{% if request.user.email %} · {{ request.user.email }}{% endif %}</p>
 
@@ -129,7 +129,7 @@
         <div class="camp-profile-upcoming">
           <div class="camp-profile-upcoming-head">
             <h3>Próximas atividades</h3>
-            <a href="{% url 'camp:calendar' %}">Ver calendário</a>
+            <a href="{% url 'plataforma:calendar' %}">Ver calendário</a>
           </div>
 
           {% for evento in proximas_atividades %}
@@ -172,7 +172,7 @@
               <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-folder"/></svg></span>
               Projetos Pessoais
             </h2>
-            <a class="camp-inline-link" href="{% url 'camp:project_create' %}">
+            <a class="camp-inline-link" href="{% url 'plataforma:project_create' %}">
               <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
               Novo projeto
             </a>
@@ -187,7 +187,7 @@
                     <span class="camp-badge camp-badge--{{ projeto.status }}">{{ projeto.rotulo_status }}</span>
                   </div>
 
-                  <h3 class="camp-profile-project-name">{{ projeto.title }}</h3>
+                  <h3 class="camp-profile-project-name"><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h3>
                   <p class="camp-profile-project-desc">{{ projeto.direction|default:"Sem descrição por enquanto."|truncatechars:120 }}</p>
 
                   <div class="camp-profile-project-meta">
@@ -206,11 +206,11 @@
                   <div class="camp-profile-project-foot">
                     <span class="camp-profile-project-date">Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
                     <div class="camp-profile-project-actions">
-                      <a class="camp-btn camp-btn--ghost camp-btn--sm" href="{% url 'camp:project_edit' projeto.pk %}">
+                      <a class="camp-btn camp-btn--ghost camp-btn--sm" href="{% url 'plataforma:project_edit' projeto.pk %}">
                         <svg class="camp-icon" aria-hidden="true"><use href="#i-edit"/></svg>
                         Editar
                       </a>
-                      <form method="post" action="{% url 'camp:project_delete' projeto.pk %}" data-confirm="Excluir o projeto “{{ projeto.title }}”? Essa ação não pode ser desfeita.">
+                      <form method="post" action="{% url 'plataforma:project_delete' projeto.pk %}" data-confirm="Excluir o projeto “{{ projeto.title }}”? Essa ação não pode ser desfeita.">
                         {% csrf_token %}
                         <button class="camp-btn camp-btn--danger camp-btn--sm" type="submit">
                           <svg class="camp-icon" aria-hidden="true"><use href="#i-trash"/></svg>
@@ -227,7 +227,7 @@
               <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-folder"/></svg></span>
               <strong>Você ainda não criou nenhum projeto.</strong>
               <p>Crie seu primeiro projeto para começar a registrar ideias, contexto e andamento.</p>
-              <a class="camp-btn camp-btn--primary" href="{% url 'camp:project_create' %}">Criar meu primeiro projeto</a>
+              <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:project_create' %}">Criar meu primeiro projeto</a>
             </div>
           {% endif %}
         </section>
@@ -236,9 +236,9 @@
           <div class="camp-profile-group-head">
             <h2 id="institucionais-perfil-titulo">
               <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
-              Projetos Institucionais
+              Projetos institucionais
             </h2>
-            <a class="camp-inline-link" href="{% url 'camp:explore' %}">
+            <a class="camp-inline-link" href="{% url 'plataforma:projects' %}">
               Explorar projetos
               <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
             </a>
@@ -252,7 +252,7 @@
                     <span class="camp-own-mark" aria-hidden="true">{{ projeto.inicial }}</span>
                     <div class="camp-own-content">
                       <div class="camp-own-head">
-                        <h3>{{ projeto.title }}</h3>
+                        <h3><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h3>
                         <span class="camp-badge camp-badge--{{ projeto.status }}">{{ projeto.rotulo_status }}</span>
                       </div>
                       <p>{{ projeto.direction|default:"Sem descrição por enquanto."|truncatechars:160 }}</p>
@@ -272,7 +272,7 @@
               <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
               <strong>Nenhum projeto institucional disponível.</strong>
               <p>Quando outros alunos publicarem projetos abertos, eles aparecem aqui.</p>
-              <a class="camp-btn camp-btn--primary" href="{% url 'camp:explore' %}">Explorar projetos</a>
+              <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:projects' %}">Explorar projetos</a>
             </div>
           {% endif %}
         </section>
@@ -293,7 +293,7 @@
               <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
               Minhas colaborações
             </h2>
-            <a class="camp-inline-link" href="{% url 'camp:explore' %}">
+            <a class="camp-inline-link" href="{% url 'plataforma:projects' %}">
               Encontrar mais
               <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
             </a>
@@ -306,7 +306,7 @@
                   <span class="camp-activity-mark" aria-hidden="true">{{ inscricao.project.inicial }}</span>
                   <div class="camp-activity-content">
                     <div class="camp-activity-head">
-                      <h3>{{ inscricao.project.title }}</h3>
+                      <h3><a href="{% url 'plataforma:project_detail' inscricao.project.pk %}">{{ inscricao.project.title }}</a></h3>
                       <span class="camp-badge camp-badge--{{ inscricao.project.status }}">{{ inscricao.project.rotulo_status }}</span>
                     </div>
                     <p>{{ inscricao.project.direction|default:"Sem descrição por enquanto."|truncatechars:140 }}</p>
@@ -322,7 +322,7 @@
                       </span>
                     </div>
                     <div class="camp-activity-actions">
-                      <form method="post" action="{% url 'camp:leave_project' inscricao.project.pk %}" data-confirm="Sair da colaboração do projeto “{{ inscricao.project.title }}”?">
+                      <form method="post" action="{% url 'plataforma:leave_collaboration' inscricao.project.pk %}" data-confirm="Sair da colaboração do projeto “{{ inscricao.project.title }}”?">
                         {% csrf_token %}
                         <button class="camp-btn camp-btn--ghost camp-btn--sm" type="submit">Sair da colaboração</button>
                       </form>
@@ -335,8 +335,8 @@
             <div class="camp-empty">
               <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
               <strong>Nenhuma colaboração ainda.</strong>
-              <p>Explore projetos abertos e junte-se a uma equipe do CAMP.</p>
-              <a class="camp-btn camp-btn--primary" href="{% url 'camp:explore' %}">Explorar projetos</a>
+              <p>Explore projetos abertos e junte-se a uma equipe do {{ tenant_display_name }}.</p>
+              <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:projects' %}">Explorar projetos</a>
             </div>
           {% endif %}
         </section>
@@ -352,7 +352,7 @@
         {% if aba_ativa != 'configuracoes' %}hidden{% endif %}>
 
         <div class="camp-settings-grid">
-          <form class="camp-settings-card" method="post" enctype="multipart/form-data" action="{% url 'camp:profile' %}?aba=configuracoes">
+          <form class="camp-settings-card" method="post" enctype="multipart/form-data" action="{% url 'plataforma:institutional_profile' %}?aba=configuracoes">
             {% csrf_token %}
             <input type="hidden" name="form" value="perfil">
 
@@ -369,7 +369,7 @@
               {% endif %}
               <div>
                 <strong>Foto de perfil</strong>
-                <small>Uma imagem redonda ajuda as pessoas a reconhecer você no CAMP.</small>
+                <small>Uma imagem redonda ajuda as pessoas a reconhecer você no {{ tenant_display_name }}.</small>
               </div>
             </div>
 
@@ -395,7 +395,7 @@
             <button class="camp-btn camp-btn--primary" type="submit">Salvar alterações</button>
           </form>
 
-          <form class="camp-settings-card" method="post" action="{% url 'camp:profile' %}?aba=configuracoes">
+          <form class="camp-settings-card" method="post" action="{% url 'plataforma:institutional_profile' %}?aba=configuracoes">
             {% csrf_token %}
             <input type="hidden" name="form" value="senha">
 
@@ -470,7 +470,7 @@
       const body = document.querySelector('[data-calendar-body]');
       if (!head || !toggle || !body) return;
 
-      const storageKey = 'camp:perfil-calendario-minimizado';
+      const storageKey = 'tenant:perfil-calendario-minimizado';
 
       const setCollapsed = (collapsed) => {
         head.classList.toggle('is-calendar-collapsed', collapsed);

@@ -64,10 +64,13 @@ class IdentidadeOrganizacao(models.Model):
         self._logo_original_name = self.logo.name
 
     def save(self, *args, **kwargs):
-        if self.logo and (not self.logo._committed or self.logo.name != self._logo_original_name):
-            self.logo = normalizar_logo(self.logo.file, self.logo.name)
-        if self.capa and not self.capa._committed:
-            self.capa = normalizar_logo(self.capa.file, self.capa.name, max_dimension=2400)
+        # Django's FileDescriptor wraps assigned ContentFile objects on access.
+        logo = self.logo
+        capa = self.capa
+        if logo and (not getattr(logo, "_committed") or logo.name != self._logo_original_name):
+            self.logo = normalizar_logo(logo.file, logo.name)
+        if capa and not getattr(capa, "_committed"):
+            self.capa = normalizar_logo(capa.file, capa.name, max_dimension=2400)
         result = super().save(*args, **kwargs)
         self._logo_original_name = self.logo.name
         return result

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends layout_template|default:"base.html" %}
 {% block title %}{% if catalog_context == 'institutional' %}Projetos de {{ catalog_name }}{% else %}Vitrine de projetos{% endif %} — Palácio Mental{% endblock %}
 {% block breadcrumb_label %}{% if catalog_context == 'institutional' %}Projetos de {{ catalog_name }}{% else %}Vitrine global{% endif %}{% endblock %}
 {% block content %}

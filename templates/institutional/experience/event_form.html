@@ -1,6 +1,6 @@
-{% extends "camp/base.html" %}
+{% extends "institutional/experience/base.html" %}
 
-{% block title %}{{ titulo_pagina }} · {{ organizacao.nome|default:"CAMP" }}{% endblock %}
+{% block title %}{{ titulo_pagina }} · {{ tenant_display_name }}{% endblock %}
 
 {% block content %}
 
@@ -8,8 +8,8 @@
     <div class="camp-hero-copy">
       <p class="camp-eyebrow">Calendário do aluno</p>
       <h1 class="camp-hero-title" id="evento-form-titulo">
-        {% if modo == "editar" %}Editar evento{% else %}Novo evento{% endif %}
-        <span>{% if modo == "editar" %}{{ evento.titulo }}{% else %}Organize sua rotina do CAMP.{% endif %}</span>
+        {{ titulo_pagina }}
+        <span>{% if modo == "editar" %}{{ evento.titulo }}{% else %}Organize sua rotina do {{ tenant_display_name }}.{% endif %}</span>
       </h1>
       <p class="camp-hero-subtitle">
         {% if modo == "editar" %}
@@ -32,6 +32,7 @@
       {% endif %}
 
       <div class="camp-form-grid">
+        {% if form.destinatario %}<div class="camp-field camp-field--full">{{ form.destinatario.label_tag }}{{ form.destinatario }}{{ form.destinatario.errors }}</div>{% endif %}
         <div class="camp-field camp-field--full">
           <label for="{{ form.titulo.id_for_label }}">Título do evento</label>
           {{ form.titulo }}
@@ -73,7 +74,7 @@
       </div>
 
       <div class="camp-form-actions">
-        <a class="camp-btn camp-btn--ghost" href="{% url 'camp:calendar' %}">Cancelar</a>
+        <a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:calendar' %}">Cancelar</a>
         <button class="camp-btn camp-btn--primary" type="submit">
           {% if modo == "editar" %}Salvar evento{% else %}Criar evento{% endif %}
         </button>

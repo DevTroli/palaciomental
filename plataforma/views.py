@@ -1,5 +1,4 @@
 import json
-import os
 import hashlib
 import secrets
 from datetime import datetime, timedelta
@@ -27,6 +26,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
+from .health import deployment_metadata
 from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
@@ -34,6 +34,7 @@ from .validators import CORES_SEMANTICAS
 from .navigation import global_home_url as _global_home_url, project_notification_url
 from .invitations import invitation_accept, invitation_login_target
 from .invitation_delivery import deliver_invitation
+from .management_metrics import management_distributions
 from .branding import invitation_branding
 from core.rankings import public_ranking_ids
 
@@ -114,7 +115,7 @@ def login_view(request):
         if next_url:
             return redirect(next_url)
         return redirect("plataforma:projects")
-    context = {"form": form}
+    context: dict[str, object] = {"form": form}
     if getattr(request, "organizacao", None) is not None:
         context.update(_tenant_identity_context(request.organizacao))
         context["global_home_url"] = _global_home_url(request)
@@ -129,6 +130,9 @@ def logout_view(request):
 
 
 def profile(request, username):
+    if getattr(request, "organizacao", None) and request.user.is_authenticated and username == request.user.username:
+        from .experience import profile as institutional_profile
+        return institutional_profile(request)
     user = get_object_or_404(User, username=username)
     MemberProfile.objects.get_or_create(user=user)
     project_scope = _project_scope(request)
@@ -141,6 +145,8 @@ def profile(request, username):
 
 @login_required
 def profile_edit(request):
+    if getattr(request, "organizacao", None):
+        return redirect(reverse("plataforma:institutional_profile") + "?aba=configuracoes")
     profile_obj, _ = MemberProfile.objects.get_or_create(user=request.user)
     form = ProfileForm(request.POST or None, instance=profile_obj)
     if request.method == "POST" and form.is_valid():
@@ -151,6 +157,9 @@ def profile_edit(request):
 
 
 def projects(request):
+    if getattr(request, "organizacao", None):
+        from .experience import explore
+        return explore(request)
     vote_exists = ProjectVote.objects.filter(project=OuterRef("pk"), user=request.user) if request.user.is_authenticated else ProjectVote.objects.none()
     queryset = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner").annotate(relevance=Count("votes"), user_voted=Exists(vote_exists))
     query = request.GET.get("q", "").strip()
@@ -215,6 +224,21 @@ def institutional_management(request):
         },
         "programas_rascunho": organizacao.programas.filter(status=ProgramaInstitucional.STATUS_RASCUNHO).order_by("-atualizado_em")[:5],
     }
+    distributions = management_distributions(organizacao)
+    context["management_charts"] = distributions
+    context["project_status_rows"] = list(zip(distributions["projects"]["labels"], distributions["projects"]["values"]))
+    context["member_role_rows"] = list(zip(distributions["members"]["labels"], distributions["members"]["values"]))
+    from .experience import _decorar_projetos, _nome_usuario
+    context["nav_ativo"] = "gestao"
+    context["total_alunos"] = context["metricas"]["membros"]
+    context["total_projetos"] = context["metricas"]["projetos"]
+    context["total_abertos"] = organizacao.projetos.filter(visibility=Project.VISIBILITY_PUBLIC, seeking_collaborators=True).count()
+    context["projetos"] = _decorar_projetos(list(organizacao.projetos.filter(visibility=Project.VISIBILITY_PUBLIC).select_related("owner").annotate(total_membros=Count("memberships", distinct=True)).order_by("-updated_at")[:25]))
+    context["membros"] = list(organizacao.afiliacoes.filter(status=MembroOrganizacao.STATUS_ATIVA).select_related("usuario").order_by("usuario__username")[:50])
+    for member in context["membros"]:
+        member.nome = _nome_usuario(member.usuario)
+        member.inicial = member.nome[:1].upper()
+        member.papel_rotulo = member.get_papel_display()
     context["grupos_sem_professor"] = Grupo.objects.filter(
         turma__programa__organizacao=organizacao,
         turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
@@ -776,7 +800,7 @@ def project_create(request):
         _auto_milestone(project, request.user, "Projeto iniciado", "O projeto foi criado com título, direção e status.", ProjectMilestone.TYPE_START)
         messages.success(request, "Projeto criado. Você pode adicionar contexto quando quiser.")
         return redirect("plataforma:project_context", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "heading": "Criar projeto institucional" if organizacao else "Criar projeto", "submit_label": "Continuar", "form_phase": "basics", "organizacao": organizacao})
+    return render(request, "institutional/experience/project_form.html" if getattr(request, "organizacao", None) else "projects/form.html", {"form": form, "heading": "Criar projeto institucional" if organizacao else "Criar projeto", "submit_label": "Continuar", "form_phase": "basics", "organizacao": organizacao})
 
 @login_required
 @require_http_methods(["POST"])
@@ -806,13 +830,13 @@ def project_context(request, pk):
         else:
             messages.success(request, "Contexto salvo. Seu projeto está pronto para continuar.")
         return redirect("plataforma:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project, "organizacao": getattr(request, "organizacao", None)})
+    return render(request, "institutional/experience/project_form.html" if getattr(request, "organizacao", None) else "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project, "organizacao": getattr(request, "organizacao", None)})
 
 @login_required
 def project_edit(request, pk):
     project = _project_for_request(request, pk=pk, owner=request.user)
     organizacao = getattr(request, "organizacao", None)
-    form = ProjectBasicsForm(request.POST or None, instance=project, organizacao=organizacao)
+    form = ProjectBasicsForm(request.POST or None, instance=project, owner=request.user, organizacao=organizacao)
     if request.method == "POST" and form.is_valid():
         before_title, before_status = project.title, project.status
         project = form.save()
@@ -824,7 +848,7 @@ def project_edit(request, pk):
         if changes: _auto_milestone(project, request.user, "Projeto atualizado", "Alterações em: " + ", ".join(changes) + ".")
         messages.success(request, "Projeto atualizado.")
         return redirect("plataforma:project_detail", pk=project.pk)
-    return render(request, "projects/form.html", {"form": form, "heading": "Editar projeto institucional" if organizacao else "Editar projeto", "submit_label": "Salvar alterações", "form_phase": "basics", "project": project, "organizacao": organizacao})
+    return render(request, "institutional/experience/project_form.html" if getattr(request, "organizacao", None) else "projects/form.html", {"form": form, "heading": "Editar projeto institucional" if organizacao else "Editar projeto", "submit_label": "Salvar alterações", "form_phase": "basics", "project": project, "organizacao": organizacao})
 
 @login_required
 @require_http_methods(["POST"])
@@ -976,6 +1000,11 @@ def decide_collaboration(request, request_id):
     project_title, requester = collaboration.project.title, collaboration.requester
     status_label = "aceito" if decision == CollaborationRequest.ACCEPTED else "recusado"
     if decision == CollaborationRequest.ACCEPTED:
+        if collaboration.project.organizacao_id and not MembroOrganizacao.objects.filter(
+            organizacao_id=collaboration.project.organizacao_id, usuario=requester,
+            status=MembroOrganizacao.STATUS_ATIVA,
+        ).exists():
+            return JsonResponse({"detail": "O solicitante não possui afiliação ativa neste ambiente."}, status=403)
         ProjectMember.objects.get_or_create(project=collaboration.project, user=collaboration.requester, defaults={"role": "Colaborador"})
     Notification.objects.create(recipient=requester, kind="collaboration_decision", message=f"Seu pedido para {project_title} foi {status_label}.", url=project_notification_url(request, collaboration.project))
     collaboration.delete()
@@ -984,24 +1013,16 @@ def decide_collaboration(request, request_id):
 
 @login_required
 def inbox(request):
+    if getattr(request, "organizacao", None):
+        from .experience import inbox as institutional_inbox
+        return institutional_inbox(request)
     notifications = request.user.notifications.all()
     request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     return render(request, "notifications/inbox.html", {"notifications": notifications})
 
 
 def saude(request):
-    deployment = {
-        label: value
-        for label, value in {
-            "commit": os.getenv("RAILWAY_GIT_COMMIT_SHA"),
-            "author": os.getenv("RAILWAY_GIT_AUTHOR"),
-            "branch": os.getenv("RAILWAY_GIT_BRANCH"),
-            "service": os.getenv("RAILWAY_SERVICE_NAME"),
-            "environment": os.getenv("RAILWAY_ENVIRONMENT_NAME"),
-        }.items()
-        if value
-    }
-    return JsonResponse({"status": "ok", "deployment": deployment})
+    return JsonResponse({"status": "ok", "deployment": deployment_metadata()})
 
 
 STATUS_COPY = {
@@ -1110,7 +1131,7 @@ def status_page(request):
                     "Aplicação web (Django)",
                     "⌂",
                     django.get("status"),
-                    _response_metric(django) + ([{"label": "Verificação", "value": "GET /saude"}] if django else []),
+                    _response_metric(django) + ([{"label": "Verificação", "value": "GET /pronto"}] if django else []),
                     "Servidor web",
                 ),
                 _service_card(

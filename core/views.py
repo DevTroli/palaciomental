@@ -1,5 +1,7 @@
 from django.shortcuts import redirect, render
 from django.db.models import Count, Q
+from plataforma.experience import _decorar_projetos
+from core.rankings import ranked_projects
 
 from plataforma.models import Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, Turma
 
@@ -20,8 +22,8 @@ def index(request):
         ).select_related("turma__programa", "turma__professor_responsavel").annotate(membros_count=Count("membros", distinct=True))
         projetos_base = organizacao.projetos.filter(
             visibility=Project.VISIBILITY_PUBLIC,
-        ).select_related("owner").annotate(relevance=Count("votes", distinct=True))
-        projetos = projetos_base.order_by("-relevance", "-updated_at")[:6]
+        ).select_related("owner").annotate(relevance=Count("votes", distinct=True), total_estrelas=Count("votes", distinct=True), total_membros=Count("memberships", distinct=True))
+        projetos = ranked_projects(projetos_base, tenant_id=organizacao.pk)[:6]
         autonomos = projetos_base.filter(vinculo_institucional__isnull=True).order_by("-updated_at")[:6]
         vinculados = projetos_base.filter(vinculo_institucional__turma__programa__organizacao=organizacao).order_by("-updated_at")[:6]
         grupos = grupos_base[:8]
@@ -57,7 +59,11 @@ def index(request):
                 "projetos": projetos,
                 "projetos_autonomos": autonomos,
                 "projetos_vinculados": vinculados,
-                "ranking_provisorio": True,
+                "ranking_provisorio": False,
+                "nav_ativo": "inicio",
+                "projetos_pessoais": _decorar_projetos(list(projetos_base.filter(owner=request.user).order_by("-updated_at")[:1])),
+                "projetos_institucionais": _decorar_projetos(list(projetos_base.exclude(owner=request.user).order_by("-updated_at")[:1])),
+                "ranking_projetos": _decorar_projetos(list(projetos[:3])),
             },
         )
     latest_projects = Project.objects.filter(

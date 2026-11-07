@@ -1,11 +1,11 @@
-from urllib.parse import urlencode
-
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseForbidden, HttpResponseNotFound
+from django.urls import resolve, Resolver404
 from django.shortcuts import redirect, render
 from .models import MembroOrganizacao, Organizacao, DominioOrganizacao
 from .validators import CORES_SEMANTICAS
+from .health import HEALTH_PATHS
 
 
 class TenantResolutionMiddleware:
@@ -19,6 +19,8 @@ class TenantResolutionMiddleware:
         self.dev_query_param = getattr(settings, "DEV_TENANT_QUERY_PARAM", "tenant")
 
     def __call__(self, request):
+        if request.path in HEALTH_PATHS:
+            return self.get_response(request)
         hostname = self._hostname(request)
         dev_organizacao = self._resolve_development_tenant(request)
         organizacao = dev_organizacao or self._resolve_organization(hostname)
@@ -27,39 +29,20 @@ class TenantResolutionMiddleware:
         if organizacao is None:
             if self._is_tenant_host(hostname):
                 return HttpResponseNotFound("Ambiente institucional não encontrado.")
-            # Em desenvolvimento, /camp/ na raiz redireciona para a página de
-            # cadastro institucional do CAMP; subcaminhos (incluindo /camp/cadastro)
-            # seguem o fluxo público/público-auth normal.
-            if settings.DEBUG and self._is_camp_path(request.path):
-                if request.path in ("/camp", "/camp/"):
-                    return self._finish(
-                        request,
-                        redirect(f"/camp/cadastro/?next={request.get_full_path()}"),
-                        is_dev_tenant,
-                    )
             return self.get_response(request)
 
         request.organizacao = organizacao
         request.tenant = organizacao
+        # Uma rota inexistente não deve virar um fluxo de autenticação.
+        try:
+            resolve(request.path_info)
+        except Resolver404:
+            return self.get_response(request)
 
         if self._is_public_auth_path(request.path):
             return self._finish(request, self.get_response(request), is_dev_tenant)
 
         if not request.user.is_authenticated:
-            # Em desenvolvimento, abrir /camp/ na raiz entra na página de
-            # cadastro institucional do CAMP, sem exigir cadastro ou senha.
-            if settings.DEBUG and self._is_camp_path(request.path):
-                if request.path in ("/camp", "/camp/"):
-                    return self._finish(
-                        request,
-                        redirect(f"/camp/cadastro/?next={request.get_full_path()}"),
-                        is_dev_tenant,
-                    )
-                return self._finish(
-                    request,
-                    redirect(f"/entrar/camp/?{urlencode({'next': request.get_full_path()})}"),
-                    is_dev_tenant,
-                )
             return self._finish(request, redirect_to_login(request.get_full_path(), settings.LOGIN_URL), is_dev_tenant)
 
         affiliation = MembroOrganizacao.objects.filter(
@@ -141,11 +124,7 @@ class TenantResolutionMiddleware:
     def _is_public_auth_path(path):
         if path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/")):
             return True
-        return path == "/camp/cadastro" or path.startswith("/camp/cadastro/")
-
-    @staticmethod
-    def _is_camp_path(path):
-        return path == "/camp" or path.startswith("/camp/")
+        return False
 
 
 class RowLevelSecurityMiddleware:
@@ -160,6 +139,8 @@ class RowLevelSecurityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.path in HEALTH_PATHS:
+            return self.get_response(request)
         from . import rls
         from .admin_access import is_internal_admin
 

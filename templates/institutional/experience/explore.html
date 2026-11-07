@@ -1,12 +1,12 @@
-{% extends "camp/base.html" %}
+{% extends "institutional/experience/base.html" %}
 
-{% block title %}Explorar · {{ organizacao.nome|default:"CAMP" }}{% endblock %}
+{% block title %}Explorar · {{ tenant_display_name }}{% endblock %}
 
 {% block content %}
 
   <section class="camp-hero camp-explore-hero" aria-labelledby="explorar-titulo">
     <div class="camp-hero-copy">
-      <p class="camp-eyebrow">Colaboração no CAMP</p>
+      <p class="camp-eyebrow">Projetos da {{ tenant_display_name }}</p>
       <h1 class="camp-hero-title" id="explorar-titulo">
         Encontre pessoas e projetos
         <span>para construir junto.</span>
@@ -22,6 +22,7 @@
           <input id="explorar-busca" type="search" name="q" value="{{ busca }}" placeholder="Busque por projeto, pessoa ou tema...">
         </span>
         <label class="camp-sr-only" for="explorar-categoria">Filtrar por categoria</label>
+        <select name="ordering" aria-label="Ordenar projetos"><option value="recent">Recentes</option><option value="relevance" {% if request.GET.ordering == "relevance" %}selected{% endif %}>Mais relevantes</option></select>
         <select id="explorar-categoria" name="categoria">
           <option value="">Todas as categorias</option>
           {% for item in categorias %}
@@ -92,7 +93,7 @@
                 <span class="camp-open-initial" aria-hidden="true">{{ projeto.inicial }}</span>
               </div>
               <div class="camp-open-body">
-                <h2 class="camp-open-title">{{ projeto.title }}</h2>
+                <h2 class="camp-open-title"><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h2>
                 <p class="camp-open-desc">{{ projeto.direction|default:"Sem descrição por enquanto."|truncatechars:150 }}</p>
                 {% if projeto.collaboration_description %}
                   <p class="camp-open-need"><strong>Procura:</strong> {{ projeto.collaboration_description }}</p>
@@ -107,14 +108,15 @@
                     {% for tag in projeto.tag_list %}<span class="camp-tag">{{ tag }}</span>{% endfor %}
                   </div>
                 {% endif %}
-                <form class="camp-open-action" method="post" action="{% url 'camp:join_project' projeto.pk %}">
+                {% if projeto.seeking_collaborators and projeto.owner != request.user %}<form class="camp-open-action" method="post" action="{% url 'plataforma:request_collaboration' projeto.pk %}">
                   {% csrf_token %}
+                  <input type="hidden" name="message" value="Gostaria de colaborar neste projeto.">
                   <input type="hidden" name="next" value="{{ request.get_full_path }}">
                   <button class="camp-btn camp-btn--primary" type="submit">
                     <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
-                    Participar da colaboração
+                    Solicitar colaboração
                   </button>
-                </form>
+                </form>{% endif %}
               </div>
             </article>
           {% endfor %}
@@ -124,16 +126,16 @@
           <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
           <strong>Nenhum projeto aberto encontrado.</strong>
           <p>{% if busca or categoria %}Tente outra busca ou remova os filtros.{% else %}Quando um aluno abrir seu projeto para colaboração, ele aparece aqui.{% endif %}</p>
-          <a class="camp-btn camp-btn--primary" href="{% url 'camp:project_create' %}">Criar meu projeto</a>
+          <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:project_create' %}">Criar meu projeto</a>
         </div>
       {% endif %}
 
       <section class="camp-explore-cta" aria-labelledby="explorar-cta-titulo">
         <div>
-          <h2 id="explorar-cta-titulo">Tem um projeto para o CAMP?</h2>
+          <h2 id="explorar-cta-titulo">Tem um projeto para o {{ tenant_display_name }}?</h2>
           <p>Crie o projeto e marque “Estou buscando colaboradores” para aparecer nesta área.</p>
         </div>
-        <a class="camp-btn camp-btn--ghost" href="{% url 'camp:profile' %}#meus-projetos">Gerenciar meus projetos</a>
+        <a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_profile' %}#meus-projetos">Gerenciar meus projetos</a>
       </section>
 
     {% else %}
@@ -152,7 +154,7 @@
                   <span class="camp-badge camp-badge--ideia">{{ membro.papel_rotulo }}</span>
                 </div>
                 <p class="camp-person-meta">
-                  {{ membro.total_projetos }} projeto{{ membro.total_projetos|pluralize }} público{{ membro.total_projetos|pluralize }} no CAMP
+                  {{ membro.total_projetos }} projeto{{ membro.total_projetos|pluralize }} público{{ membro.total_projetos|pluralize }} no {{ tenant_display_name }}
                 </p>
                 {% if membro.categorias %}
                   <div class="camp-tag-row">
@@ -171,7 +173,7 @@
         <div class="camp-empty">
           <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
           <strong>Nenhum aluno encontrado.</strong>
-          <p>{% if busca or categoria %}Tente outro nome ou remova os filtros.{% else %}Quando novos alunos entrarem no CAMP, eles aparecem aqui.{% endif %}</p>
+          <p>{% if busca or categoria %}Tente outro nome ou remova os filtros.{% else %}Quando novos alunos entrarem no {{ tenant_display_name }}, eles aparecem aqui.{% endif %}</p>
         </div>
       {% endif %}
 
@@ -179,4 +181,5 @@
 
   </div>
 
+  {% if page_obj.has_other_pages %}<nav aria-label="Paginação" class="camp-form-actions">{% if page_obj.has_previous %}<a href="?{{ pagination_query }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{{ pagination_query }}&amp;page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}
 {% endblock %}

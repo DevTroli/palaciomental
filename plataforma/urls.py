@@ -1,9 +1,20 @@
 from django.urls import path
 from . import views as v
+from . import agenda_views as agenda
+from . import experience
+from .health import readiness
 
 app_name = "plataforma"
 
 urlpatterns = [
+    path("perfil/", experience.profile, name="institutional_profile"),
+    path("calendario/", agenda.calendar_view, name="calendar"),
+    path("calendario/publicar/", agenda.event_publish, name="event_publish"),
+    path("calendario/novo/", agenda.event_create, name="event_create"),
+    path("calendario/<int:pk>/editar/", agenda.event_edit, name="event_edit"),
+    path("calendario/<int:pk>/excluir/", agenda.event_delete, name="event_delete"),
+    path("calendario/<int:pk>/entregar/", agenda.calendar_toggle, name="calendar_toggle"),
+    path("projetos/<int:pk>/participacao/sair/", experience.leave_project, name="leave_collaboration"),
     path("entrar/", v.login_view, name="login"),
     path("cadastrar/", v.register, name="register"),
     path("sair/", v.logout_view, name="logout"),
@@ -34,6 +45,8 @@ urlpatterns = [
     path("status", v.status_page, name="status"),
     path("status/", v.status_page, name="status-slash"),
     path("saude", v.saude, name="saude"),
+    path("pronto", readiness, name="readiness"),
+    path("notificacoes/resumo/", experience.notification_summary, name="notification_summary"),
     path("projetos/<int:pk>/comentarios/", v.add_comment, name="add_comment"),
     path("comentarios/<int:comment_id>/editar/", v.edit_comment, name="edit_comment"),
     path("comentarios/<int:comment_id>/remover/", v.delete_comment, name="delete_comment"),

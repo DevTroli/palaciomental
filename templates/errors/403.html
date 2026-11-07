@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends layout_template|default:"base.html" %}
 {% block title %}Acesso interrompido — Palácio Mental{% endblock %}
 {% block institutional_header %}
 <header class="tenant-header"><span class="tenant-brand">{{ tenant_display_name }}</span><span>Ambiente institucional</span></header>

@@ -1,17 +1,9 @@
+{% extends "institutional/experience/base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Identidade — {{ organizacao.nome }}</title>
-  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
-  <link rel="stylesheet" href="{% static 'vendor/pickr-1.10.3/nano.min.css' %}">
-  {% include "institutional/partials/theme.html" %}
-  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
-</head>
-<body>
-  {% include "institutional/partials/project_header.html" %}
-  <main id="main-content" class="tenant-container">
+{% block title %}Identidade · {{ tenant_display_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'vendor/pickr-1.10.3/nano.min.css' %}">{% endblock %}
+{% block content %}
+  <div class="tenant-experience-content">
     <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_management' %}">Gestão</a><span aria-hidden="true">/</span><strong>Identidade visual</strong></nav>
     <section class="tenant-hero">
       <p class="tenant-eyebrow">Marca da organização</p><h1>Faça o ambiente ter a sua cara.</h1>
@@ -45,9 +37,9 @@
         <p>As alterações só entram em vigor ao salvar. As cores não mudam as permissões de acesso.</p>
       </aside>
     </div>
-  </main>
-  {% include "institutional/partials/shell_footer.html" %}
-  <script src="{% static 'vendor/pickr-1.10.3/pickr.min.js' %}" defer></script>
-  <script src="{% static 'js/tenant-identity.js' %}" defer></script>
-</body>
-</html>
+  </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'vendor/pickr-1.10.3/pickr.min.js' %}" defer></script>
+<script src="{% static 'js/tenant-identity.js' %}" defer></script>
+{% endblock %}

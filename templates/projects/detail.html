@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends layout_template|default:"base.html" %}
 {% load static %}
 {% block title %}{{ project.title }} — Palácio Mental{% endblock %}
 {% block extra_head %}<meta name="description" content="{{ project.direction|truncatechars:155 }}"><meta property="og:type" content="website"><meta property="og:url" content="{{ share_url }}"><meta property="og:title" content="{{ project.title }} — Palácio Mental"><meta property="og:description" content="{{ project.direction|truncatechars:155 }}"><meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/mind_palace_logo.png' %}"><meta name="twitter:card" content="summary_large_image">{% endblock %}

@@ -1,6 +1,6 @@
-{% extends "camp/base.html" %}
+{% extends "institutional/experience/base.html" %}
 
-{% block title %}Calendário · {{ organizacao.nome|default:"CAMP" }}{% endblock %}
+{% block title %}Calendário · {{ tenant_display_name }}{% endblock %}
 
 {% block content %}
 
@@ -25,11 +25,11 @@
         </a>
       </div>
       <div class="camp-calendar-hero-links">
-        <a class="camp-calendar-new" href="{% url 'camp:event_create' %}?data={{ hoje|date:'Y-m-d' }}">
+        <a class="camp-calendar-new" href="{% url 'plataforma:event_create' %}?data={{ hoje|date:'Y-m-d' }}">
           <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
           Novo evento
         </a>
-        <a class="camp-calendar-today" href="{% url 'camp:calendar' %}">Ir para hoje</a>
+        <a class="camp-calendar-today" href="{% url 'plataforma:calendar' %}">Ir para hoje</a>
       </div>
     </div>
   </section>
@@ -119,7 +119,7 @@
                   <span class="camp-agenda-time">{% if evento.horario %}{{ evento.horario|time:"H:i" }}{% else %}—{% endif %}</span>
                   <div>
                     <strong>{{ evento.titulo }}</strong>
-                    <span>{% if evento.projeto %}{{ evento.projeto.title }}{% else %}CAMP{% endif %}{% if evento.status == 'entregue' %} · Entregue{% endif %}</span>
+                    <span>{% if evento.projeto_visivel %}{{ evento.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}{% if evento.status == 'entregue' %} · Entregue{% endif %}</span>
                   </div>
                 </article>
               {% endfor %}
@@ -154,13 +154,13 @@
                 <article class="camp-delivery">
                   <div class="camp-delivery-info">
                     <strong>{{ trabalho.titulo }}</strong>
-                    <span class="camp-delivery-project">{% if trabalho.projeto %}{{ trabalho.projeto.title }}{% else %}CAMP{% endif %}</span>
+                    <span class="camp-delivery-project">{% if trabalho.projeto_visivel %}{{ trabalho.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}</span>
                     <span class="camp-delivery-date">
                       <svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
                       {{ trabalho.data|date:"d/m/Y" }}{% if trabalho.horario %} · {{ trabalho.horario|time:"H:i" }}{% endif %}
                     </span>
                   </div>
-                  <form method="post" action="{% url 'camp:calendar_toggle' trabalho.pk %}">
+                  <form method="post" action="{% url 'plataforma:calendar_toggle' trabalho.pk %}">
                     {% csrf_token %}
                     <button class="camp-btn camp-btn--ghost camp-btn--sm" type="submit">Marcar entregue</button>
                   </form>
@@ -171,7 +171,7 @@
             <div class="camp-empty camp-empty--compact">
               <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-star"/></svg></span>
               <strong>Nenhum trabalho pendente.</strong>
-              <p>Você está em dia com as entregas do CAMP.</p>
+              <p>Você está em dia com as entregas do {{ tenant_display_name }}.</p>
             </div>
           {% endif %}
         </section>
@@ -194,7 +194,7 @@
                   </span>
                   <div>
                     <strong>{{ atividade.titulo }}</strong>
-                    <span>{% if atividade.projeto %}{{ atividade.projeto.title }}{% else %}CAMP{% endif %}{% if atividade.horario %} · {{ atividade.horario|time:"H:i" }}{% endif %}</span>
+                    <span>{% if atividade.projeto_visivel %}{{ atividade.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}{% if atividade.horario %} · {{ atividade.horario|time:"H:i" }}{% endif %}</span>
                   </div>
                 </li>
               {% endfor %}
@@ -214,7 +214,7 @@
               <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-plus"/></svg></span>
               Meus eventos
             </h2>
-            <a class="camp-inline-link" href="{% url 'camp:event_create' %}?data={{ hoje|date:'Y-m-d' }}">
+            <a class="camp-inline-link" href="{% url 'plataforma:event_create' %}?data={{ hoje|date:'Y-m-d' }}">
               <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
               Novo
             </a>
@@ -229,14 +229,14 @@
                     <span class="camp-event-kind camp-event-kind--{{ evento.tipo }}">{{ evento.get_tipo_display }}</span>
                   </div>
                   <span class="camp-own-event-meta">
-                    {{ evento.data|date:"d/m/Y" }}{% if evento.horario %} · {{ evento.horario|time:"H:i" }}{% endif %}{% if evento.projeto %} · {{ evento.projeto.title }}{% endif %}
+                    {{ evento.data|date:"d/m/Y" }}{% if evento.horario %} · {{ evento.horario|time:"H:i" }}{% endif %}{% if evento.projeto_visivel %} · {{ evento.projeto_visivel.title }}{% endif %}
                   </span>
                   <div class="camp-own-event-actions">
-                    <a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'camp:event_edit' evento.pk %}">
+                    <a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'plataforma:event_edit' evento.pk %}">
                       <svg class="camp-icon" aria-hidden="true"><use href="#i-edit"/></svg>
                       Editar
                     </a>
-                    <form method="post" action="{% url 'camp:event_delete' evento.pk %}" data-confirm="Excluir o evento “{{ evento.titulo }}”? Essa ação não pode ser desfeita.">
+                    <form method="post" action="{% url 'plataforma:event_delete' evento.pk %}" data-confirm="Excluir o evento “{{ evento.titulo }}”? Essa ação não pode ser desfeita.">
                       {% csrf_token %}
                       <button class="camp-btn camp-btn--danger camp-btn--xs" type="submit">
                         <svg class="camp-icon" aria-hidden="true"><use href="#i-trash"/></svg>
@@ -252,7 +252,7 @@
               <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-plus"/></svg></span>
               <strong>Nenhum evento seu neste mês.</strong>
               <p>Crie atividades e entregas pessoais para organizar sua rotina.</p>
-              <a class="camp-btn camp-btn--primary" href="{% url 'camp:event_create' %}?data={{ hoje|date:'Y-m-d' }}">Criar evento</a>
+              <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:event_create' %}?data={{ hoje|date:'Y-m-d' }}">Criar evento</a>
             </div>
           {% endif %}
         </section>

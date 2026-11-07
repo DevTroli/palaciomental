@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends layout_template|default:"base.html" %}
 {% block title %}{{ member.get_full_name|default:member.username }} — {% if request.organizacao %}{{ tenant_display_name }}{% else %}Palácio Mental{% endif %}{% endblock %}
 {% block breadcrumb_label %}{% if request.organizacao %}Projetos neste ambiente{% else %}Meu espaço pessoal{% endif %}{% endblock %}
 {% block content %}
