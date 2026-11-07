@@ -1,76 +1,17 @@
-# Status API (Spring Boot)
+# API de status
 
-API de health check que monitora o banco de dados PostgreSQL e a aplicação Django.
+Serviço Spring Boot/Java 21 que verifica PostgreSQL e Django. Execute com `docker compose up --build -d` na raiz; a API responde em `http://localhost:8080/v1/status`.
 
 ## Configuração
 
-### Variáveis de ambiente
+Defina `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD` no ambiente. A API usa essas variáveis individuais; não interpreta `DATABASE_URL`.
 
-| Variável | Descrição | Padrão (local) |
-|----------|-----------|----------------|
-| `POSTGRES_HOST` | Host do PostgreSQL | `database` (nome do serviço no Docker Compose) |
-| `POSTGRES_PORT` | Porta do PostgreSQL | `5432` |
-| `POSTGRES_DB` | Nome do banco | `local_db` |
-| `POSTGRES_USER` | Usuário do banco | `local_user` |
-| `POSTGRES_PASSWORD` | Senha do banco | `184122` |
-| `DJANGO_APP_URL` | URL base da aplicação Django | `http://django:8000` |
-
-### Desenvolvimento local (Docker Compose)
-
-No ambiente local, o `docker compose up` configura automaticamente:
-- `POSTGRES_HOST=database` (nome do serviço PostgreSQL no Compose)
-- `DJANGO_APP_URL=http://django:8000` (nome do serviço Django no Compose)
-
-Não é necessário definir `DJANGO_APP_URL` manualmente — o padrão já aponta para o serviço `django` do Compose.
-
-### Produção (Railway)
-
-Em produção no Railway, os serviços têm hostnames internos diferentes (formato `*.railway.internal`).
-
-**É obrigatório definir `DJANGO_APP_URL`** como variável de ambiente no serviço `status_api` do Railway, apontando para o hostname interno do serviço Django:
-
-```bash
-DJANGO_APP_URL=http://<nome-do-servico-django>.railway.internal:<porta>
-```
-
-Exemplo:
-```bash
-DJANGO_APP_URL=http://django-app.railway.internal:8000
-```
-
-As variáveis de banco (`POSTGRES_HOST`, `POSTGRES_PORT`, etc.) devem apontar para o banco PostgreSQL provisionado no Railway (o Railway injeta essas automaticamente via `DATABASE_URL` ou variáveis individuais).
+`DJANGO_APP_URL` é a URL base do Django; o padrão `http://django:8000` atende ao Compose local. Em outros ambientes, configure o endereço interno alcançável pelo serviço.
 
 ## Endpoints
 
-- `GET /v1/ping` — Liveness probe (sempre retorna 200 se a aplicação estiver rodando)
-- `GET /v1/status` — Readiness probe (checa banco + Django)
+- `GET /v1/ping`: responde `pong` quando o processo está ativo.
+- `GET /v1/status`: verifica banco e `GET /pronto` do Django, incluindo migrations pendentes. Retorna estado geral, dependências e tempos de resposta.
+- `/`: documentação interativa Swagger.
 
-### Resposta de `/v1/status`
-
-```json
-{
-  "service": "palacio-mental-status",
-  "checked_at": "2026-09-21T...",
-  "status": "operacional",
-  "dependencies": {
-    "database": {
-      "status": "operacional",
-      "response_time_ms": 5,
-      "details": { ... }
-    },
-    "django_app": {
-      "status": "operacional",
-      "response_time_ms": 12
-    }
-  }
-}
-```
-
-## Executando localmente
-
-```bash
-# Na raiz do monorepo
-docker compose up --build
-```
-
-A API estará disponível em `http://localhost:8080/v1/status`.
+O Compose aguarda a saúde do banco e do Django antes de iniciar este serviço. As credenciais ficam no ambiente, sem valores de senha no repositório.
