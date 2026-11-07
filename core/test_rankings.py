@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from plataforma.models import Project, ProjectVote
+from plataforma.models import Project, ProjectVote, Organizacao
 
 from .rankings import (
     public_ranking_ids,
@@ -33,6 +33,21 @@ class FakeRedis:
     def delete(self, *keys):
         for key in keys:
             self.data.pop(key, None)
+
+    def expire(self, key, timeout):
+        return True
+
+    def persist(self, key):
+        return True
+
+    def rename(self, source, target):
+        self.data[target] = self.data.pop(source)
+
+    def pipeline(self, transaction=True):
+        return self
+
+    def execute(self):
+        return []
 
     def zrevrange(self, key, start, stop):
         members = sorted(self.data.get(key, {}).items(), key=lambda item: (-item[1], int(item[0])))
@@ -72,12 +87,16 @@ class RankingProjectionTests(TestCase):
             self.assertNotIn(str(self.private.pk), self.redis.data[key])
 
     def test_global_and_institutional_sets_are_separate(self):
+        org = Organizacao.objects.create(nome="Organização A", slug="org-a", status="ativa")
+        institutional = Project.objects.create(owner=self.owner, organizacao=org,
+                                               title="Projeto institucional", visibility="publico")
         with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            update_project_projection(self.public.pk, tenant_id="org-a")
-
+            update_project_projection(self.public.pk)
+            update_project_projection(institutional.pk)
             self.assertIn(str(self.public.pk), self.redis.data[ranking_key("all")])
-            self.assertIn(str(self.public.pk), self.redis.data[ranking_key("all", "org-a")])
-            self.assertNotIn(ranking_key("all", "org-b"), self.redis.data)
+            self.assertNotIn(str(institutional.pk), self.redis.data[ranking_key("all")])
+            self.assertIn(str(institutional.pk), self.redis.data[ranking_key("all", org.pk)])
+            self.assertNotIn(str(self.public.pk), self.redis.data[ranking_key("all", org.pk)])
 
     def test_confirmed_vote_uses_increment_without_duplicate_score(self):
         from core.rankings import adjust_project_projection

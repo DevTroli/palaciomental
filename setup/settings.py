@@ -166,14 +166,13 @@ DATABASES = {
 # Redis é uma camada de aceleração; o PostgreSQL continua sendo a fonte oficial.
 # Fora do Compose, REDIS_URL pode ser omitida e o cache local será utilizado.
 REDIS_URL = config("REDIS_URL", default="")
-TENANT_CACHE_TTL = config("TENANT_CACHE_TTL", cast=int, default=300)
-TENANT_BRANDING_CACHE_TTL = config("TENANT_BRANDING_CACHE_TTL", cast=int, default=300)
-TENANT_PUBLIC_CONFIG_CACHE_TTL = config("TENANT_PUBLIC_CONFIG_CACHE_TTL", cast=int, default=120)
+RANKING_KEY_PREFIX = config("CACHE_KEY_PREFIX", default="pm")
 if REDIS_URL:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+            "OPTIONS": {"socket_connect_timeout": 0.3, "socket_timeout": 0.3},
             "TIMEOUT": 300,
             "KEY_PREFIX": config("CACHE_KEY_PREFIX", default="pm"),
         }
@@ -186,7 +185,7 @@ else:
             "TIMEOUT": 300,
         }
     }
-SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_ENGINE = "plataforma.session_backend"
 SESSION_CACHE_ALIAS = "default"
 
 
