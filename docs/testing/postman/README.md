@@ -80,7 +80,7 @@ python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py pm_rls_status --strict
 python manage.py test
-node --test tools/test_postman_identity.mjs
+node --test tools/test_postman_*.mjs
 python -m unittest discover -s scripts/tests -p 'test_release_contract.py' -v
 python -m unittest discover -s scripts/tests -p 'test_tenant_admin_links.py' -v
 ```

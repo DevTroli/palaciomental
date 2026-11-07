@@ -189,50 +189,68 @@ add("05.8 · Membro não altera identidade por POST direto", "/gestao/identidade
   description: "Use convite novo de papel membro. Para convite de Gestor, esta asserção não se aplica: não execute esta pasta com papel diferente.",
 });
 
-function guard() {
-  const enabled = name => pm.environment.get(name) === "true";
+function blockRequest(label, message) {
+  pm.execution.setNextRequest(null);
+  pm.test(label, () => pm.expect.fail(message));
+  pm.execution.skipRequest();
+}
+function guardIdentity(enabled) {
   const identityWrite = (pm.info.requestName.startsWith("02.2") && enabled("allow_branding")) ||
     (pm.info.requestName.startsWith("02.3a") && enabled("allow_uploads"));
   if (enabled("allow_writes") && identityWrite && !pm.variables.get("identity_snapshot")) {
-    pm.execution.setNextRequest(null);
-    pm.test("Upload exige snapshot prévio", () => pm.expect.fail("Identidade anterior não foi lida."));
-    pm.execution.skipRequest();
-    return;
+    blockRequest("Upload exige snapshot prévio", "Identidade anterior não foi lida.");
+    return false;
   }
+  return true;
+}
+function guardMedia() {
   if (pm.info.requestName.startsWith("02.3c") && !pm.variables.get(pm.request.url.toString().includes("cover") ? "media_cover_url" : "media_logo_url")) {
     pm.execution.skipRequest();
-    return;
+    return false;
   }
+  return true;
+}
+function guardWrite(enabled) {
+  if (pm.request.method === "GET") return true;
+  if (!enabled("allow_writes")) {
+    pm.execution.skipRequest();
+    return false;
+  }
+  const target = pm.variables.replaceIn(pm.request.url.toString());
+  const host = (target.match(/^https?:\/\/([^/]+)/i) || [])[1];
+  const approved = pm.environment.get("approved_write_host");
+  if (!host || !approved || host.toLowerCase() !== approved.toLowerCase()) {
+    blockRequest("Host de escrita aprovado", "Escrita bloqueada: host não aprovado explicitamente.");
+    return false;
+  }
+  return true;
+}
+function guardInvitation(enabled) {
+  if (pm.info.requestName.startsWith("05.") && enabled("allow_invite_accept")) {
+    const path = pm.environment.get("invite_path") || "";
+    if (!/^\/convites\/organizacao\/[A-Za-z0-9_-]+\/aceitar\/$/.test(path)) {
+      blockRequest("Caminho de convite válido", "Convite opcional exige caminho válido de organização.");
+      return false;
+    }
+  }
+  return true;
+}
+function guard() {
+  const enabled = name => pm.environment.get(name) === "true";
   if (pm.info.requestName === "01.1 · Login institucional e CSRF") {
     pm.variables.set("auth_ready", false);
     pm.variables.set("project_id", "");
     pm.variables.set("project_title", `TESTE-POSTMAN ${Date.now()}`);
   }
-  if (pm.request.method !== "GET") {
-    if (!enabled("allow_writes")) { pm.execution.skipRequest(); return; }
-    const target = pm.variables.replaceIn(pm.request.url.toString());
-    const host = (target.match(/^https?:\/\/([^/]+)/i) || [])[1];
-    const approved = pm.environment.get("approved_write_host");
-    if (!host || !approved || host.toLowerCase() !== approved.toLowerCase()) {
-      pm.execution.setNextRequest(null);
-      pm.test("Host de escrita aprovado", () => pm.expect.fail("Escrita bloqueada: host não aprovado explicitamente."));
-      pm.execution.skipRequest();
-      return;
-    }
-  }
-  if (pm.info.requestName.startsWith("05.") && enabled("allow_invite_accept")) {
-    const path = pm.environment.get("invite_path") || "";
-    if (!/^\/convites\/organizacao\/[A-Za-z0-9_-]+\/aceitar\/$/.test(path)) {
-      pm.execution.setNextRequest(null);
-      pm.test("Caminho de convite válido", () => pm.expect.fail("Convite opcional exige caminho válido de organização."));
-      pm.execution.skipRequest();
-      return;
-    }
-  }
+  if (!guardWrite(enabled)) return;
+  if (!guardIdentity(enabled)) return;
+  if (!guardMedia()) return;
+  guardInvitation(enabled);
 }
+const guards = [blockRequest, guardIdentity, guardMedia, guardWrite, guardInvitation].map(fn => fn.toString()).join("\n");
 const collection = {
   info: {_postman_id: id("collection"), name: "Palácio Mental · Homologação institucional", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", description: "Formulários reais Django; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."},
-  event: [script("prerequest", `(${guard.toString()})();`)],
+  event: [script("prerequest", `${guards}\n(${guard.toString()})();`)],
   item: folders,
 };
 const defaults = {
