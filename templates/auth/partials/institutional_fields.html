@@ -1,0 +1,11 @@
+{% if form.errors %}<div class="auth-error-summary" id="auth-errors" role="alert" tabindex="-1" data-auth-error-summary>{% if form.non_field_errors %}{{ form.non_field_errors }}{% else %}<p>Confira os campos destacados para continuar.</p>{% endif %}{% if compact %}{{ form.email.errors }}{% endif %}</div>{% endif %}
+{% for field in form %}
+  {% if field.is_hidden %}{{ field }}{% elif compact and field.name == "email" or compact and field.name == "first_name" %}{% else %}
+  <div class="auth-field{% if field.errors %} auth-field--error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %}<span class="auth-optional"> (opcional)</span>{% endif %}</label>
+    <div class="auth-input-wrap{% if field.field.widget.input_type == 'password' %} auth-input-wrap--password{% endif %}">{{ field }}{% if field.field.widget.input_type == 'password' %}<button class="auth-password-toggle" type="button" aria-controls="{{ field.id_for_label }}" aria-pressed="false" aria-label="Mostrar {{ field.label|lower }}" data-password-toggle hidden>Mostrar</button>{% endif %}</div>
+    {% if field.help_text %}{% if field.name == "password1" %}<details class="auth-field-help" {% if field.errors or form.password2.errors %}open{% endif %}><summary>Requisitos da senha</summary><div id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div></details>{% else %}<div class="auth-field-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>{% endif %}{% endif %}
+    {% if field.errors %}<div class="auth-field-error" id="{{ field.auto_id }}_error">{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+  </div>
+  {% endif %}
+{% endfor %}

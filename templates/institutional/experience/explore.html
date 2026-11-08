@@ -15,6 +15,7 @@
 
       <form class="camp-explore-search" method="get" role="search">
         <input type="hidden" name="vista" value="{{ vista }}">
+        {% if request.GET.tipo == "autonomo" or request.GET.tipo == "vinculado" %}<input type="hidden" name="tipo" value="{{ request.GET.tipo }}">{% endif %}
         {% if aluno_filtro %}<input type="hidden" name="aluno" value="{{ aluno_filtro }}">{% endif %}
         <label class="camp-sr-only" for="explorar-busca">Buscar projetos ou alunos</label>
         <span class="camp-explore-search-field">
@@ -61,18 +62,19 @@
     </section>
 
     <nav class="camp-explore-tabs" aria-label="Explorar">
-      <a class="camp-explore-tab" href="?vista=projetos{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'projetos' %} aria-current="page"{% endif %}>
+      <a class="camp-explore-tab" href="?vista=projetos{% if request.GET.tipo == 'autonomo' or request.GET.tipo == 'vinculado' %}&amp;tipo={{ request.GET.tipo|urlencode }}{% endif %}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'projetos' %} aria-current="page"{% endif %}>
         <svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg>
         Projetos
         <span>{{ total_projetos_abertos }}</span>
       </a>
-      <a class="camp-explore-tab" href="?vista=alunos{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'alunos' %} aria-current="page"{% endif %}>
+      <a class="camp-explore-tab" href="?vista=alunos{% if request.GET.tipo == 'autonomo' or request.GET.tipo == 'vinculado' %}&amp;tipo={{ request.GET.tipo|urlencode }}{% endif %}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'alunos' %} aria-current="page"{% endif %}>
         <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
         Alunos
         <span>{{ total_colaboradores }}</span>
       </a>
     </nav>
 
+    {% if request.GET.tipo == "autonomo" or request.GET.tipo == "vinculado" %}<p class="camp-explore-note">Mostrando projetos {% if request.GET.tipo == "autonomo" %}autônomos{% else %}de programas ativos{% endif %}. <a href="{% url 'plataforma:projects' %}">Ver todos os projetos</a></p>{% endif %}
     {% if aluno_filtro %}
       <p class="camp-explore-note">
         Mostrando projetos de <strong>{{ aluno_filtro_nome|default:aluno_filtro }}</strong>.

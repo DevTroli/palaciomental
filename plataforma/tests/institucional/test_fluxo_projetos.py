@@ -36,7 +36,7 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         response = self.client.get("/", HTTP_HOST=HOST, secure=True)
         self.assertContains(response, 'href="/projetos/novo/"')
         self.assertContains(response, 'href="https://palaciomental.com.br/perfil/participante/"')
-        self.assertContains(response, "Meus projetos institucionais")
+        self.assertContains(response, "Meus projetos neste ambiente")
 
     def test_fluxo_criar_salvar_contexto_reabrir_e_editar_sem_sair_do_tenant(self):
         response = self.client.post(reverse("plataforma:project_create"), {

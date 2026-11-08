@@ -136,3 +136,14 @@ class BrandingEmailTests(SimpleTestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("https://media.palaciomental.com.br/", html_alternative(mail.outbox[0]))
         self.assertIn("Programa", html_alternative(mail.outbox[0]))
+
+    def test_footer_remains_distinct_from_background_with_readable_text(self):
+        from plataforma.branding import organization_branding
+        from plataforma.theme import contrast
+
+        for primary, background in (("#FFFFFF", "#FFFFFF"), ("#111111", "#111111"), ("#123456", "#F5F8FC")):
+            with self.subTest(primary=primary, background=background):
+                self.identity.tema = {"primary": primary, "background": background}
+                branding = organization_branding(self.organization)
+                self.assertGreaterEqual(contrast(branding["tenant_footer_color"], background), 3)
+                self.assertGreaterEqual(contrast(branding["tenant_footer_color"], branding["tenant_footer_text_color"]), 4.5)

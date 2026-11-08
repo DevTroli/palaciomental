@@ -1,67 +1,17 @@
-{% extends layout_template|default:"base.html" %}
-{% load static %}
-{% block title %}Convite institucional{% endblock %}
-{% block breadcrumb_label %}Convite institucional{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/invitation.css' %}">{% endblock %}
-{% block institutional_header %}
-<header class="tenant-header">
-  <span class="tenant-brand">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}{{ tenant_display_name }}</span>
-  <span>Convite institucional</span>
-</header>
-{% endblock %}
-{% block institutional_footer %}
-<footer class="tenant-footer">
-  <div class="tenant-footer-inner">
-    <a class="tenant-footer-brand" href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>Palácio Mental</span></a>
-  </div>
-</footer>
-{% endblock %}
-{% block content %}
-<section class="auth-section mvp-container invitation-section">
-  <div class="form-card invitation-card">
-    <span class="eyebrow">Entrada por convite</span>
-    {% if tenant_logo_url %}<img class="auth-tenant-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}
-    <h1>{% if user.is_authenticated %}Confirme sua entrada{% else %}Crie sua conta{% endif %}</h1>
-    <ol class="invitation-progress" aria-label="Etapas de entrada">
-      <li {% if not user.is_authenticated %}aria-current="step"{% endif %}><span>1</span> Sua conta</li>
-      <li {% if user.is_authenticated %}aria-current="step"{% endif %}><span>2</span> Confirmar entrada</li>
-    </ol>
-    <div class="invitation-summary">
-      {% if grupo %}<p>Grupo <strong>{{ grupo.nome }}</strong></p>{% else %}<p>Papel: <strong>{{ convite.get_papel_display }}</strong></p>{% endif %}
-      <p>Convite para <strong>{{ convite.email }}</strong></p>
-    </div>
-    {% if user.is_authenticated %}
-      <p>Você está na conta <strong>{{ user.username }}</strong>. O aceite vincula esta conta somente ao ambiente e ao papel deste convite.</p>
-      <form method="post">
-        {% csrf_token %}
-        <button class="button button-green" name="action" value="accept" type="submit">Aceitar convite e entrar</button>
-      </form>
-    {% else %}
-      <p class="form-foot invitation-login">Já tem conta? <a href="{{ login_url }}" aria-label="Entrar para continuar o convite">Entrar</a>.</p>
-      <form method="post">
-        {% csrf_token %}
-        {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-        {% for error in form.email.errors %}<p class="form-errors" role="alert">{{ error }}</p>{% endfor %}
-        <div class="field">
-          {{ form.username.label_tag }}{{ form.username }}
-          <small id="{{ form.username.auto_id }}_helptext">{{ form.username.help_text }}</small>
-          {% if form.username.errors %}<div class="field-error" role="alert">{{ form.username.errors }}</div>{% endif %}
-        </div>
-        <div class="invitation-passwords">
-          <div class="field">{{ form.password1.label_tag }}{{ form.password1 }}
-            {% if form.password1.errors %}<div class="field-error" role="alert">{{ form.password1.errors }}</div>{% endif %}
-          </div>
-          <div class="field">{{ form.password2.label_tag }}{{ form.password2 }}
-            {% if form.password2.errors %}<div class="field-error" role="alert">{{ form.password2.errors }}</div>{% endif %}
-          </div>
-        </div>
-        <details class="invitation-password-help" {% if form.password2.errors or form.password1.errors %}open{% endif %}>
-          <summary>Requisitos da senha</summary><div id="{{ form.password1.auto_id }}_helptext">{{ form.password1.help_text }}</div>
-        </details>
-        <button class="button button-green" name="action" value="register" type="submit">Criar conta e continuar</button>
-      </form>
-    {% endif %}
-    <p class="form-foot invitation-note">Válido até {{ convite.expira_em|date:"d/m/Y H:i" }}. A afiliação exige aceite na etapa 2 e vale somente para este ambiente.</p>
-  </div>
-</section>
+{% extends "auth/institutional_base.html" %}
+{% block title %}Convite para {{ tenant_display_name }} · Palácio Mental{% endblock %}
+{% block auth_content %}
+  <p class="auth-eyebrow">Você recebeu um convite</p>
+  <h1 id="auth-title">{% if user.is_authenticated %}Seu lugar na <br>comunidade.{% else %}Vamos construir <br>algo juntos?{% endif %}</h1>
+  <p class="auth-form-intro">{% if user.is_authenticated %}Confirme sua entrada em{% else %}Crie sua conta para participar de{% endif %} <strong>{{ tenant_display_name }}</strong>.</p>
+  <ol class="auth-progress" aria-label="Etapas de entrada"><li {% if not user.is_authenticated %}aria-current="step"{% endif %}><span>01</span>Sua conta</li><li {% if user.is_authenticated %}aria-current="step"{% endif %}><span>02</span>Confirmar entrada</li></ol>
+  <div class="auth-invite-summary"><span>Convite para</span><strong>{{ convite.email }}</strong><p>{% if grupo %}Grupo {{ grupo.nome }}{% else %}Papel: {{ convite.get_papel_display }}{% endif %}</p></div>
+  {% if user.is_authenticated %}
+    <p class="auth-form-intro">Você está na conta <strong>{{ user.username }}</strong>. O aceite vincula esta conta somente ao ambiente e ao papel deste convite.</p>
+    <form method="post" class="auth-form">{% csrf_token %}<button class="auth-submit" name="action" value="accept" type="submit">Aceitar convite e entrar <span aria-hidden="true">→</span></button></form>
+  {% else %}
+    <p class="auth-existing-account">Já tem conta? <a href="{{ login_url }}" aria-label="Entrar para continuar o convite">Entrar com minha conta</a></p>
+    <form method="post" class="auth-form" novalidate>{% csrf_token %}{% include "auth/partials/institutional_fields.html" with compact=True %}<button class="auth-submit" name="action" value="register" type="submit">Criar conta e continuar <span aria-hidden="true">→</span></button></form>
+  {% endif %}
+  <p class="auth-invite-expiry">Válido até {{ convite.expira_em|date:"d/m/Y H:i" }}. A afiliação exige aceite na etapa 2 e vale somente para este ambiente.</p>
 {% endblock %}

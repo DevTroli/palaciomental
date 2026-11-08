@@ -436,6 +436,15 @@ def explore(request):
             .select_related("owner")
             .annotate(total_membros=Count("memberships", distinct=True))
         )
+        tipo = request.GET.get("tipo", "")
+        if tipo == "autonomo":
+            base_projetos = base_projetos.filter(vinculo_institucional__isnull=True)
+        elif tipo == "vinculado":
+            from .models import ProgramaInstitucional
+            base_projetos = base_projetos.filter(
+                vinculo_institucional__turma__programa__organizacao=organizacao,
+                vinculo_institucional__turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+            )
         total_projetos_abertos = base_projetos.count()
 
         if busca:

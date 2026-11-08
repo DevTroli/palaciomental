@@ -1,0 +1,36 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}{{ tenant_display_name }} · acesso institucional{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  {% include "institutional/partials/theme.html" %}
+  <link rel="stylesheet" href="{% static 'css/tenant-auth.css' %}">
+</head>
+<body class="tenant-auth">
+  <a class="auth-skip" href="#main-content">Pular para o conteúdo principal</a>
+  <header class="auth-header"><a class="auth-brand" href="{% url 'core:index' %}">{% if tenant_logo_url %}<span class="auth-brand-image"><img src="{{ tenant_logo_url }}" alt=""></span>{% else %}<span class="auth-brand-initial" aria-hidden="true">{{ tenant_display_name|first|upper }}</span>{% endif %}<span>{{ tenant_display_name }}</span></a><a class="auth-global-link" href="{{ global_home_url }}"><span aria-hidden="true">↗</span> Palácio Mental</a></header>
+  <main class="auth-layout" id="main-content">
+    <aside class="auth-story" aria-label="Sobre {{ tenant_display_name }}">
+      <div class="auth-story-cover{% if not tenant_cover_url %} auth-story-cover--empty{% endif %}">{% if tenant_cover_url %}<img src="{{ tenant_cover_url }}" alt="">{% endif %}<span>Um ambiente. Muitas possibilidades.</span></div>
+      <div class="auth-story-content">
+        <span class="auth-story-logo">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% else %}<span aria-hidden="true">{{ tenant_display_name|first|upper }}</span>{% endif %}</span>
+        <p class="auth-eyebrow">{{ tenant_display_name }}</p>
+        <h2>Boas ideias crescem <br>com boas conexões.</h2>
+        <p class="auth-story-description">{% if tenant_presentation %}{{ tenant_presentation|linebreaksbr }}{% else %}Um lugar para desenvolver projetos, compartilhar descobertas e construir seu próximo passo em comunidade.{% endif %}</p>
+        <div class="auth-story-foot"><span class="auth-story-dot" aria-hidden="true"></span>Ambiente institucional privado</div>
+      </div>
+    </aside>
+    <section class="auth-form-panel" aria-labelledby="auth-title">
+      {% if messages %}<div class="auth-messages" aria-live="polite">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+      {% block auth_content %}{% endblock %}
+      <div class="auth-access-note"><span aria-hidden="true">↳</span><p>Este acesso é exclusivo de <strong>{{ tenant_display_name }}</strong>. Sua conta e seus projetos pessoais continuam no Palácio Mental.</p></div>
+    </section>
+  </main>
+  <footer class="auth-footer"><a href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>Uma comunidade no <strong>Palácio Mental</strong></span></a><span>Projetos, pessoas e possibilidades.</span></footer>
+  <script src="{% static 'js/tenant-auth.js' %}" defer></script>
+</body>
+</html>

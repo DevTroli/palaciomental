@@ -70,7 +70,7 @@ class CapaHomeTests(PortalInstitucionalBase):
 
     def test_empty_cover_and_home_sections(self):
         response = self.client.get("/", HTTP_HOST=HOST)
-        for label in ("tenant-cover--empty", "Projetos autônomos", "Projetos vinculados", "Programas ativos", "Turmas elegíveis"):
+        for label in ("tenant-cover--empty", "Projetos autônomos", "Projetos institucionais", "Ranking de projetos", "Acesso rápido"):
             self.assertContains(response, label)
 
     def test_only_tenant_public_projects_in_columns(self):
@@ -79,7 +79,7 @@ class CapaHomeTests(PortalInstitucionalBase):
         Project.objects.create(title="Privado A secreto", owner=self.user, organizacao=self.organization, visibility=Project.VISIBILITY_PRIVATE)
         other = Organizacao.objects.create(slug="outro", nome="Outro", status="ativa")
         Project.objects.create(title="Outro tenant secreto", owner=self.user, organizacao=other, visibility=Project.VISIBILITY_PUBLIC)
-        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", criado_por=self.user)
+        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
         turma = Turma.objects.create(programa=program, nome="Turma", criado_por=self.user)
         VinculoProjetoInstitucional.objects.create(projeto=linked, turma=turma, vinculado_por=self.user)
         response = self.client.get("/", HTTP_HOST=HOST)
