@@ -119,6 +119,7 @@
                   <span class="camp-agenda-time">{% if evento.horario %}{{ evento.horario|time:"H:i" }}{% else %}—{% endif %}</span>
                   <div>
                     <strong>{{ evento.titulo }}</strong>
+                    {% if evento.descricao %}<p class="camp-agenda-description">{{ evento.descricao }}</p>{% endif %}
                     <span>{% if evento.projeto_visivel %}{{ evento.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}{% if evento.status == 'entregue' %} · Entregue{% endif %}</span>
                   </div>
                 </article>
@@ -155,6 +156,7 @@
                   <div class="camp-delivery-info">
                     <strong>{{ trabalho.titulo }}</strong>
                     <span class="camp-delivery-project">{% if trabalho.projeto_visivel %}{{ trabalho.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}</span>
+                    {% if trabalho.descricao %}<p class="camp-delivery-description">{{ trabalho.descricao }}</p>{% endif %}
                     <span class="camp-delivery-date">
                       <svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
                       {{ trabalho.data|date:"d/m/Y" }}{% if trabalho.horario %} · {{ trabalho.horario|time:"H:i" }}{% endif %}
@@ -194,6 +196,7 @@
                   </span>
                   <div>
                     <strong>{{ atividade.titulo }}</strong>
+                    {% if atividade.descricao %}<p class="camp-calendar-activity-description">{{ atividade.descricao }}</p>{% endif %}
                     <span>{% if atividade.projeto_visivel %}{{ atividade.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}{% if atividade.horario %} · {{ atividade.horario|time:"H:i" }}{% endif %}</span>
                   </div>
                 </li>

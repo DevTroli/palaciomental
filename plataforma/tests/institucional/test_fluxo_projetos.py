@@ -139,6 +139,18 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Notification.objects.get(recipient=other).url, expected)
 
+    def test_decisao_de_colaboracao_aparece_no_badge_antes_de_abrir_inbox(self):
+        Notification.objects.create(
+            recipient=self.user,
+            kind="collaboration_decision",
+            message="Seu pedido foi aceito.",
+            url=f"https://{HOST}/projetos/{self.project.pk}/",
+        )
+        response = self.client.get(
+            reverse("plataforma:notification_summary"), HTTP_HOST=HOST, secure=True
+        )
+        self.assertEqual(response.json()["count"], 1)
+
     def test_workspace_only_for_members_and_no_duplicate_collaboration_action(self):
         other = get_user_model().objects.create_user(username="membro-equipe")
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=other)

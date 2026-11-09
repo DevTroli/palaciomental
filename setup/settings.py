@@ -51,7 +51,7 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool, default=True)
     CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool, default=True)
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", cast=bool, default=False)
-SECURE_REDIRECT_EXEMPT = [r"^saude$"]
+SECURE_REDIRECT_EXEMPT = [r"^saude$", r"^pronto$"]
 SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", cast=int, default=0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool, default=False)
 SECURE_CONTENT_TYPE_NOSNIFF = True

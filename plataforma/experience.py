@@ -24,6 +24,7 @@ from .models import (
     Organizacao,
     Project,
     ProjectMember,
+    Notification,
 )
 
 from .experience_forms import PerfilInstitucionalForm, SenhaInstitucionalForm
@@ -203,7 +204,18 @@ def _contar_novas_inbox(request):
             project__owner=request.user,
             status=CollaborationRequest.PENDING,
         ).count()
+        + _notificacoes_tenant(request, nao_lidas=True).count()
     )
+
+
+def _notificacoes_tenant(request, *, nao_lidas=False):
+    """Restringe notificações ao domínio atual do tenant."""
+    domains = request.organizacao.dominios.filter(status_verificacao="ativo").values_list("hostname", flat=True)
+    urls = Q(pk__in=[])
+    for domain in domains:
+        urls |= Q(url__startswith=f"https://{domain}/") | Q(url__startswith=f"http://{domain}/")
+    queryset = Notification.objects.filter(recipient=request.user).filter(urls)
+    return queryset.filter(read_at__isnull=True) if nao_lidas else queryset
 
 
 
@@ -639,12 +651,7 @@ def inbox(request):
         }
     )
     request.session[f"tenant:{request.organizacao.pk}:inbox_visto"] = timezone.now().isoformat()
-    from .models import Notification
-    domains = request.organizacao.dominios.filter(status_verificacao="ativo").values_list("hostname", flat=True)
-    urls = Q(pk__in=[])
-    for domain in domains:
-        urls |= Q(url__startswith=f"https://{domain}/") | Q(url__startswith=f"http://{domain}/")
-    notifications = Notification.objects.filter(urls, recipient=request.user)
+    notifications = _notificacoes_tenant(request)
     notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     context["notifications"] = notifications[:50]
     return render(request, "institutional/experience/inbox.html", context)

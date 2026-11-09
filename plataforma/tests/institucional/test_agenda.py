@@ -142,6 +142,16 @@ class CalendarTests(AgendaTestCase):
         self.assertIn(atrasado, response.context["trabalhos_pendentes"])
         self.assertContains(response, "Entrega atrasada")
 
+    def test_calendario_exibe_descricao_do_trabalho_publicado(self):
+        self.evento(
+            titulo="Entrega com instruções",
+            descricao="Anexe o relatório final no projeto.",
+            origem=EventoCalendario.ORIGEM_ORGANIZACAO,
+            data=date.today(),
+        )
+        response = self.get(reverse("plataforma:calendar"))
+        self.assertContains(response, "Anexe o relatório final no projeto.")
+
     def test_marcar_entrega_altera_status(self):
         trabalho = self.evento()
 

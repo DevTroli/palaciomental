@@ -36,7 +36,7 @@ from .invitations import invitation_accept, invitation_login_target
 from .invitation_delivery import deliver_invitation
 from .management_metrics import management_distributions
 from .branding import invitation_branding
-from core.rankings import public_ranking_ids
+from core.rankings import complete_ranking_ids
 
 
 def _tenant_identity_context(organizacao):
@@ -177,7 +177,7 @@ def projects(request):
         queryset = queryset.filter(tags__icontains=tag)
     if ordering == "relevance":
         tenant_id = getattr(getattr(request, "organizacao", None), "pk", None)
-        ranking_ids = public_ranking_ids(tenant_id=tenant_id, limit=500)
+        ranking_ids = complete_ranking_ids(tenant_id=tenant_id)
         if ranking_ids:
             ranking_order = Case(
                 *[When(pk=project_id, then=position) for position, project_id in enumerate(ranking_ids)],
