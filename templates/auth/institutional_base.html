@@ -19,7 +19,7 @@
       <div class="auth-story-content">
         <span class="auth-story-logo">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% else %}<span aria-hidden="true">{{ tenant_display_name|first|upper }}</span>{% endif %}</span>
         <p class="auth-eyebrow">{{ tenant_display_name }}</p>
-        <h2>Boas ideias crescem <br>com boas conexões.</h2>
+        <h2>{{ tenant_slogan }}</h2>
         <p class="auth-story-description">{% if tenant_presentation %}{{ tenant_presentation|linebreaksbr }}{% else %}Um lugar para desenvolver projetos, compartilhar descobertas e construir seu próximo passo em comunidade.{% endif %}</p>
         <div class="auth-story-foot"><span class="auth-story-dot" aria-hidden="true"></span>Ambiente institucional privado</div>
       </div>

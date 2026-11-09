@@ -1,7 +1,7 @@
 {% extends "institutional/experience/base.html" %}
 {% load static %}
 {% block title %}Identidade · {{ tenant_display_name }}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'vendor/pickr-1.10.3/nano.min.css' %}"><link rel="stylesheet" href="{% static 'css/tenant-identity.css' %}?v=20261109-3">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'vendor/pickr-1.10.3/nano.min.css' %}"><link rel="stylesheet" href="{% static 'css/tenant-identity.css' %}?v=20261109-4">{% endblock %}
 {% block content %}
   <div class="tenant-experience-content">
     <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_management' %}">Gestão</a><span aria-hidden="true">/</span><strong>Identidade visual</strong></nav>
@@ -25,7 +25,16 @@
           {% include "institutional/partials/identity_field.html" with field=form.nome_exibicao %}
           {% include "institutional/partials/identity_field.html" with field=form.logo %}
           {% include "institutional/partials/identity_field.html" with field=form.capa %}
+          {% include "institutional/partials/identity_field.html" with field=form.slogan %}
           {% include "institutional/partials/identity_field.html" with field=form.apresentacao %}
+          <details{% if form.site_oficial.errors or form.link_1_titulo.errors or form.link_2_titulo.errors or form.link_2_url.errors or form.link_3_titulo.errors or form.link_3_url.errors %} open{% endif %}><summary>Links importantes (até 3)</summary>
+          {% include "institutional/partials/identity_field.html" with field=form.site_oficial %}
+          {% include "institutional/partials/identity_field.html" with field=form.link_1_titulo %}
+          {% include "institutional/partials/identity_field.html" with field=form.link_2_titulo %}
+          {% include "institutional/partials/identity_field.html" with field=form.link_2_url %}
+          {% include "institutional/partials/identity_field.html" with field=form.link_3_titulo %}
+          {% include "institutional/partials/identity_field.html" with field=form.link_3_url %}
+          </details>
         </section>
         <section class="identity-section" id="identity-colors" aria-labelledby="identity-colors-title">
           <h2 id="identity-colors-title">Cores do ambiente</h2>
@@ -39,8 +48,7 @@
         </section>
         <section class="identity-section" id="identity-footer" aria-labelledby="identity-footer-title">
           <h2 id="identity-footer-title">Rodapé da organização</h2>
-          <p>Adicione uma frase, contato e redes sociais para os membros.</p>
-          {% include "institutional/partials/identity_field.html" with field=form.slogan_rodape %}
+          <p>Adicione contato e redes sociais para os membros. O slogan institucional também aparece no rodapé.</p>
           {% include "institutional/partials/identity_field.html" with field=form.email_contato %}
           {% include "institutional/partials/identity_field.html" with field=form.instagram_url %}
           {% include "institutional/partials/identity_field.html" with field=form.facebook_url %}
@@ -53,10 +61,10 @@
         <div class="identity-preview" id="identity-preview" data-organization-name="{{ organizacao.nome }}">
           <img class="identity-cover-preview" id="cover-preview" src="{{ tenant_cover_url }}" alt="Prévia da capa" {% if not tenant_cover_url %}hidden{% endif %}>
           <div class="identity-preview-header"><img id="logo-preview" src="{% if tenant_logo_url %}{{ tenant_logo_url }}{% else %}{% static 'img/mind_palace_logo.png' %}{% endif %}" alt="Prévia da logo"><strong id="name-preview">{{ tenant_display_name }}</strong></div>
-          <div class="identity-preview-body"><span class="identity-preview-selection">● &nbsp;Início selecionado</span><h3>Seu ambiente institucional</h3><p>Contexto, autoria e evolução dos projetos, com a marca da sua organização.</p><button type="button">Ação principal</button><p class="identity-preview-link">Exemplo de link</p></div>
+          <div class="identity-preview-body"><span class="identity-preview-selection">● &nbsp;Início selecionado</span><h3 id="slogan-preview">{{ tenant_slogan }}</h3><p>Contexto, autoria e evolução dos projetos, com a marca da sua organização.</p><button type="button">Ação principal</button><p class="identity-preview-link">Exemplo de link</p></div>
           <div class="identity-preview-footer">
             <strong id="footer-preview-name">{{ tenant_display_name }}</strong>
-            <span id="footer-preview-description">{{ tenant_footer_description }}</span>
+            <span id="footer-preview-description">{{ tenant_slogan }}</span>
             <span id="footer-preview-email"{% if not tenant_contact_email %} hidden{% endif %}>{{ tenant_contact_email }}</span>
             <span id="footer-preview-social"{% if not tenant_social_links %} hidden{% endif %}>{% for social in tenant_social_links %}{{ social.label }}{% if not forloop.last %} · {% endif %}{% endfor %}</span>
           </div>
@@ -69,5 +77,5 @@
 {% endblock %}
 {% block extra_js %}
 <script src="{% static 'vendor/pickr-1.10.3/pickr.min.js' %}" defer></script>
-<script src="{% static 'js/tenant-identity.js' %}?v=20261109-12" defer></script>
+<script src="{% static 'js/tenant-identity.js' %}?v=20261109-15" defer></script>
 {% endblock %}

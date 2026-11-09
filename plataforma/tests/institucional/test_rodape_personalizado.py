@@ -18,7 +18,7 @@ class RodapePersonalizadoTests(PortalInstitucionalBase):
     def payload(self):
         return {
             "nome_exibicao": "CAMPPG",
-            "slogan_rodape": "Aprender para transformar",
+            "slogan": "Aprender para transformar",
             "email_contato": "contato@example.org",
             "instagram_url": "https://instagram.com/camppg",
             "facebook_url": "https://facebook.com/camppg",
@@ -31,7 +31,7 @@ class RodapePersonalizadoTests(PortalInstitucionalBase):
             response = self.client.post("/gestao/identidade/", self.payload(), HTTP_HOST=HOST)
             self.assertEqual(response.status_code, 302)
         self.identity.refresh_from_db()
-        self.assertEqual(self.identity.slogan_rodape, "Aprender para transformar")
+        self.assertEqual(self.identity.slogan, "Aprender para transformar")
         self.membership.papel = "membro"
         self.membership.save(update_fields=["papel"])
         response = self.client.get("/", HTTP_HOST=HOST)
@@ -60,7 +60,7 @@ class RodapePersonalizadoTests(PortalInstitucionalBase):
         self.client.post("/gestao/identidade/", self.payload(), HTTP_HOST=HOST)
         other = Organizacao.objects.create(nome="Outra organização", slug="outra", status="ativa")
         DominioOrganizacao.objects.create(organizacao=other, hostname="outra.palaciomental.com.br", principal=True)
-        IdentidadeOrganizacao.objects.create(organizacao=other, slogan_rodape="Outro ambiente")
+        IdentidadeOrganizacao.objects.create(organizacao=other, slogan="Outro ambiente")
         MembroOrganizacao.objects.create(organizacao=other, usuario=self.user)
         response = self.client.get("/", HTTP_HOST="outra.palaciomental.com.br")
         self.assertContains(response, "Outro ambiente")
@@ -69,12 +69,12 @@ class RodapePersonalizadoTests(PortalInstitucionalBase):
         self.assertContains(response, "Outra organização")
         self.client.post("/gestao/identidade/", {"nome_exibicao": "CAMPPG"}, HTTP_HOST=HOST)
         response = self.client.get("/", HTTP_HOST=HOST)
-        self.assertContains(response, "Seu ambiente de projetos e conexões.")
+        self.assertNotContains(response, "Seu ambiente de projetos e conexões.")
         self.assertNotContains(response, "mailto:contato%40example.org")
 
     def test_unsafe_stored_links_are_not_rendered_and_slogan_is_escaped(self):
         self.identity.instagram_url = "javascript:alert(1)"
-        self.identity.slogan_rodape = "<script>alert(1)</script>"
+        self.identity.slogan = "<script>alert(1)</script>"
         self.identity.save()
         response = self.client.get("/", HTTP_HOST=HOST)
         self.assertNotContains(response, 'href="javascript:alert(1)"')

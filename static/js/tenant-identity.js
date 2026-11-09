@@ -146,13 +146,14 @@
   });
   const name = document.querySelector("#id_nome_exibicao");
   const defaultName = preview.dataset.organizationName || "Sua organização";
-  const footerDescription = document.querySelector("#id_slogan_rodape");
+  const organizationSlogan = document.querySelector("#id_slogan");
   const footerEmail = document.querySelector("#id_email_contato");
   const socials = [["instagram_url", "Instagram"], ["facebook_url", "Facebook"]]
     .map(([id, label]) => [document.getElementById(`id_${id}`), label]);
   const syncFooter = () => {
     preview.querySelector("#footer-preview-name").textContent = name?.value.trim() || defaultName;
-    preview.querySelector("#footer-preview-description").textContent = footerDescription?.value.trim() || "Seu ambiente de projetos e conexões.";
+    const description = preview.querySelector("#footer-preview-description");
+    description.textContent = organizationSlogan?.value.trim() || "Ideias que conectam pessoas";
     const email = preview.querySelector("#footer-preview-email");
     email.textContent = footerEmail?.value.trim() || "";
     email.hidden = !email.textContent;
@@ -160,9 +161,14 @@
     social.textContent = socials.filter(([input]) => input?.value.trim()).map(([, label]) => label).join(" · ");
     social.hidden = !social.textContent;
   };
+  const syncSlogan = () => {
+    preview.querySelector("#slogan-preview").textContent = organizationSlogan?.value.trim() || "Ideias que conectam pessoas";
+  };
   name?.addEventListener("input", () => { preview.querySelector("#name-preview").textContent = name.value.trim() || defaultName; syncFooter(); });
-  [footerDescription, footerEmail, ...socials.map(([input]) => input)].forEach(input => input?.addEventListener("input", syncFooter));
+  [footerEmail, ...socials.map(([input]) => input)].forEach(input => input?.addEventListener("input", syncFooter));
+  organizationSlogan?.addEventListener("input", () => { syncSlogan(); syncFooter(); });
   syncFooter();
+  syncSlogan();
   const tabList = document.querySelector(".identity-tabs");
   const tabs = Array.from(tabList?.querySelectorAll('[role="tab"]') || []);
   const panels = tabs.map(tab => document.getElementById(tab.getAttribute("aria-controls")));
