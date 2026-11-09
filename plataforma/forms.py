@@ -49,17 +49,28 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
         from .theme import COLOR_ROLES
 
         colors = organization_branding(self.instance.organizacao)["tenant_colors"]
+        color_descriptions = {
+            "primary": "Destaques, navegação e cabeçalhos.",
+            "secondary": "Elementos de apoio e convites.",
+            "accent": "Botões e ações principais.",
+            "background": "Área ao redor do conteúdo.",
+            "surface": "Cartões, formulários e navegação.",
+        }
         for role in COLOR_ROLES:
             field = self.fields[f"theme_{role}"]
             field.initial = colors[role]
             field.widget.attrs.update({"data-theme-color": role, "placeholder": "#RRGGBB", "maxlength": 7})
-            field.help_text = "Escolha no seletor ou digite #RRGGBB. O texto terá contraste automático."
+            field.help_text = color_descriptions[role]
         for name in ("cor_primaria", "cor_destaque", "cor_fundo"):
             self.fields[name].widget = forms.HiddenInput()
         self.fields["nome_exibicao"].help_text = "Nome curto que aparecerá no cabeçalho e no rodapé do ambiente."
         self.fields["logo"].help_text = "PNG, JPEG ou WebP. Até 2 MB, com pelo menos 64 px e proporção de até 8:1."
         self.fields["capa"].help_text = "Imagem horizontal PNG, JPEG ou WebP, até 5 MB. Recomendado: 1.920×640 px. O centro será exibido conforme a tela."
         self.fields["apresentacao"].help_text = "Até 600 caracteres para apresentar a organização na home."
+        self.fields["slogan_rodape"].help_text = "Frase exibida abaixo do nome da organização no rodapé. Se vazio, será usado o texto padrão."
+        self.fields["email_contato"].help_text = "Opcional. Visível para os membros que acessam este ambiente."
+        for name in ("instagram_url", "facebook_url"):
+            self.fields[name].help_text = "Opcional. Informe o endereço do perfil, começando com https:// ou http://."
         self.fields["cor_primaria"].help_text = "Identidade principal usada em cabeçalhos, títulos e ações seguras."
         self.fields["cor_destaque"].help_text = "Cor de apoio para detalhes visuais; o sistema garante contraste nas ações."
         self.fields["cor_fundo"].help_text = "Fundo geral do ambiente, sempre aplicado com texto legível."
@@ -80,7 +91,7 @@ class IdentidadeOrganizacaoForm(forms.ModelForm):
 
     class Meta:
         model = IdentidadeOrganizacao
-        fields = ("nome_exibicao", "logo", "capa", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo")
+        fields = ("nome_exibicao", "logo", "capa", "apresentacao", "slogan_rodape", "email_contato", "instagram_url", "facebook_url", "cor_primaria", "cor_destaque", "cor_fundo")
         labels = {
             "nome_exibicao": "Nome mostrado no ambiente",
             "logo": "Logo da organização",

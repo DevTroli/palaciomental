@@ -1,7 +1,13 @@
 {% if widget.is_initial %}
   <span class="branding-file-current"><a href="{{ widget.value.url }}" target="_blank" rel="noopener noreferrer">Ver imagem atual</a></span>
   {% if not widget.required %}
-    <label class="branding-file-clear" for="{{ widget.checkbox_id }}"><input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.disabled %} disabled{% endif %}> Remover imagem atual</label>
+    <label class="branding-file-clear" for="{{ widget.checkbox_id }}">
+      <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}" data-branding-clear="{{ widget.name }}" aria-describedby="{{ widget.checkbox_id }}_help"{% if widget.attrs.checked %} checked{% endif %}{% if widget.attrs.disabled %} disabled{% endif %}>
+      <span class="branding-file-trash" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></svg></span>
+      <span data-clear-label>{% if widget.attrs.checked %}Remoção marcada{% else %}Remover imagem atual{% endif %}</span>
+    </label>
+    <small class="branding-file-clear-help" id="{{ widget.checkbox_id }}_help">A imagem deixará de aparecer ao salvar. Você pode desfazer antes de salvar.</small>
+    <small class="branding-file-clear-status" id="{{ widget.checkbox_id }}_status" data-branding-status role="status" hidden>Remoção marcada. Salve as alterações para aplicá-la.</small>
   {% endif %}
 {% endif %}
 <input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>

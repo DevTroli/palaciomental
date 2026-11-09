@@ -57,6 +57,18 @@ class CapaHomeTests(PortalInstitucionalBase):
             with self.assertRaises(ValidationError):
                 validar_capa(file)
 
+    def test_cover_removal_is_kept_pending_when_another_field_is_invalid(self):
+        self.identity.capa = self.logo_file("capa.png", (1200, 400))
+        self.identity.save()
+        response = self.client.post("/gestao/identidade/", {
+            "nome_exibicao": "Campus", "capa-clear": "on", "email_contato": "invalido",
+        }, HTTP_HOST=HOST)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-branding-clear="capa"')
+        self.assertContains(response, "Remoção marcada")
+        self.identity.refresh_from_db()
+        self.assertTrue(self.identity.capa)
+
     def test_cover_upload_and_presentation_escaped(self):
         response = self.client.post("/gestao/identidade/", {
             "nome_exibicao": "Meu campus", "apresentacao": "<script>alert(1)</script>",

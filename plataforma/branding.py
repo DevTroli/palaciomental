@@ -1,6 +1,8 @@
 """Identidade visual compartilhada por telas e mensagens institucionais."""
 
 from django.templatetags.static import static
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 
 from .navigation import global_home_url
 from .validators import CORES_SEMANTICAS
@@ -32,14 +34,25 @@ def organization_branding(organization):
                 colors[role] = value.upper()
     primary, accent = colors["primary"], colors["accent"]
     solid = brand_background(primary)
-    footer = solid if contrast(solid, colors["background"]) >= 3 else text_on(colors["background"])
     selection = solid if contrast(solid, colors["surface"]) >= 3 else text_on(colors["surface"])
+    social_links = []
+    validate_link = URLValidator(schemes=["http", "https"])
+    for name, label, icon in (("instagram_url", "Instagram", "instagram"),
+                              ("facebook_url", "Facebook", "facebook")):
+        url = getattr(identity, name, "")
+        if url:
+            try:
+                validate_link(url)
+            except ValidationError:
+                continue
+            social_links.append({"label": label, "url": url, "icon": icon})
     return {
+        "tenant_footer_description": getattr(identity, "slogan_rodape", "") or "Seu ambiente de projetos e conexões.",
+        "tenant_contact_email": getattr(identity, "email_contato", ""),
+        "tenant_social_links": social_links,
         "tenant_solid_color": solid,
         "tenant_selection_color": selection,
         "tenant_selection_text_color": text_on(selection),
-        "tenant_footer_color": footer,
-        "tenant_footer_text_color": text_on(footer),
         "tenant_display_name": getattr(identity, "nome_exibicao", "") or organization.nome,
         "tenant_identidade": identity,
         "tenant_logo_url": identity.logo.url if identity and identity.logo else "",

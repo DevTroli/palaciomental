@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 import uuid
 
 from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, normalizar_logo, validar_logo
@@ -54,6 +55,10 @@ class IdentidadeOrganizacao(models.Model):
     tema = models.JSONField("Cores personalizadas", default=dict, blank=True, validators=[validate_theme])
     capa = models.ImageField("Capa", upload_to=caminho_capa, validators=[validar_capa], blank=True)
     apresentacao = models.TextField("Apresentação do ambiente", max_length=600, blank=True)
+    slogan_rodape = models.CharField("Texto da organização no rodapé", max_length=160, blank=True)
+    email_contato = models.EmailField("E-mail de contato", blank=True)
+    instagram_url = models.URLField("Instagram", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
+    facebook_url = models.URLField("Facebook", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
     logo = models.ImageField("Logo", upload_to=caminho_logo, validators=[validar_logo], blank=True)
     cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
     cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)

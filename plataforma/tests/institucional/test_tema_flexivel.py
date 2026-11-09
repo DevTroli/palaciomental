@@ -67,6 +67,18 @@ class TemaFlexivelTests(PortalInstitucionalBase):
         self.identity.refresh_from_db()
         self.assertEqual(self.identity.tema, {})
 
+    def test_invalid_identity_keeps_fields_and_errors_in_their_sections(self):
+        payload = {**self.payload(), "email_contato": "invalido", "instagram_url": "https://instagram.com/camppg"}
+        response = self.client.post("/gestao/identidade/", payload, HTTP_HOST=HOST)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("email_contato", response.context["form"].errors)
+        self.assertContains(response, 'id="identity-brand"')
+        self.assertContains(response, 'id="identity-colors"')
+        self.assertContains(response, 'id="identity-footer"')
+        self.assertContains(response, 'value="https://instagram.com/camppg"')
+        self.identity.refresh_from_db()
+        self.assertFalse(self.identity.instagram_url)
+
     def test_model_theme_validation(self):
         for value in ({"css": "body{}"}, {"primary": "red"}, {"primary": "#fff"}, {"primary": "#ffffffff"}, ["red"]):
             with self.assertRaises(ValidationError):
@@ -98,10 +110,9 @@ class TemaFlexivelTests(PortalInstitucionalBase):
                 self.assertEqual(branding["tenant_primary_color"], primary)
                 self.assertGreaterEqual(contrast(branding["tenant_solid_color"], "#FFFFFF"), 4.7)
                 for color, text in (("tenant_selection_color", "tenant_selection_text_color"),
-                                    ("tenant_footer_color", "tenant_footer_text_color")):
+                                    ("tenant_surface_color", "tenant_surface_text_color")):
                     self.assertGreaterEqual(contrast(branding[color], branding[text]), 4.5)
                 self.assertGreaterEqual(contrast(branding["tenant_selection_color"], surface), 3)
-                self.assertGreaterEqual(contrast(branding["tenant_footer_color"], background), 3)
         self.assertEqual(brand_background("#112233"), "#112233")
 
     def test_theme_is_applied_to_home_management_and_login(self):
