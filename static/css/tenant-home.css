@@ -124,3 +124,5 @@
 .home-ranking-score strong { font-size: 20px; }
 @media(max-width:900px) { .home-project-layout { grid-template-columns: 1fr; } }
 @media(max-width:500px) { .home-project-grid { grid-template-columns: 1fr; }.home-ranking-list .home-ranking-entry { grid-template-columns: 46px minmax(0, 1fr); gap: 12px; padding: 14px; }.home-ranking-list .home-rank-position, .home-ranking-list li:first-child .home-rank-position { width: 44px; height: 44px; font-size: 17px; }.home-ranking-score { grid-column: 2; justify-content: flex-start; } }
+.home-project-category { align-self: flex-start; padding: 4px 8px; border-radius: 6px; color: var(--tenant-secondary-text); background: var(--tenant-secondary); }
+.home-project-author > span:first-child { background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
