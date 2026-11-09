@@ -52,6 +52,10 @@ def _invitation(request, token, kind, *, locked=False):
     organization = _organization(invitation, kind)
     if getattr(request, "organizacao", None) != organization:
         raise Http404
+    if isinstance(invitation, ConviteGrupo):
+        from .models import Turma, Grupo
+        if invitation.grupo.status != Grupo.STATUS_ATIVO or invitation.grupo.turma.status != Turma.STATUS_ATIVO or invitation.grupo.turma.politica_participacao == Turma.POLITICA_ENCERRADA:
+            raise PermissionDenied("Este grupo ou turma não aceita novas entradas.")
     if invitation.status != model.STATUS_PENDENTE or invitation.expira_em <= timezone.now():
         raise PermissionDenied("Este convite não está mais disponível.")
     return invitation
@@ -132,6 +136,7 @@ def invitation_accept(request, token, kind):
                 invitation = _invitation(request, token, kind, locked=True)
                 _accept(invitation, request.user, kind)
             if kind == "group":
+                assert isinstance(invitation, ConviteGrupo)
                 return redirect(
                     "plataforma:institutional_program_detail",
                     programa_id=invitation.grupo.turma.programa_id,
@@ -142,7 +147,7 @@ def invitation_accept(request, token, kind):
 
     response = render(request, "auth/invitation.html", {
         "convite": invitation,
-        "grupo": invitation.grupo if kind == "group" else None,
+        "grupo": invitation.grupo if isinstance(invitation, ConviteGrupo) else None,
         "form": form,
         "login_url": reverse("plataforma:login") + "?" + urlencode({"next": request.path}),
     })

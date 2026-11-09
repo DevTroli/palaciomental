@@ -1,9 +1,11 @@
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseForbidden, HttpResponseNotFound
-from django.shortcuts import render
+from django.urls import resolve, Resolver404
+from django.shortcuts import redirect, render
 from .models import MembroOrganizacao, Organizacao, DominioOrganizacao
 from .validators import CORES_SEMANTICAS
+from .health import HEALTH_PATHS
 
 
 class TenantResolutionMiddleware:
@@ -17,6 +19,8 @@ class TenantResolutionMiddleware:
         self.dev_query_param = getattr(settings, "DEV_TENANT_QUERY_PARAM", "tenant")
 
     def __call__(self, request):
+        if request.path in HEALTH_PATHS:
+            return self.get_response(request)
         hostname = self._hostname(request)
         dev_organizacao = self._resolve_development_tenant(request)
         organizacao = dev_organizacao or self._resolve_organization(hostname)
@@ -29,6 +33,11 @@ class TenantResolutionMiddleware:
 
         request.organizacao = organizacao
         request.tenant = organizacao
+        # Uma rota inexistente não deve virar um fluxo de autenticação.
+        try:
+            resolve(request.path_info)
+        except Resolver404:
+            return self.get_response(request)
 
         if self._is_public_auth_path(request.path):
             return self._finish(request, self.get_response(request), is_dev_tenant)
@@ -113,7 +122,9 @@ class TenantResolutionMiddleware:
 
     @staticmethod
     def _is_public_auth_path(path):
-        return path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/"))
+        if path.startswith(("/entrar/", "/cadastrar/", "/sair/", "/static/", "/favicon", "/convites/grupos/", "/convites/organizacao/")):
+            return True
+        return False
 
 
 class RowLevelSecurityMiddleware:
@@ -128,6 +139,8 @@ class RowLevelSecurityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.path in HEALTH_PATHS:
+            return self.get_response(request)
         from . import rls
         from .admin_access import is_internal_admin
 

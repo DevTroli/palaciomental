@@ -1,10 +1,7 @@
+{% extends "institutional/experience/base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ programa.nome }} — {{ organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">{% include "institutional/partials/theme.html" %}</head>
-<body>
-{% include "institutional/partials/project_header.html" %}
-<main id="main-content" class="tenant-container">
+{% block content %}
+<div class="tenant-experience-content">
   <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas</a><span>/</span><span>{{ programa.nome }}</span></nav>
   <section class="tenant-hero"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h1>{{ programa.nome }}</h1><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p></section>
 
@@ -33,5 +30,5 @@
     {% endfor %}
   </section>
   {% if solicitacoes %}<section class="tenant-section-heading"><p class="tenant-eyebrow">Governança</p><h2>Solicitações pendentes</h2></section><section class="tenant-flow-grid">{% for solicitacao in solicitacoes %}<article class="tenant-card"><p class="tenant-eyebrow">{{ solicitacao.turma.nome }}</p><h3>{{ solicitacao.usuario.get_full_name|default:solicitacao.usuario.username }}</h3><p>{{ solicitacao.mensagem|default:"Sem mensagem adicional." }}</p><form method="post" action="{% url 'plataforma:institutional_class_request_decide' solicitacao.pk %}">{% csrf_token %}<button class="tenant-button" name="acao" value="aprovar" type="submit">Aprovar</button><button class="tenant-button tenant-button--secondary" name="acao" value="recusar" type="submit">Recusar</button></form></article>{% endfor %}</section>{% endif %}
-</main>
-{% include 'institutional/partials/shell_footer.html' %}</body></html>
+</div>
+{% endblock %}

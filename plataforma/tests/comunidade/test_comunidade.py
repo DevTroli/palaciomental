@@ -42,6 +42,18 @@ class CommunityM2Tests(TestCase):
         self.client.post(url)
         self.assertEqual(ProjectVote.objects.count(), 0)
 
+    def test_author_cannot_vote_or_comment_even_by_direct_post(self):
+        self.client.force_login(self.owner)
+        page = self.client.get(reverse("plataforma:project_detail", args=[self.project.pk]))
+        self.assertNotContains(page, 'name="content"')
+        self.assertNotContains(page, 'action="' + reverse("plataforma:toggle_vote", args=[self.project.pk]) + '"')
+        self.assertEqual(self.client.post(reverse("plataforma:toggle_vote", args=[self.project.pk])).status_code, 403)
+        self.assertEqual(self.client.post(reverse("plataforma:add_comment", args=[self.project.pk]), {"content": "Teste"}).status_code, 403)
+        self.assertFalse(ProjectVote.objects.filter(project=self.project, user=self.owner).exists())
+        self.assertFalse(ProjectComment.objects.filter(project=self.project, author=self.owner).exists())
+        previous = ProjectComment.objects.create(project=self.project, author=self.owner, content="Comentário anterior")
+        self.assertEqual(self.client.post(reverse("plataforma:edit_comment", args=[previous.pk]), {"content": "Edição"}).status_code, 403)
+
     def test_milestone_requires_owner_or_collaborator(self):
         self.client.force_login(self.member)
         url = reverse("plataforma:add_milestone", args=[self.project.pk])
@@ -84,6 +96,20 @@ class M2AcceptanceTests(TestCase):
         self.client.force_login(self.member)
         self.assertEqual(self.client.get(reverse("plataforma:project_detail", args=[private.pk])).status_code, 404)
         self.assertEqual(self.client.get(reverse("plataforma:project_detail", args=[restricted.pk]) + f"?access={restricted.access_token}").status_code, 200)
+
+    def test_shared_link_contains_restricted_token_and_private_has_no_share_button(self):
+        restricted = Project.objects.create(owner=self.owner, title="Restrito", direction="Rumo", category="", visibility=Project.VISIBILITY_RESTRICTED)
+        private = Project.objects.create(owner=self.owner, title="Privado", direction="Rumo", category="", visibility=Project.VISIBILITY_PRIVATE)
+        self.client.force_login(self.owner)
+        page = self.client.get(reverse("plataforma:project_detail", args=[restricted.pk]))
+        self.assertContains(page, f"?access={restricted.access_token}")
+        self.assertNotContains(self.client.get(reverse("plataforma:project_detail", args=[private.pk])), 'id="share-project"')
+        self.client.force_login(self.member)
+        url = reverse("plataforma:project_detail", args=[restricted.pk])
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.get(url + "?access=invalid").status_code, 404)
+        self.assertEqual(self.client.get(url + f"?access={restricted.access_token}").status_code, 200)
+        self.assertEqual(self.client.get(reverse("plataforma:project_detail", args=[private.pk])).status_code, 404)
 
     def test_create_starts_with_basics_then_generates_action_milestone(self):
         self.client.force_login(self.owner)

@@ -51,7 +51,7 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool, default=True)
     CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool, default=True)
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", cast=bool, default=False)
-SECURE_REDIRECT_EXEMPT = [r"^saude$"]
+SECURE_REDIRECT_EXEMPT = [r"^saude$", r"^pronto$"]
 SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", cast=int, default=0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool, default=False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -137,6 +137,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "plataforma.context_processors.inbox_unread_count",
                 "plataforma.context_processors.tenant_branding",
+                "plataforma.context_processors.institutional_experience",
             ],
         },
     },
@@ -164,14 +165,13 @@ DATABASES = {
 # Redis é uma camada de aceleração; o PostgreSQL continua sendo a fonte oficial.
 # Fora do Compose, REDIS_URL pode ser omitida e o cache local será utilizado.
 REDIS_URL = config("REDIS_URL", default="")
-TENANT_CACHE_TTL = config("TENANT_CACHE_TTL", cast=int, default=300)
-TENANT_BRANDING_CACHE_TTL = config("TENANT_BRANDING_CACHE_TTL", cast=int, default=300)
-TENANT_PUBLIC_CONFIG_CACHE_TTL = config("TENANT_PUBLIC_CONFIG_CACHE_TTL", cast=int, default=120)
+RANKING_KEY_PREFIX = config("CACHE_KEY_PREFIX", default="pm")
 if REDIS_URL:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+            "OPTIONS": {"socket_connect_timeout": 0.3, "socket_timeout": 0.3},
             "TIMEOUT": 300,
             "KEY_PREFIX": config("CACHE_KEY_PREFIX", default="pm"),
         }
@@ -184,7 +184,7 @@ else:
             "TIMEOUT": 300,
         }
     }
-SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_ENGINE = "plataforma.session_backend"
 SESSION_CACHE_ALIAS = "default"
 
 

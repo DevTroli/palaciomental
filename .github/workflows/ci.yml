@@ -7,6 +7,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 10
       postgres:
         image: postgres:18
         env:
@@ -14,6 +18,8 @@ jobs:
         ports: ["5432:5432"]
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
     env:
+      TEST_REDIS_URL: redis://127.0.0.1:6379/15
+      REDIS_URL: ""
       DJANGO_SECRET_KEY: ci
       DJANGO_DEBUG: "False"
       DATABASE_URL: postgres://pm_app:pm_app@localhost:5432/pm

@@ -23,3 +23,10 @@ def tenant_branding(request):
         ),
         **organization_branding(organizacao),
     }
+
+
+def institutional_experience(request):
+    if not getattr(request, "membro_organizacao", None):
+        return {"layout_template": "base.html"}
+    from .experience import _contexto_base
+    return {"layout_template": "institutional/experience/base.html", **_contexto_base(request)}

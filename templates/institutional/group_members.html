@@ -1,10 +1,7 @@
+{% extends "institutional/experience/base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Membros — {{ grupo.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}"><link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">{% include "institutional/partials/theme.html" %}</head>
-<body>
-{% include "institutional/partials/project_header.html" %}
-<main id="main-content" class="tenant-container">
+{% block content %}
+<div class="tenant-experience-content">
   <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_program_detail' grupo.turma.programa.pk %}">{{ grupo.turma.programa.nome }}</a><span>/</span><span>{{ grupo.nome }}</span></nav>
   <section class="tenant-hero"><p class="tenant-eyebrow">Grupo · {{ grupo.turma.nome }}</p><h1>Membros e convites</h1><p>Convites são de uso único, expiram em sete dias e só podem ser aceitos pelo e-mail para o qual foram emitidos.</p></section>
   <section class="tenant-flow-grid">
@@ -13,5 +10,5 @@
     <article class="tenant-card"><p class="tenant-eyebrow">Pendentes</p><h2>{{ convites|length }} convite(s)</h2>{% for convite in convites %}<p><strong>{{ convite.email }}</strong><br><span class="tenant-status">{{ convite.get_papel_display }}</span>{% if pode_gerenciar %}<form method="post" action="{% url 'plataforma:institutional_invite_revoke' convite.pk %}">{% csrf_token %}<button class="tenant-button" type="submit">Revogar</button></form>{% endif %}</p>{% empty %}<p>Nenhum convite pendente.</p>{% endfor %}</article>
     {% if solicitacoes %}<article class="tenant-card"><p class="tenant-eyebrow">Solicitações</p><h2>{{ solicitacoes|length }} pendente(s)</h2>{% for solicitacao in solicitacoes %}<p><strong>{{ solicitacao.usuario.get_full_name|default:solicitacao.usuario.username }}</strong><br>{{ solicitacao.mensagem|default:"Sem mensagem." }}<form method="post" action="{% url 'plataforma:institutional_group_request_decide' solicitacao.pk %}">{% csrf_token %}<button class="tenant-button" name="acao" value="aprovar" type="submit">Aprovar</button><button class="tenant-button tenant-button--secondary" name="acao" value="recusar" type="submit">Recusar</button></form></p>{% endfor %}</article>{% endif %}
   </section>
-</main>
-{% include 'institutional/partials/shell_footer.html' %}</body></html>
+</div>
+{% endblock %}

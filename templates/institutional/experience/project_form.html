@@ -1,0 +1,10 @@
+{% extends "institutional/experience/base.html" %}
+{% block title %}{{ heading }} · {{ tenant_display_name }}{% endblock %}
+{% block content %}
+<section class="camp-hero camp-form-hero"><div class="camp-hero-copy"><p class="camp-eyebrow">Meus projetos</p><h1 class="camp-hero-title">{{ heading }}</h1><p class="camp-hero-subtitle">Dê forma à sua próxima ideia. O projeto pertence a este ambiente.</p></div></section>
+<div class="camp-form-wrap"><form class="camp-form" method="post" novalidate>{% csrf_token %}
+{% if form.non_field_errors %}<div class="camp-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<div class="camp-form-grid">{% for field in form %}<div class="camp-field camp-field--full">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="camp-field-hint">{{ field.help_text }}</span>{% endif %}{% for error in field.errors %}<span class="camp-field-error" role="alert">{{ error }}</span>{% endfor %}</div>{% endfor %}</div>
+{% if formset %}<fieldset><legend>Links importantes</legend>{{ formset.management_form }}{{ formset.non_form_errors }}{% for link in formset %}<div class="camp-field">{{ link.as_p }}</div>{% endfor %}</fieldset>{% endif %}
+<div class="camp-form-actions"><a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_profile' %}">Cancelar</a><button class="camp-btn camp-btn--primary" type="submit">{{ submit_label }}</button></div>
+</form></div>{% endblock %}
