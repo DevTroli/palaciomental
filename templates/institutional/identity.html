@@ -31,9 +31,10 @@
         <div class="identity-preview" id="identity-preview">
           <img class="identity-cover-preview" id="cover-preview" src="{{ tenant_cover_url }}" alt="Prévia da capa" {% if not tenant_cover_url %}hidden{% endif %}>
           <div class="identity-preview-header"><img id="logo-preview" src="{% if tenant_logo_url %}{{ tenant_logo_url }}{% else %}{% static 'img/mind_palace_logo.png' %}{% endif %}" alt="Prévia da logo"><strong id="name-preview">{{ tenant_display_name }}</strong></div>
-          <div class="identity-preview-body"><h3>Seu ambiente institucional</h3><p>Contexto, autoria e evolução dos projetos, com a marca da sua organização.</p><button type="button">Ação principal</button></div>
+          <div class="identity-preview-body"><span class="identity-preview-selection">● &nbsp;Início selecionado</span><h3>Seu ambiente institucional</h3><p>Contexto, autoria e evolução dos projetos, com a marca da sua organização.</p><button type="button">Ação principal</button><p class="identity-preview-link">Exemplo de link</p></div>
+          <div class="identity-preview-footer">Rodapé do ambiente institucional</div>
         </div>
-        <p id="contrast-status" role="status" aria-live="polite">Os textos e botões recebem contraste automático.</p>
+        <p id="contrast-status" role="status" aria-live="polite">As cores de texto e de alguns fundos são adaptadas para facilitar a leitura.</p>
         <p>As alterações só entram em vigor ao salvar. As cores não mudam as permissões de acesso.</p>
       </aside>
     </div>
@@ -41,5 +42,5 @@
 {% endblock %}
 {% block extra_js %}
 <script src="{% static 'vendor/pickr-1.10.3/pickr.min.js' %}" defer></script>
-<script src="{% static 'js/tenant-identity.js' %}" defer></script>
+<script src="{% static 'js/tenant-identity.js' %}?v=20261109-4" defer></script>
 {% endblock %}

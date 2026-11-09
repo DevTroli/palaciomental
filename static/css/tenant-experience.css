@@ -1,6 +1,7 @@
 /* Layout e fluxo CAMP preservados; marca e dados pertencem ao tenant do host. */
 .camp-body { --camp-bg: var(--tenant-background); --camp-card: var(--tenant-surface); --camp-ink: var(--tenant-surface-ink); --camp-muted: var(--tenant-surface-ink); --camp-navy: var(--tenant-primary); --camp-yellow: var(--tenant-accent); --camp-blue: var(--tenant-primary); }
-.camp-topbar, .camp-sidebar, .camp-hero { background: var(--tenant-primary); color: var(--tenant-primary-text); }
+.camp-topbar, .camp-sidebar { background: var(--tenant-primary); color: var(--tenant-primary-text); }
+.camp-hero { background: var(--tenant-solid); color: #fff; }
 .camp-hero::after { display: none; }
 .camp-brand-name, .camp-sidebar-brand-text strong, .camp-nav-link, .camp-hero-title, .camp-hero-subtitle, .camp-account-trigger, .camp-account-menu-head, .camp-sidebar-brand-text span { color: inherit; }
 .camp-nav-link:hover, .camp-nav-link[aria-current=page] { background: color-mix(in srgb,currentColor 15%,transparent); color: inherit; }
@@ -37,3 +38,44 @@
 .camp-stat strong, .camp-stat span, .camp-panel-title, .camp-block-title,
 .camp-open-title, .camp-profile-name, .camp-person h2, .camp-field label { color: inherit; }
 .camp-icon-badge[hidden], .camp-account-badge[hidden] { display: none; }
+/* As cores desses elementos são pares: texto e ícones acompanham seu fundo. */
+.camp-body .camp-hero .camp-hero-title,
+.camp-body .camp-hero .camp-hero-subtitle,
+.camp-body .camp-hero .camp-eyebrow { color: #fff; }
+.camp-body .camp-btn--primary, .camp-body .camp-btn--primary:hover { background: var(--tenant-accent); color: var(--tenant-accent-text); }
+.camp-body .camp-btn--ghost, .camp-body .camp-btn--ghost:hover { background: var(--tenant-surface); color: var(--tenant-surface-ink); border-color: color-mix(in srgb,var(--tenant-surface-ink) 45%,var(--tenant-surface)); }
+.camp-body .camp-explore-tab[aria-current="page"] { background: var(--tenant-selection); border-color: var(--tenant-selection); color: var(--tenant-selection-text); }
+.camp-body .camp-explore-tab[aria-current="page"] span { background: transparent; color: inherit; }
+.camp-body .camp-explore-note a, .camp-body .camp-inline-link, .camp-body .camp-open-title a { color: var(--tenant-surface-link); }
+.camp-body .camp-badge--ativo { background: var(--tenant-solid); color: #fff; }
+.camp-body .camp-badge--ideia, .camp-body .camp-badge--pausado { color: #000; }
+.camp-body .camp-explore-tab:not([aria-current="page"]) { background: var(--tenant-surface); color: var(--tenant-surface-ink); border-color: currentColor; }
+.camp-body .camp-explore-tab:not([aria-current="page"]) span { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-explore-cta { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-calendar-new { background: var(--tenant-accent); color: var(--tenant-accent-text); }
+.camp-body .camp-calendar-today, .camp-body .camp-calendar-today:hover { color: #fff; }
+.camp-body .camp-calendar-table th { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-calendar-day { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-calendar-day.is-outside { background: color-mix(in srgb,var(--tenant-surface-ink) 7%,var(--tenant-surface)); }
+.camp-body .camp-calendar-daynum, .camp-body .camp-calendar-day.is-outside .camp-calendar-daynum { color: var(--tenant-surface-ink); }
+.camp-body .camp-calendar-day.is-today .camp-calendar-daynum { background: var(--tenant-selection); color: var(--tenant-selection-text); }
+.camp-body .camp-calendar-activity { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-calendar-activity-date { background: var(--tenant-solid); color: #fff; }
+.camp-body .camp-calendar-activity-date strong { color: inherit; }
+.camp-body .camp-field input, .camp-body .camp-field select, .camp-body .camp-field textarea { background: var(--tenant-surface); color: var(--tenant-surface-ink); border-color: color-mix(in srgb,var(--tenant-surface-ink) 45%,var(--tenant-surface)); }
+.camp-body .camp-explore-search input[type="search"], .camp-body .camp-explore-search select { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-explore-search input::placeholder { color: var(--tenant-surface-ink); opacity: 1; }
+.camp-body .camp-explore-search-field .camp-icon { color: var(--tenant-surface-ink); }
+.camp-body .camp-stat .camp-stat-icon { color: #142a40; }
+.camp-body .camp-profile-calendar, .camp-body .camp-profile-cal-toggle, .camp-body .camp-profile-tabs { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-profile-tab, .camp-body .camp-profile-tab:hover { color: var(--tenant-surface-ink); background: var(--tenant-surface); }
+.camp-body .camp-profile-tab.is-active { background: var(--tenant-selection); color: var(--tenant-selection-text); }
+.camp-body .camp-profile-tab.is-active .camp-profile-tab-count { background: transparent; color: inherit; }
+.camp-body .camp-mini-calendar th, .camp-body .camp-mini-calendar td, .camp-body .camp-mini-calendar td.is-outside { color: var(--tenant-surface-ink); }
+.camp-body .camp-mini-calendar td.is-outside { background: color-mix(in srgb,var(--tenant-surface-ink) 7%,var(--tenant-surface)); }
+.camp-body .camp-mini-calendar td.is-today { background: var(--tenant-selection); color: var(--tenant-selection-text); }
+.camp-body .camp-mini-calendar td.is-today .camp-mini-dot { background: var(--tenant-selection-text); }
+.camp-body .camp-profile-upcoming-head a { color: var(--tenant-surface-link); }
+.camp-body .camp-profile-project-meta { color: var(--tenant-surface-ink); }
+.camp-body .camp-inbox-item, .camp-body .camp-inbox-item.is-new, .camp-body .camp-inbox-item--pedido, .camp-body .camp-inbox-date, .camp-body .camp-manage-person { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-body .camp-inbox-new, .camp-body .camp-manage-table .camp-manage-open { color: #14532d; }

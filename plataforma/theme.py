@@ -32,3 +32,12 @@ def text_on(color):
 
 def readable_color(color, background):
     return color if contrast(color, background) >= 4.5 else text_on(background)
+
+
+def brand_background(color):
+    """Escurece a cor de marca apenas o suficiente para texto branco legível."""
+    channels = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
+    for factor in range(255, -1, -1):
+        candidate = "#" + "".join(f"{channel * factor // 255:02X}" for channel in channels)
+        if contrast(candidate, "#FFFFFF") >= 4.7:
+            return candidate

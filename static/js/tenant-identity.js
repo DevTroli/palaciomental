@@ -4,24 +4,48 @@
   const preview = document.querySelector("#identity-preview");
   if (!preview) return;
   const hex = /^#[0-9a-f]{6}$/i;
-  const textOn = color => {
+  const luminance = color => {
     const channels = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16) / 255)
       .map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
-    return channels.reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0) > .179 ? "#000000" : "#ffffff";
+    return channels.reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+  };
+  const textOn = color => luminance(color) > .179 ? "#000000" : "#ffffff";
+  const contrast = (a, b) => {
+    const values = [luminance(a), luminance(b)].sort((x, y) => x - y);
+    return (values[1] + .05) / (values[0] + .05);
+  };
+  const brandBackground = color => {
+    const channels = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16));
+    for (let factor = 255; factor >= 0; factor--) {
+      const candidate = "#" + channels.map(c => Math.floor(c * factor / 255).toString(16).padStart(2, "0")).join("");
+      if (contrast(candidate, "#ffffff") >= 4.7) return candidate;
+    }
   };
   const sync = () => {
     const colors = {};
     inputs.forEach(input => { if (hex.test(input.value)) colors[input.dataset.themeColor] = input.value; });
     if (colors.primary) {
+      const solid = brandBackground(colors.primary);
       const header = preview.querySelector(".identity-preview-header");
-      header.style.background = colors.primary;
-      header.style.color = textOn(colors.primary);
+      header.style.background = solid;
+      header.style.color = "#ffffff";
+      const selection = preview.querySelector(".identity-preview-selection");
+      const selected = colors.surface && contrast(solid, colors.surface) < 3 ? textOn(colors.surface) : solid;
+      selection.style.background = selected;
+      selection.style.color = textOn(selected);
+      const footer = preview.querySelector(".identity-preview-footer");
+      const footerColor = colors.background && contrast(solid, colors.background) < 3 ? textOn(colors.background) : solid;
+      footer.style.background = footerColor;
+      footer.style.color = textOn(footerColor);
     }
     if (colors.background) preview.style.background = colors.background;
     const body = preview.querySelector(".identity-preview-body");
     if (colors.surface) {
       body.style.background = colors.surface;
       body.querySelectorAll("h3,p").forEach(el => { el.style.color = textOn(colors.surface); });
+      if (colors.primary) {
+        body.querySelector(".identity-preview-link").style.color = contrast(colors.primary, colors.surface) >= 4.5 ? colors.primary : textOn(colors.surface);
+      }
     }
     if (colors.accent) {
       const button = body.querySelector("button");

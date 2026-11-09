@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from plataforma.branding import organization_branding
 from plataforma.forms import IdentidadeOrganizacaoForm
 from plataforma.models import IdentidadeOrganizacao, MembroOrganizacao
-from plataforma.theme import contrast, validate_theme
+from plataforma.theme import brand_background, contrast, validate_theme
 from .base import PortalInstitucionalBase
 
 HOST = "camppg.palaciomental.com.br"
@@ -84,6 +84,25 @@ class TemaFlexivelTests(PortalInstitucionalBase):
             ("tenant_background_color", "tenant_background_text_color"),
         ):
             self.assertGreaterEqual(contrast(branding[color], branding[text]), 4.5)
+
+    def test_brand_colors_remain_readable_with_light_and_dark_surfaces(self):
+        for primary, surface, background in (
+            ("#2C7DB3", "#FFFFFF", "#F3ECDF"),
+            ("#FFFFFF", "#111111", "#111111"),
+            ("#080808", "#080808", "#FFFFFF"),
+            ("#F6E945", "#FFFFFF", "#FFFFFF"),
+        ):
+            with self.subTest(primary=primary, surface=surface, background=background):
+                self.identity.tema = {"primary": primary, "surface": surface, "background": background}
+                branding = organization_branding(self.organization)
+                self.assertEqual(branding["tenant_primary_color"], primary)
+                self.assertGreaterEqual(contrast(branding["tenant_solid_color"], "#FFFFFF"), 4.7)
+                for color, text in (("tenant_selection_color", "tenant_selection_text_color"),
+                                    ("tenant_footer_color", "tenant_footer_text_color")):
+                    self.assertGreaterEqual(contrast(branding[color], branding[text]), 4.5)
+                self.assertGreaterEqual(contrast(branding["tenant_selection_color"], surface), 3)
+                self.assertGreaterEqual(contrast(branding["tenant_footer_color"], background), 3)
+        self.assertEqual(brand_background("#112233"), "#112233")
 
     def test_theme_is_applied_to_home_management_and_login(self):
         self.identity.tema = {"primary": "#ABCDEF", "secondary": "#112233"}

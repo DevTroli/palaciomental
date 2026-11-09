@@ -4,7 +4,7 @@ from django.templatetags.static import static
 
 from .navigation import global_home_url
 from .validators import CORES_SEMANTICAS
-from .theme import COLOR_ROLES, HEX_COLOR, contrast, readable_color, text_on
+from .theme import COLOR_ROLES, HEX_COLOR, brand_background, contrast, readable_color, text_on
 
 
 def contrasting_text(color):
@@ -31,8 +31,13 @@ def organization_branding(organization):
             if isinstance(value, str) and HEX_COLOR.fullmatch(value):
                 colors[role] = value.upper()
     primary, accent = colors["primary"], colors["accent"]
-    footer = primary if contrast(primary, colors["background"]) >= 3 else text_on(colors["background"])
+    solid = brand_background(primary)
+    footer = solid if contrast(solid, colors["background"]) >= 3 else text_on(colors["background"])
+    selection = solid if contrast(solid, colors["surface"]) >= 3 else text_on(colors["surface"])
     return {
+        "tenant_solid_color": solid,
+        "tenant_selection_color": selection,
+        "tenant_selection_text_color": text_on(selection),
         "tenant_footer_color": footer,
         "tenant_footer_text_color": text_on(footer),
         "tenant_display_name": getattr(identity, "nome_exibicao", "") or organization.nome,
