@@ -20,6 +20,7 @@ from .models import (
     CollaborationRequest,
     MemberProfile,
     MembroOrganizacao,
+    MembroGrupo,
     Organizacao,
     Project,
     ProjectMember,
@@ -306,6 +307,7 @@ def profile(request):
     meus_projetos = []
     projetos_institucionais = []
     inscricoes = []
+    grupos_ativos = []
 
     if organizacao:
         projetos = (
@@ -343,6 +345,10 @@ def profile(request):
         )
         for inscricao in inscricoes:
             _decorar_projetos([inscricao.project])
+        grupos_ativos = list(MembroGrupo.objects.filter(
+            usuario=request.user, status=MembroGrupo.STATUS_ATIVO,
+            grupo__turma__programa__organizacao=organizacao,
+        ).select_related("grupo__turma__programa").order_by("grupo__nome"))
 
     eventos = []
     if organizacao:
@@ -394,6 +400,7 @@ def profile(request):
             "meus_projetos": meus_projetos,
             "projetos_institucionais": projetos_institucionais,
             "inscricoes": inscricoes,
+            "grupos_ativos": grupos_ativos,
             "total_projetos": len(meus_projetos),
             "total_institucionais": len(projetos_institucionais),
             "total_inscricoes": len(inscricoes),

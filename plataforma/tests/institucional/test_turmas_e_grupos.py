@@ -134,6 +134,15 @@ class TurmasEGruposTests(PortalInstitucionalBase):
         response = self.client.post(reverse("plataforma:institutional_group_request_decide", kwargs={"request_id": solicitacao.pk}), {"acao": "aprovar"}, HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 302)
         self.assertTrue(MembroGrupo.objects.filter(grupo=grupo, usuario=target).exists())
+        self.client.force_login(target)
+        profile = self.client.get(reverse("plataforma:institutional_profile") + "?aba=colaboracoes", HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertContains(profile, "Grupo aberto")
+        self.assertContains(profile, reverse("plataforma:institutional_group_members", args=[grupo.pk]))
+        membership = MembroGrupo.objects.get(grupo=grupo, usuario=target)
+        membership.status = MembroGrupo.STATUS_SUSPENSO
+        membership.save(update_fields=["status"])
+        profile = self.client.get(reverse("plataforma:institutional_profile") + "?aba=colaboracoes", HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertNotContains(profile, "Grupo aberto")
 
     def test_ineligible_member_does_not_see_invite_only_class(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)

@@ -292,6 +292,11 @@
         data-profile-panel="colaboracoes"
         {% if aba_ativa != 'colaboracoes' %}hidden{% endif %}>
 
+        <section class="camp-profile-group" aria-labelledby="meus-grupos-titulo">
+          <div class="camp-profile-group-head"><h2 id="meus-grupos-titulo"><span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-teams"/></svg></span>Meus grupos</h2></div>
+          {% if grupos_ativos %}<div class="camp-activity-grid">{% for participacao in grupos_ativos %}<article class="camp-activity-card"><div class="camp-activity-content"><h3><a href="{% url 'plataforma:institutional_group_members' participacao.grupo.pk %}">{{ participacao.grupo.nome }}</a></h3><p>{{ participacao.grupo.turma.programa.nome }} · {{ participacao.grupo.turma.nome }}</p><span>{% if participacao.representante %}Representante{% else %}Participante{% endif %}</span></div></article>{% endfor %}</div>{% else %}<p>Você ainda não participa de nenhum grupo nesta organização.</p>{% endif %}
+        </section>
+
         <section class="camp-profile-group" aria-labelledby="colaboracoes-titulo">
           <div class="camp-profile-group-head">
             <h2 id="colaboracoes-titulo">
