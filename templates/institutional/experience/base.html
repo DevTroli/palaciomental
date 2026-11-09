@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{% static 'css/institutional-experience.css' %}">
   {% include "institutional/partials/theme.html" %}
   <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}?v=20261109-5">
-  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-9">
+  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-13">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="camp-body tenant-shell">
@@ -193,7 +193,7 @@
       <footer class="camp-footer tenant-footer tenant-workspace-footer">
         <a class="tenant-footer-platform" href="{{ global_home_url }}" aria-label="Ir para a página inicial do Palácio Mental"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span><strong>Palácio Mental</strong><small>Dê continuidade às suas ideias.</small></span></a>
         <div class="tenant-footer-context">
-          <strong>{{ tenant_display_name }}</strong><span>{{ tenant_footer_description }}</span>
+          <strong>{{ tenant_display_name }}</strong><span>{{ tenant_slogan }}</span>
           {% if tenant_contact_email or tenant_social_links %}<div class="tenant-footer-contacts" aria-label="Contato e redes sociais de {{ tenant_display_name }}">
             {% if tenant_contact_email %}<a class="tenant-footer-contact" href="mailto:{{ tenant_contact_email|urlencode }}"><span class="tenant-footer-contact-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-mail"/></svg></span><span>{{ tenant_contact_email }}</span></a>{% endif %}
             {% for social in tenant_social_links %}<a class="tenant-footer-contact" href="{{ social.url }}" aria-label="{{ social.label }} de {{ tenant_display_name }}"><span class="tenant-footer-contact-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-{{ social.icon }}"/></svg></span><span>{{ social.label }}</span></a>{% endfor %}

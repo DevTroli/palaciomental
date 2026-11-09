@@ -1,21 +1,21 @@
 {% extends "institutional/experience/base.html" %}
 {% load static %}
 {% block title %}{{ tenant_display_name }} · início{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-home.css' %}?v=20261109-4">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-home.css' %}?v=20261109-10">{% endblock %}
 {% block content %}
 <div class="tenant-home">
   <section class="home-community" aria-labelledby="community-title">
     <div class="home-cover{% if not tenant_cover_url %} tenant-cover--empty{% endif %}">
       {% if tenant_cover_url %}<img src="{{ tenant_cover_url }}" alt="" fetchpriority="high">{% endif %}
-      <span class="home-cover-label"><span aria-hidden="true"></span> Ambiente institucional</span>
     </div>
     <div class="home-community-body">
       <div class="home-community-identity">
         <div class="home-community-logo">{% if tenant_logo_url %}<img src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% else %}<span aria-hidden="true">{{ tenant_display_name|first|upper }}</span>{% endif %}</div>
         <div class="home-introduction">
-          <p class="home-eyebrow">Ideias que conectam pessoas</p>
+          <p class="home-eyebrow">{{ tenant_slogan }}</p>
           <h1 id="community-title">{{ tenant_display_name }}</h1>
           <p class="home-presentation">{% if tenant_presentation %}{{ tenant_presentation|linebreaksbr }}{% else %}Um espaço para compartilhar ideias, desenvolver projetos e construir em comunidade.{% endif %}</p>
+          {% if tenant_important_links %}<div class="home-important-links"><p class="home-eyebrow">Links importantes</p><div class="home-important-list">{% for link in tenant_important_links %}<a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"><span>{{ link.title }}</span><span aria-hidden="true">↗</span><span class="home-external-note">Abre em nova aba</span></a>{% endfor %}</div></div>{% endif %}
           <a class="home-discover" href="#projetos-do-ambiente">Explore os projetos abaixo <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
       </div>
