@@ -435,8 +435,8 @@
 .camp-sidebar-brand-text span { color: #8ba1bd; font-size: 10.5px; }
 
 /* Estado recolhido (mini sidebar) */
-.camp-sidebar-brand { justify-content: center; padding-inline: 0; }
-.camp-sidebar-brand-text { display: none; }
+:is(.camp-sidebar-brand){ justify-content: center; padding-inline: 0; }
+:is(.camp-sidebar-brand-text){ display: none; }
 .camp-nav-link { justify-content: center; gap: 0; padding-inline: 0; }
 .camp-nav-link > span { display: none; }
 .camp-sidebar-foot { display: none; }
@@ -465,7 +465,7 @@
 
 .camp-nav { display: flex; flex-direction: column; gap: 3px; }
 
-.camp-nav-link {
+:is(.camp-nav-link){
   display: flex;
   align-items: center;
   gap: 12px;
@@ -498,7 +498,7 @@
   text-align: center;
 }
 
-.camp-sidebar-foot {
+:is(.camp-sidebar-foot){
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -1152,19 +1152,19 @@
 .camp-history-back:hover { border-color: var(--camp-blue); color: var(--camp-blue); }
 
 @media (max-width: 900px) {
-  .camp-history-layout { grid-template-columns: 1fr; }
-  .camp-history-side { position: static; }
-  .camp-history-hero { padding: 28px; }
-  .camp-history-hero-mark { width: 116px; height: 116px; }
+  :is(.camp-history-layout):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-history-side):where(*):where(*){ position: static; }
+  :is(.camp-history-hero):where(*):where(*){ padding: 28px; }
+  :is(.camp-history-hero-mark):where(*):where(*){ width: 116px; height: 116px; }
 }
 
 @media (max-width: 720px) {
-  .camp-history-page { padding-top: 20px; }
-  .camp-history-hero { flex-direction: column; align-items: flex-start; padding: 22px; border-radius: 18px; }
-  .camp-history-hero-mark { width: 92px; height: 92px; align-self: flex-start; }
-  .camp-history-block { padding: 20px; }
-  .camp-history-timeline li { flex-direction: column; gap: 4px; }
-  .camp-history-timeline-year { min-width: 0; }
+  :is(.camp-history-page):where(*):where(*){ padding-top: 20px; }
+  :is(.camp-history-hero):where(*):where(*):where(*){ flex-direction: column; align-items: flex-start; padding: 22px; border-radius: 18px; }
+  :is(.camp-history-hero-mark):where(*):where(*):where(*){ width: 92px; height: 92px; align-self: flex-start; }
+  :is(.camp-history-block):where(*):where(*){ padding: 20px; }
+  :is(.camp-history-timeline li):where(*):where(*){ flex-direction: column; gap: 4px; }
+  :is(.camp-history-timeline-year):where(*):where(*){ min-width: 0; }
 }
 
 .camp-about-quick { display: flex; flex-direction: column; min-width: 0; }
@@ -1398,13 +1398,13 @@
 }
 
 @media (max-width: 1100px) {
-  .camp-home-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .camp-home-panel--ranking { grid-column: 1 / -1; }
+  :is(.camp-home-columns):where(*):where(*){ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :is(.camp-home-panel--ranking):where(*):where(*){ grid-column: 1 / -1; }
 }
 
 @media (max-width: 700px) {
-  .camp-home-columns { grid-template-columns: 1fr; }
-  .camp-home-panel--ranking { grid-column: auto; }
+  :is(.camp-home-columns):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-home-panel--ranking):where(*):where(*):where(*){ grid-column: auto; }
 }
 
 /* ── Grade de conteúdo ──────────────────────────────────────────────── */
@@ -1445,8 +1445,8 @@
   letter-spacing: -.01em;
 }
 
-.camp-block-title,
-.camp-panel-title {
+:is(.camp-block-title,
+.camp-panel-title){
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1467,7 +1467,7 @@
 .camp-panel-title .camp-block-icon,
 .camp-panel-title .camp-block-icon .camp-icon { width: 16px; height: 16px; }
 
-.camp-panel-title { font-size: 14px; }
+:is(.camp-panel-title){ font-size: 14px; }
 
 /* ── Projetos em destaque ───────────────────────────────────────────── */
 .camp-featured-grid {
@@ -1938,7 +1938,7 @@
 .camp-footer a:hover { color: var(--camp-blue); }
 
 /* ── Mensagens e toast ──────────────────────────────────────────────── */
-.camp-messages { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+:is(.camp-messages){ display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 
 .camp-message {
   display: flex;
@@ -2342,7 +2342,7 @@
 .camp-profile-head::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 0 auto;
   height: 50%;
   border-radius: inherit;
   background:
@@ -2797,26 +2797,26 @@ img.camp-profile-avatar-xl {
 .camp-settings-avatar small { color: var(--camp-muted); font-size: 11px; line-height: 1.4; }
 
 @media (max-width: 1100px) {
-  .camp-profile-head { grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); gap: 20px; padding: 24px; }
-  .camp-profile-avatar-xl { width: 96px; height: 96px; font-size: 38px; }
+  :is(.camp-profile-head):where(*):where(*){ grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); gap: 20px; padding: 24px; }
+  :is(.camp-profile-avatar-xl):where(*):where(*){ width: 96px; height: 96px; font-size: 38px; }
 }
 
 @media (max-width: 900px) {
-  .camp-profile-head { grid-template-columns: 1fr; }
-  .camp-profile-head::before { height: 100%; }
-  .camp-profile-calendar { width: 100%; }
+  :is(.camp-profile-head):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-profile-head::before):where(*):where(*){ height: 100%; }
+  :is(.camp-profile-calendar):where(*):where(*){ width: 100%; }
 }
 
 @media (max-width: 720px) {
-  .camp-profile-page { padding-top: 20px; }
-  .camp-profile-head { padding: 20px; border-radius: 18px; }
-  .camp-profile-id { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .camp-profile-avatar-xl { width: 84px; height: 84px; font-size: 32px; }
-  .camp-profile-name { font-size: 30px; }
-  .camp-profile-tabs { width: 100%; justify-content: flex-start; border-radius: 16px; flex-wrap: nowrap; overflow-x: auto; }
-  .camp-profile-tab { padding: 10px 14px; font-size: 11.5px; }
-  .camp-settings-grid { grid-template-columns: 1fr; }
-  .camp-settings-card { padding: 20px; }
+  :is(.camp-profile-page):where(*):where(*){ padding-top: 20px; }
+  :is(.camp-profile-head):where(*):where(*):where(*):where(*){ padding: 20px; border-radius: 18px; }
+  :is(.camp-profile-id):where(*):where(*){ flex-direction: column; align-items: flex-start; gap: 16px; }
+  :is(.camp-profile-avatar-xl):where(*):where(*):where(*){ width: 84px; height: 84px; font-size: 32px; }
+  :is(.camp-profile-name):where(*):where(*){ font-size: 30px; }
+  :is(.camp-profile-tabs):where(*):where(*){ width: 100%; justify-content: flex-start; border-radius: 16px; flex-wrap: nowrap; overflow-x: auto; }
+  :is(.camp-profile-tab):where(*):where(*){ padding: 10px 14px; font-size: 11.5px; }
+  :is(.camp-settings-grid):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-settings-card):where(*):where(*){ padding: 20px; }
 }
 
 /* Botões extras */
@@ -3779,13 +3779,13 @@ img.camp-profile-avatar-xl {
 .camp-manage-person span { color: var(--camp-muted); font-size: 10.5px; font-weight: 600; }
 
 @media (max-width: 980px) {
-  .camp-manage-people { grid-template-columns: 1fr; }
+  :is(.camp-manage-people):where(*):where(*){ grid-template-columns: 1fr; }
 }
 
 @media (max-width: 720px) {
-  .camp-inbox-hero { flex-direction: column; align-items: flex-start; }
-  .camp-inbox-summary { align-items: flex-start; text-align: left; }
-  .camp-inbox-item { flex-direction: column; }
+  :is(.camp-inbox-hero):where(*):where(*){ flex-direction: column; align-items: flex-start; }
+  :is(.camp-inbox-summary):where(*):where(*){ align-items: flex-start; text-align: left; }
+  :is(.camp-inbox-item):where(*):where(*){ flex-direction: column; }
   .camp-manage-table th:nth-child(2),
   .camp-manage-table td:nth-child(2) { display: none; }
 }
@@ -3797,31 +3797,31 @@ img.camp-profile-avatar-xl {
   .camp-block { padding: 0 13px 0 20px; }
 
   /* O rodapé do menu respira acima da borda inferior, como na referência. */
-  .camp-sidebar-foot { margin-bottom: 43px; }
+  :is(.camp-sidebar-foot):where(*):where(*){ margin-bottom: 43px; }
 }
 
 @media (max-width: 1200px) {
-  .camp-content-grid { grid-template-columns: minmax(0, 1fr) 280px; }
-  .camp-hero-tags { display: none; }
-  .camp-hero-copy { max-width: 640px; }
+  :is(.camp-content-grid):where(*):where(*){ grid-template-columns: minmax(0, 1fr) 280px; }
+  :is(.camp-hero-tags):where(*):where(*){ display: none; }
+  :is(.camp-hero-copy):where(*):where(*){ max-width: 640px; }
 }
 
 @media (max-width: 1060px) {
-  .camp-content-grid { grid-template-columns: 1fr; }
-  .camp-about { grid-template-columns: 1fr; }
-  .camp-secondary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-  .camp-quote { grid-column: 1 / -1; }
-  .camp-hero-network { width: min(52%, 460px); }
+  :is(.camp-content-grid):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-about):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-secondary):where(*):where(*){ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  :is(.camp-quote):where(*):where(*){ grid-column: 1 / -1; }
+  :is(.camp-hero-network):where(*):where(*){ width: min(52%, 460px); }
 }
 
 @media (max-width: 980px) {
-  .camp-featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :is(.camp-featured-grid):where(*):where(*){ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
-  :root { --camp-topbar-h: 70px; }
+  :is(:root):where(*):where(*){ --camp-topbar-h: 70px; }
 
-  .camp-app { grid-template-columns: 1fr; }
+  :is(.camp-app):where(*):where(*){ grid-template-columns: 1fr; }
 
   .camp-sidebar,
   .camp-sidebar:hover,
@@ -3868,19 +3868,19 @@ img.camp-profile-avatar-xl {
   .camp-sidebar:hover .camp-sidebar-foot,
   .camp-sidebar:focus-within .camp-sidebar-foot { display: flex; }
 
-  .camp-menu-toggle { display: grid; }
-  .camp-account-text { display: none; }
-  .camp-main { padding-top: 20px; }
-  .camp-hero { min-height: 210px; padding: 28px 30px; }
-  .camp-hero-network { width: 48%; }
+  :is(.camp-menu-toggle):where(*):where(*){ display: grid; }
+  :is(.camp-account-text):where(*):where(*){ display: none; }
+  :is(.camp-main):where(*):where(*){ padding-top: 20px; }
+  :is(.camp-hero):where(*):where(*){ min-height: 210px; padding: 28px 30px; }
+  :is(.camp-hero-network):where(*):where(*):where(*){ width: 48%; }
 }
 
 @media (max-width: 720px) {
-  .camp-hero-art { display: none; }
-  .camp-hero { padding: 26px 24px; }
-  .camp-hero-title { font-size: 22px; }
-  .camp-hero--emblem .camp-hero-copy { padding-left: 0; padding-top: 58px; }
-  .camp-hero-emblem {
+  :is(.camp-hero-art):where(*):where(*){ display: none; }
+  :is(.camp-hero):where(*):where(*):where(*){ padding: 26px 24px; }
+  :is(.camp-hero-title):where(*):where(*){ font-size: 22px; }
+  :is(.camp-hero--emblem .camp-hero-copy):where(*):where(*){ padding-left: 0; padding-top: 58px; }
+  :is(.camp-hero-emblem):where(*):where(*){
     top: 24px;
     left: 24px;
     width: 54px;
@@ -3889,20 +3889,20 @@ img.camp-profile-avatar-xl {
     transform: none;
     box-shadow: 0 8px 18px rgba(3, 18, 36, .4), 0 0 0 3px rgba(255, 255, 255, .16);
   }
-  .camp-history { padding: 20px; }
-  .camp-featured-grid { grid-template-columns: 1fr; }
-  .camp-secondary { grid-template-columns: 1fr; }
-  .camp-quote { grid-column: auto; }
-  .camp-cta { flex-direction: column; align-items: flex-start; }
+  :is(.camp-history):where(*):where(*){ padding: 20px; }
+  :is(.camp-featured-grid):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-secondary):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-quote):where(*):where(*):where(*){ grid-column: auto; }
+  :is(.camp-cta):where(*):where(*){ flex-direction: column; align-items: flex-start; }
 
-  .camp-myproject {
+  :is(.camp-myproject):where(*):where(*){
     grid-template-columns: 40px minmax(0, 1fr);
     align-items: start;
   }
 
-  .camp-myproject-icon { width: 40px; height: 40px; }
+  :is(.camp-myproject-icon):where(*):where(*){ width: 40px; height: 40px; }
 
-  .camp-myproject-progress {
+  :is(.camp-myproject-progress):where(*):where(*){
     grid-column: 2;
     flex-direction: row;
     align-items: center;
@@ -3910,11 +3910,11 @@ img.camp-profile-avatar-xl {
     width: 100%;
   }
 
-  .camp-progress-track { flex: 1; max-width: 180px; }
-  .camp-footer { flex-direction: column; align-items: flex-start; }
+  :is(.camp-progress-track):where(*):where(*){ flex: 1; max-width: 180px; }
+  :is(.camp-footer):where(*):where(*){ flex-direction: column; align-items: flex-start; }
 
-  .camp-profile-hero { flex-direction: column; align-items: flex-start; }
-  .camp-profile-identity {
+  :is(.camp-profile-hero):where(*):where(*){ flex-direction: column; align-items: flex-start; }
+  :is(.camp-profile-identity):where(*):where(*){
     width: 100%;
     min-width: 0;
     flex-direction: row;
@@ -3922,63 +3922,63 @@ img.camp-profile-avatar-xl {
     justify-content: flex-start;
     text-align: left;
   }
-  .camp-profile-avatar { width: 52px; height: 52px; margin-bottom: 0; }
-  .camp-profile-role { margin-top: 0; }
-  .camp-stats { grid-template-columns: 1fr; }
-  .camp-own-card { flex-direction: column; }
-  .camp-own-actions { flex-direction: row; width: 100%; }
-  .camp-own-actions form { flex: 1; }
-  .camp-own-actions .camp-btn { width: 100%; justify-content: center; }
-  .camp-form-grid { grid-template-columns: 1fr; }
-  .camp-field--full { grid-column: auto; }
-  .camp-form { padding: 20px; }
+  :is(.camp-profile-avatar):where(*):where(*){ width: 52px; height: 52px; margin-bottom: 0; }
+  :is(.camp-profile-role):where(*):where(*){ margin-top: 0; }
+  :is(.camp-stats):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-own-card):where(*):where(*){ flex-direction: column; }
+  :is(.camp-own-actions):where(*):where(*){ flex-direction: row; width: 100%; }
+  :is(.camp-own-actions form):where(*):where(*){ flex: 1; }
+  :is(.camp-own-actions .camp-btn):where(*):where(*){ width: 100%; justify-content: center; }
+  :is(.camp-form-grid):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-field--full):where(*):where(*){ grid-column: auto; }
+  :is(.camp-form):where(*):where(*){ padding: 20px; }
 }
 
 @media (max-width: 520px) {
-  .camp-topbar { gap: 10px; padding: 0 14px; }
-  .camp-brand { gap: 8px; }
-  .camp-brand-logo { height: 42px; }
-  .camp-brand-name { font-size: 16px; letter-spacing: .02em; }
-  .camp-topbar-actions { gap: 1px; }
-  .camp-icon-btn { width: 36px; height: 36px; }
-  .camp-account-trigger { padding: 3px; gap: 4px; }
-  .camp-account-chevron { display: none; }
-  .camp-account-avatar { width: 36px; height: 36px; }
-  .camp-topbar-search { right: 12px; }
-  .camp-hero-title { font-size: 20px; }
-  .camp-hero-subtitle { font-size: 12.5px; }
-  .camp-tabs { gap: 14px; overflow-x: auto; }
-  .camp-tab { font-size: 12px; white-space: nowrap; }
-  .camp-profile { gap: 20px; padding-top: 20px; }
-  .camp-form-wrap { margin-top: 20px; }
-  .camp-form-actions { flex-direction: column-reverse; align-items: stretch; }
-  .camp-form-actions .camp-btn { justify-content: center; }
+  :is(.camp-topbar):where(*):where(*){ gap: 10px; padding: 0 14px; }
+  :is(.camp-brand):where(*):where(*){ gap: 8px; }
+  :is(.camp-brand-logo):where(*):where(*){ height: 42px; }
+  :is(.camp-brand-name):where(*):where(*){ font-size: 16px; letter-spacing: .02em; }
+  :is(.camp-topbar-actions):where(*):where(*){ gap: 1px; }
+  :is(.camp-icon-btn):where(*):where(*){ width: 36px; height: 36px; }
+  :is(.camp-account-trigger):where(*):where(*){ padding: 3px; gap: 4px; }
+  :is(.camp-account-chevron):where(*):where(*){ display: none; }
+  :is(.camp-account-avatar):where(*):where(*){ width: 36px; height: 36px; }
+  :is(.camp-topbar-search):where(*):where(*){ right: 12px; }
+  :is(.camp-hero-title):where(*):where(*):where(*){ font-size: 20px; }
+  :is(.camp-hero-subtitle):where(*):where(*){ font-size: 12.5px; }
+  :is(.camp-tabs):where(*):where(*){ gap: 14px; overflow-x: auto; }
+  :is(.camp-tab):where(*):where(*){ font-size: 12px; white-space: nowrap; }
+  :is(.camp-profile):where(*):where(*){ gap: 20px; padding-top: 20px; }
+  :is(.camp-form-wrap):where(*):where(*){ margin-top: 20px; }
+  :is(.camp-form-actions):where(*):where(*){ flex-direction: column-reverse; align-items: stretch; }
+  :is(.camp-form-actions .camp-btn):where(*):where(*){ justify-content: center; }
 }
 
 @media (max-width: 1200px) {
-  .camp-calendar-layout { grid-template-columns: minmax(0, 1fr) 300px; }
+  :is(.camp-calendar-layout):where(*):where(*){ grid-template-columns: minmax(0, 1fr) 300px; }
 }
 
 @media (max-width: 1060px) {
-  .camp-calendar-layout { grid-template-columns: 1fr; }
-  .camp-calendar-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :is(.camp-calendar-layout):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-calendar-side):where(*):where(*){ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 720px) {
-  .camp-calendar-hero { flex-direction: column; align-items: flex-start; }
-  .camp-calendar-hero-actions { align-items: flex-start; width: 100%; }
-  .camp-calendar-table { display: none; }
-  .camp-agenda { display: block; }
-  .camp-calendar-side { grid-template-columns: 1fr; }
-  .camp-calendar-legend { display: none; }
+  :is(.camp-calendar-hero):where(*):where(*){ flex-direction: column; align-items: flex-start; }
+  :is(.camp-calendar-hero-actions):where(*):where(*){ align-items: flex-start; width: 100%; }
+  :is(.camp-calendar-table):where(*):where(*){ display: none; }
+  :is(.camp-agenda):where(*):where(*){ display: block; }
+  :is(.camp-calendar-side):where(*):where(*):where(*){ grid-template-columns: 1fr; }
+  :is(.camp-calendar-legend):where(*):where(*){ display: none; }
 }
 
 @media (max-width: 520px) {
   .camp-calendar-card,
   .camp-calendar-panel { padding: 14px; }
-  .camp-calendar-page { gap: 20px; padding-top: 20px; }
-  .camp-calendar-month { min-width: 120px; font-size: 12px; }
-  .camp-calendar-nav-btn { width: 28px; height: 28px; }
+  :is(.camp-calendar-page):where(*):where(*){ gap: 20px; padding-top: 20px; }
+  :is(.camp-calendar-month):where(*):where(*){ min-width: 120px; font-size: 12px; }
+  :is(.camp-calendar-nav-btn):where(*):where(*){ width: 28px; height: 28px; }
 }
 
 @media (max-width: 980px) {
@@ -3987,18 +3987,18 @@ img.camp-profile-avatar-xl {
 }
 
 @media (max-width: 720px) {
-  .camp-explore-search { flex-direction: column; align-items: stretch; }
-  .camp-explore-search select { width: 100%; max-width: none; }
-  .camp-explore-search .camp-btn { width: 100%; }
-  .camp-explore-cta { flex-direction: column; align-items: flex-start; }
+  :is(.camp-explore-search):where(*):where(*){ flex-direction: column; align-items: stretch; }
+  :is(.camp-explore-search select):where(*):where(*){ width: 100%; max-width: none; }
+  :is(.camp-explore-search .camp-btn):where(*):where(*){ width: 100%; }
+  :is(.camp-explore-cta):where(*):where(*){ flex-direction: column; align-items: flex-start; }
   .camp-explore-cta .camp-btn { width: 100%; justify-content: center; }
 }
 
 @media (max-width: 520px) {
-  .camp-explore-page { gap: 18px; padding-top: 20px; }
-  .camp-explore-hero { padding: 26px 22px; }
-  .camp-person { flex-direction: column; }
-  .camp-person-head { flex-direction: column; gap: 4px; }
+  :is(.camp-explore-page):where(*):where(*){ gap: 18px; padding-top: 20px; }
+  :is(.camp-explore-hero):where(*):where(*){ padding: 26px 22px; }
+  :is(.camp-person):where(*):where(*){ flex-direction: column; }
+  :is(.camp-person-head):where(*):where(*){ flex-direction: column; gap: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

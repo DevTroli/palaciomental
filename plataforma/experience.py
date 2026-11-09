@@ -261,6 +261,95 @@ def guidance(request):
     return render(request, "institutional/experience/guidance.html", _contexto_base(request))
 
 
+def _processar_atualizacao_perfil(request, perfil_usuario):
+    form_perfil = PerfilInstitucionalForm(instance=request.user)
+    form_senha = SenhaInstitucionalForm(request.user)
+    if request.method != "POST":
+        return form_perfil, form_senha, None
+    if request.POST.get("form") == "senha":
+        form_senha = SenhaInstitucionalForm(request.user, request.POST)
+        if form_senha.is_valid():
+            form_senha.save()
+            update_session_auth_hash(request, form_senha.user)
+            messages.success(request, "Senha alterada com sucesso.")
+            return form_perfil, form_senha, redirect(
+                f"{reverse('plataforma:institutional_profile')}?aba=configuracoes"
+            )
+        return form_perfil, form_senha, None
+    form_perfil = PerfilInstitucionalForm(request.POST, request.FILES, instance=request.user)
+    if form_perfil.is_valid():
+        form_perfil.save()
+        if form_perfil.cleaned_data.get("remover_avatar"):
+            if perfil_usuario.avatar:
+                perfil_usuario.avatar.delete(save=False)
+            perfil_usuario.avatar = ""
+        elif form_perfil.cleaned_data.get("avatar"):
+            if perfil_usuario.avatar:
+                perfil_usuario.avatar.delete(save=False)
+            perfil_usuario.avatar = form_perfil.cleaned_data["avatar"]
+        perfil_usuario.save()
+        messages.success(request, "Dados do perfil atualizados.")
+        return form_perfil, form_senha, redirect(
+            f"{reverse('plataforma:institutional_profile')}?aba=configuracoes"
+        )
+    return form_perfil, form_senha, None
+
+
+def _dados_projetos_perfil(organizacao, usuario):
+    dados = {"meus_projetos": [], "projetos_institucionais": [], "inscricoes": [], "grupos_ativos": []}
+    if not organizacao:
+        return dados
+    projetos = Project.objects.filter(organizacao=organizacao).select_related("owner").annotate(
+        total_membros=Count("memberships", distinct=True), total_estrelas=Count("votes", distinct=True)
+    )
+    dados["meus_projetos"] = _decorar_projetos(list(projetos.filter(owner=usuario).order_by("-updated_at")))
+    dados["projetos_institucionais"] = _decorar_projetos(list(
+        projetos.filter(visibility=Project.VISIBILITY_PUBLIC)
+        .exclude(Q(owner=usuario) | Q(memberships__user=usuario)).distinct()
+        .order_by("-updated_at")[:6]
+    ))
+    dados["inscricoes"] = list(
+        ProjectMember.objects.filter(
+            project__visibility=Project.VISIBILITY_PUBLIC, user=usuario, project__organizacao=organizacao
+        ).exclude(project__owner=usuario).select_related("project", "project__owner").order_by("-joined_at")
+    )
+    for inscricao in dados["inscricoes"]:
+        _decorar_projetos([inscricao.project])
+    dados["grupos_ativos"] = list(MembroGrupo.objects.filter(
+        usuario=usuario, status=MembroGrupo.STATUS_ATIVO,
+        grupo__turma__programa__organizacao=organizacao,
+    ).select_related("grupo__turma__programa").order_by("grupo__nome"))
+    return dados
+
+
+def _dados_calendario_perfil(organizacao, usuario, request, ano, mes, hoje):
+    eventos = list(EventoCalendario.objects.filter(
+        organizacao=organizacao, aluno=usuario,
+    ).select_related("projeto")) if organizacao else []
+    eventos = visible_events(eventos, request)
+    eventos_por_dia = {}
+    for evento in eventos:
+        eventos_por_dia.setdefault(evento.data, []).append(evento)
+    semanas = []
+    for semana in pycalendar.Calendar(firstweekday=0).monthdatescalendar(ano, mes):
+        semanas.append([
+            {
+                "data": dia, "numero": dia.day, "fora_do_mes": dia.month != mes,
+                "hoje": dia == hoje, "eventos": sorted(eventos_por_dia.get(dia, []), key=_chave_ordenacao),
+            }
+            for dia in semana
+        ])
+    proximas = sorted([evento for evento in eventos if evento.data >= hoje], key=_chave_ordenacao)[:3]
+    primeiro = date(ano, mes, 1)
+    anterior = (primeiro - timedelta(days=1)).replace(day=1)
+    proximo = (primeiro + timedelta(days=32)).replace(day=1)
+    return {
+        "semanas": semanas, "proximas_atividades": proximas,
+        "ano_anterior": anterior.year, "mes_anterior": anterior.month,
+        "ano_proximo": proximo.year, "mes_proximo": proximo.month,
+    }
+
+
 @tenant_required
 @login_required
 def profile(request):
@@ -268,173 +357,35 @@ def profile(request):
     context = _contexto_base(request)
     organizacao = context["organizacao"]
     hoje = date.today()
-
     aba_ativa = request.GET.get("aba") or "projetos"
     if aba_ativa not in {"projetos", "colaboracoes", "configuracoes"}:
         aba_ativa = "projetos"
-
     try:
         ano = int(request.GET.get("ano", hoje.year))
-        if not 2 <= ano <= 9998:
-            raise ValueError
         mes = int(request.GET.get("mes", hoje.month))
         primeiro_dia = date(ano, mes, 1)
+        if not 2 <= ano <= 9998:
+            raise ValueError
     except (TypeError, ValueError):
         ano, mes = hoje.year, hoje.month
         primeiro_dia = date(ano, mes, 1)
-
-    form_perfil = PerfilInstitucionalForm(instance=request.user)
-    form_senha = SenhaInstitucionalForm(request.user)
     perfil_usuario, _ = MemberProfile.objects.get_or_create(user=request.user)
-
-    if request.method == "POST":
-        aba_ativa = "configuracoes"
-        if request.POST.get("form") == "senha":
-            form_senha = SenhaInstitucionalForm(request.user, request.POST)
-            if form_senha.is_valid():
-                form_senha.save()
-                update_session_auth_hash(request, form_senha.user)
-                messages.success(request, "Senha alterada com sucesso.")
-                return redirect(f"{reverse('plataforma:institutional_profile')}?aba=configuracoes")
-        else:
-            form_perfil = PerfilInstitucionalForm(
-                request.POST,
-                request.FILES,
-                instance=request.user,
-            )
-            if form_perfil.is_valid():
-                form_perfil.save()
-                if form_perfil.cleaned_data.get("remover_avatar"):
-                    if perfil_usuario.avatar:
-                        perfil_usuario.avatar.delete(save=False)
-                    perfil_usuario.avatar = ""
-                elif form_perfil.cleaned_data.get("avatar"):
-                    if perfil_usuario.avatar:
-                        perfil_usuario.avatar.delete(save=False)
-                    perfil_usuario.avatar = form_perfil.cleaned_data["avatar"]
-                perfil_usuario.save()
-                messages.success(request, "Dados do perfil atualizados.")
-                return redirect(f"{reverse('plataforma:institutional_profile')}?aba=configuracoes")
-
-    meus_projetos = []
-    projetos_institucionais = []
-    inscricoes = []
-    grupos_ativos = []
-
-    if organizacao:
-        projetos = (
-            Project.objects.filter(organizacao=organizacao)
-            .select_related("owner")
-            .annotate(
-                total_membros=Count("memberships", distinct=True),
-                total_estrelas=Count("votes", distinct=True),
-            )
-        )
-        meus_projetos = _decorar_projetos(
-            list(
-                projetos.filter(owner=request.user).order_by("-updated_at")
-            )
-        )
-        projetos_institucionais = _decorar_projetos(
-            list(
-                projetos.filter(visibility=Project.VISIBILITY_PUBLIC)
-                .exclude(
-                    Q(owner=request.user) | Q(memberships__user=request.user)
-                )
-                .distinct()
-                .order_by("-updated_at")[:6]
-            )
-        )
-        inscricoes = list(
-            ProjectMember.objects.filter(
-                project__visibility=Project.VISIBILITY_PUBLIC,
-                user=request.user,
-                project__organizacao=organizacao,
-            )
-            .exclude(project__owner=request.user)
-            .select_related("project", "project__owner")
-            .order_by("-joined_at")
-        )
-        for inscricao in inscricoes:
-            _decorar_projetos([inscricao.project])
-        grupos_ativos = list(MembroGrupo.objects.filter(
-            usuario=request.user, status=MembroGrupo.STATUS_ATIVO,
-            grupo__turma__programa__organizacao=organizacao,
-        ).select_related("grupo__turma__programa").order_by("grupo__nome"))
-
-    eventos = []
-    if organizacao:
-        eventos = list(
-            EventoCalendario.objects.filter(
-                organizacao=organizacao,
-                aluno=request.user,
-            ).select_related("projeto")
-        )
-
-    eventos = visible_events(eventos, request)
-    eventos_por_dia = {}
-    for evento in eventos:
-        eventos_por_dia.setdefault(evento.data, []).append(evento)
-
-    semanas = []
-    for semana in pycalendar.Calendar(firstweekday=0).monthdatescalendar(ano, mes):
-        dias = []
-        for dia in semana:
-            dias.append(
-                {
-                    "data": dia,
-                    "numero": dia.day,
-                    "fora_do_mes": dia.month != mes,
-                    "hoje": dia == hoje,
-                    "eventos": sorted(
-                        eventos_por_dia.get(dia, []),
-                        key=_chave_ordenacao,
-                    ),
-                }
-            )
-        semanas.append(dias)
-
-    proximas_atividades = sorted(
-        [evento for evento in eventos if evento.data >= hoje],
-        key=_chave_ordenacao,
-    )[:3]
-
-    anterior = (primeiro_dia - timedelta(days=1)).replace(day=1)
-    proximo = (primeiro_dia + timedelta(days=32)).replace(day=1)
-
-    context.update(
-        {
-            "nav_ativo": "perfil",
-            "aba_ativa": aba_ativa,
-            "form_perfil": form_perfil,
-            "form_senha": form_senha,
-            "perfil_usuario": perfil_usuario,
-            "meus_projetos": meus_projetos,
-            "projetos_institucionais": projetos_institucionais,
-            "inscricoes": inscricoes,
-            "grupos_ativos": grupos_ativos,
-            "total_projetos": len(meus_projetos),
-            "total_institucionais": len(projetos_institucionais),
-            "total_inscricoes": len(inscricoes),
-            "total_concluidos": sum(
-                1 for projeto in meus_projetos if projeto.status == Project.STATUS_DONE
-            ),
-            "ano": ano,
-            "mes": mes,
-            "mes_nome": MESES[mes - 1],
-            "hoje": hoje,
-            "semanas": semanas,
-            "proximas_atividades": proximas_atividades,
-            "ano_anterior": anterior.year,
-            "mes_anterior": anterior.month,
-            "ano_proximo": proximo.year,
-            "mes_proximo": proximo.month,
-            "inicial_usuario": (context["nome_usuario"] or "?")[:1].upper(),
-        }
-    )
+    form_perfil, form_senha, response = _processar_atualizacao_perfil(request, perfil_usuario)
+    if response:
+        return response
+    dados = _dados_projetos_perfil(organizacao, request.user)
+    calendario = _dados_calendario_perfil(organizacao, request.user, request, ano, mes, hoje)
+    context.update({
+        "nav_ativo": "perfil", "aba_ativa": aba_ativa,
+        "form_perfil": form_perfil, "form_senha": form_senha, "perfil_usuario": perfil_usuario,
+        **dados, "total_projetos": len(dados["meus_projetos"]),
+        "total_institucionais": len(dados["projetos_institucionais"]),
+        "total_inscricoes": len(dados["inscricoes"]),
+        "total_concluidos": sum(p.status == Project.STATUS_DONE for p in dados["meus_projetos"]),
+        "ano": ano, "mes": mes, "mes_nome": MESES[mes - 1], "hoje": hoje,
+        **calendario, "inicial_usuario": (context["nome_usuario"] or "?")[:1].upper(),
+    })
     return render(request, "institutional/experience/profile.html", context)
-
-
 
 def _chave_ordenacao(evento):
     return (evento.data, evento.horario or time.min, evento.titulo)

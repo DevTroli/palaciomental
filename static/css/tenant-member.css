@@ -15,6 +15,6 @@
 .tenant-shell .workspace-projects .project-card p, .tenant-shell .workspace-projects .project-meta, .tenant-shell .workspace-projects .project-relevance { color: var(--tenant-surface-ink); }
 .tenant-shell .workspace-projects .project-mark, .tenant-shell .workspace-projects .status-pill { background: var(--tenant-selection); color: var(--tenant-selection-text); }
 .tenant-shell .workspace-projects .tag-row a { color: var(--tenant-selection-text); background: var(--tenant-selection); }
-.tenant-shell .workspace-projects .tag-row a { color: var(--tenant-secondary-text); background: var(--tenant-secondary); }
+:is(.tenant-shell .workspace-projects .tag-row a){ color: var(--tenant-secondary-text); background: var(--tenant-secondary); }
 .tenant-shell .workspace-projects :focus-visible, .tenant-shell .profile-hero :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
-@media(max-width:600px) { .tenant-shell .profile-hero { gap: 16px; }.tenant-shell .profile-hero .avatar { flex-basis: 64px; height: 64px; }.tenant-shell .section-heading { align-items: flex-start; flex-wrap: wrap; } }
+@media(max-width:600px) { :is(.tenant-shell .profile-hero):where(*):where(*){ gap: 16px; }:is(.tenant-shell .profile-hero .avatar):where(*):where(*){ flex-basis: 64px; height: 64px; }.tenant-shell .section-heading { align-items: flex-start; flex-wrap: wrap; } }

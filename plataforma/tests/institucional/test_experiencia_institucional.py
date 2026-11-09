@@ -98,7 +98,8 @@ class ExperienceM6Tests(PortalInstitucionalBase):
             response = self.client.post("/perfil/", {**payload, "avatar": SimpleUploadedFile("fake.png", b"not-image", content_type="image/png")}, HTTP_HOST=HOST)
             self.assertEqual(response.status_code, 200)
             self.assertFalse(MemberProfile.objects.get(user=self.user).avatar)
-            data = BytesIO(); Image.new("RGB", (100, 100), "blue").save(data, format="PNG")
+            data = BytesIO()
+            Image.new("RGB", (100, 100), "blue").save(data, format="PNG")
             response = self.client.post("/perfil/", {**payload, "avatar": SimpleUploadedFile("real.png", data.getvalue(), content_type="image/png")}, HTTP_HOST=HOST)
             self.assertEqual(response.status_code, 302)
             avatar = MemberProfile.objects.get(user=self.user).avatar
@@ -108,7 +109,8 @@ class ExperienceM6Tests(PortalInstitucionalBase):
 
     def test_avatar_removal_is_confirmed_on_save_and_survives_validation_errors(self):
         with TemporaryDirectory() as media, override_settings(MEDIA_ROOT=media):
-            data = BytesIO(); Image.new("RGB", (100, 100), "blue").save(data, format="PNG")
+            data = BytesIO()
+            Image.new("RGB", (100, 100), "blue").save(data, format="PNG")
             payload = {"form": "perfil", "first_name": "Participante", "email": self.user.email}
             self.client.post("/perfil/", {**payload, "avatar": SimpleUploadedFile("real.png", data.getvalue(), content_type="image/png")}, HTTP_HOST=HOST)
             response = self.client.post("/perfil/", {**payload, "first_name": "x", "remover_avatar": "on"}, HTTP_HOST=HOST)
@@ -135,12 +137,14 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertEqual(response.context['aba_ativa'], 'colaboracoes')
 
     def test_inactive_membership_cannot_use_new_agenda(self):
-        self.membership.status = "suspensa"; self.membership.save()
+        self.membership.status = "suspensa"
+        self.membership.save()
         self.assertEqual(self.client.post("/calendario/novo/", HTTP_HOST=HOST).status_code, 403)
 
     def test_agenda_posts_require_csrf(self):
         from django.test import Client
-        client = Client(enforce_csrf_checks=True); client.force_login(self.user)
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
         self.assertEqual(client.post("/calendario/novo/", HTTP_HOST=HOST).status_code, 403)
 
     def test_existing_event_does_not_reveal_project_that_became_private(self):
@@ -160,7 +164,8 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertEqual(self.client.get("/perfil/", HTTP_HOST=HOST).status_code, 200)
 
     def test_manager_cannot_publish_to_member_of_another_tenant(self):
-        self.membership.papel = "gestor"; self.membership.save()
+        self.membership.papel = "gestor"
+        self.membership.save()
         external = MembroOrganizacao.objects.create(organizacao=self.other, usuario=self.pm_staff)
         response = self.client.post("/calendario/publicar/", {"titulo": "Publicação forjada", "tipo": "atividade",
             "data": date.today().isoformat(), "destinatario": external.pk}, HTTP_HOST=HOST)
