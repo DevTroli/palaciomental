@@ -126,3 +126,12 @@
 @media(max-width:500px) { .home-project-grid { grid-template-columns: 1fr; }.home-ranking-list .home-ranking-entry { grid-template-columns: 46px minmax(0, 1fr); gap: 12px; padding: 14px; }.home-ranking-list .home-rank-position, .home-ranking-list li:first-child .home-rank-position { width: 44px; height: 44px; font-size: 17px; }.home-ranking-score { grid-column: 2; justify-content: flex-start; } }
 .home-project-category { align-self: flex-start; padding: 4px 8px; border-radius: 6px; color: var(--tenant-secondary-text); background: var(--tenant-secondary); }
 .home-project-author > span:first-child { background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
+.home-ranking-list .home-rank-position, .home-ranking-list li:first-child .home-rank-position { border-radius: 50%; border: 3px double currentColor; }
+.home-ranking-list li:nth-child(2) .home-rank-position { background: #d9e0e7; color: #1b2934; }
+.home-ranking-list li:nth-child(3) .home-rank-position { background: #e4b28a; color: #321907; }
+.home-project-category, .home-project-author, .home-project-meta, .home-project-state, .home-ranking-note, .home-ranking-list .home-ranking-place { font-size: 13px; }
+.home-shortcuts a { font-size: 13px; }
+.home-agenda-heading p, .home-agenda-list li > a span, .home-agenda-empty p { font-size: 12px; }
+.home-section-heading { flex-wrap: wrap; }
+.home-section-heading > div { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.home-section-count { height: auto; min-height: 27px; padding: 3px 5px; }

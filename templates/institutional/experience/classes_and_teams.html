@@ -3,6 +3,7 @@
 {% block title %}Turmas e equipes · {{ tenant_display_name }}{% endblock %}
 
 {% block content %}
+  <div class="tenant-page-frame">
   <section class="camp-hero" aria-labelledby="turmas-equipes-titulo">
     <div class="camp-hero-copy">
       <p class="camp-eyebrow">Comunidade</p>
@@ -19,4 +20,5 @@
       <a class="camp-btn camp-btn--primary" href="{% url 'core:index' %}">Voltar à home</a>
     </div>
   </section>
+  </div>
 {% endblock %}

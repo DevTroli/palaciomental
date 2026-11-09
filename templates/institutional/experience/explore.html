@@ -84,6 +84,11 @@
 
     {% if vista == 'projetos' %}
 
+      <section class="camp-explore-start" aria-label="Criar projeto">
+        <p>Tem uma ideia? Crie um projeto e encontre pessoas para construí-la com você.</p>
+        <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:project_create' %}">Criar projeto</a>
+      </section>
+
       {% if projetos_abertos %}
         <div class="camp-explore-grid">
           {% for projeto in projetos_abertos %}
@@ -131,14 +136,6 @@
           <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:project_create' %}">Criar meu projeto</a>
         </div>
       {% endif %}
-
-      <section class="camp-explore-cta" aria-labelledby="explorar-cta-titulo">
-        <div>
-          <h2 id="explorar-cta-titulo">Tem um projeto para o {{ tenant_display_name }}?</h2>
-          <p>Crie o projeto e marque “Estou buscando colaboradores” para aparecer nesta área.</p>
-        </div>
-        <a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_profile' %}#meus-projetos">Gerenciar meus projetos</a>
-      </section>
 
     {% else %}
 
