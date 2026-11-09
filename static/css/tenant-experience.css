@@ -1,5 +1,10 @@
 /* Layout e fluxo CAMP preservados; marca e dados pertencem ao tenant do host. */
 .camp-body { --camp-bg: var(--tenant-background); --camp-card: var(--tenant-surface); --camp-ink: var(--tenant-surface-ink); --camp-muted: var(--tenant-surface-ink); --camp-navy: var(--tenant-primary); --camp-yellow: var(--tenant-accent); --camp-blue: var(--tenant-primary); }
+.ranking-honour { display: inline-block; margin: 10px 0 0; padding: 7px 12px; border: 1px solid #806518; border-radius: 8px; background: #fff2bf; color: #302300; font-size: 13px; font-weight: 700; line-height: 1.5; }
+.camp-profile-project-card { border-top: 3px solid var(--tenant-primary); }
+.camp-profile-project-name { font-size: 17px; }
+.camp-body.tenant-shell { display: block; }
+.camp-main:has(.context-hero) { --pm-purple: var(--tenant-solid); --pm-purple-2: var(--tenant-solid); --pm-green: var(--tenant-solid); --pm-green-dark: var(--tenant-solid); }
 .camp-topbar, .camp-sidebar { background: var(--tenant-primary); color: var(--tenant-primary-text); }
 .camp-hero { background: var(--tenant-solid); color: #fff; }
 .camp-hero::after { display: none; }

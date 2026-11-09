@@ -1,7 +1,7 @@
 {% extends "institutional/experience/base.html" %}
 {% load static %}
 {% block title %}{{ tenant_display_name }} · início{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-home.css' %}?v=20261109-10">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-home.css' %}?v=20261109-14">{% endblock %}
 {% block content %}
 <div class="tenant-home">
   <section class="home-community" aria-labelledby="community-title">
@@ -24,11 +24,11 @@
         <header class="home-access-heading"><div><p class="home-eyebrow">Seu próximo passo</p><h2 id="home-access-title">Acesso rápido</h2></div><svg class="camp-icon" aria-hidden="true"><use href="#i-spark"/></svg></header>
         <nav class="home-shortcuts" aria-label="Acesso rápido">
         <a href="{% url 'plataforma:project_create' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg></span><span>Novo projeto</span></a>
-        <a href="{% url 'plataforma:calendar' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><span>Agenda</span></a>
-        <a href="{% url 'plataforma:institutional_profile' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span><span>Meus projetos</span></a>
+        <a href="{% url 'plataforma:calendar' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><span>Agenda de atividades</span></a>
+        <a href="{% url 'plataforma:classes_and_teams' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg></span><span>Turmas e grupos</span></a>
         <a href="{% url 'plataforma:projects' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg></span><span>Explorar</span></a>
-        <a href="{% url 'plataforma:classes_and_teams' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg></span><span>Turmas e equipes</span></a>
-        {% if pode_gerenciar %}<a href="{% url 'plataforma:institutional_management' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg></span><span>Gestão</span></a>{% else %}<a href="{% url 'plataforma:projects' %}?vista=alunos"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg></span><span>Pessoas</span></a>{% endif %}
+        <a href="{% url 'plataforma:guidance' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-book"/></svg></span><span>Orientações</span></a>
+        {% if pode_gerenciar %}<a href="{% url 'plataforma:institutional_management' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg></span><span>Gestão</span></a>{% else %}<a href="{% url 'plataforma:institutional_profile' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg></span><span>Meu espaço</span></a>{% endif %}
         </nav>
       </section>
       <section class="home-agenda" aria-labelledby="home-agenda-title">
@@ -39,7 +39,7 @@
     </div>
   </section>
 
-  <div class="home-discovery-heading" id="projetos-do-ambiente"><div><p class="home-eyebrow">Descubra o que acontece aqui</p><h2>Projetos da comunidade</h2></div><a href="#ranking-do-ambiente" class="home-ranking-jump"><svg class="camp-icon" aria-hidden="true"><use href="#i-star"/></svg> Ver ranking</a></div>
+  <div class="home-discovery-heading" id="projetos-do-ambiente"><div><p class="home-eyebrow">Descubra o que acontece aqui</p><h2>Projetos da comunidade</h2></div><a href="#ranking-do-ambiente" class="home-ranking-jump"><svg class="camp-icon" aria-hidden="true"><use href="#i-bulb"/></svg> Ver ranking</a></div>
   <div class="home-project-layout">
     <section class="home-project-section" aria-labelledby="autonomous-title">
       <header class="home-section-heading"><div><p class="home-eyebrow">Liberdade para criar</p><h3 id="autonomous-title">Projetos autônomos</h3></div><span class="home-section-count" aria-label="{{ total_autonomos }} projetos">{{ total_autonomos }}</span></header>
@@ -53,12 +53,11 @@
       <div class="home-project-grid">{% for projeto in projetos_vinculados %}{% include "institutional/partials/home_project_card.html" with vinculado=True %}{% empty %}<div class="home-empty"><svg class="camp-icon" aria-hidden="true"><use href="#i-book"/></svg><h4>Construções que ganham contexto</h4><p>Os projetos públicos de programas ativos aparecem aqui.</p><a href="{% url 'plataforma:institutional_programs' %}">Conhecer os programas</a></div>{% endfor %}</div>
       <a class="home-section-more" href="{% url 'plataforma:projects' %}?tipo=vinculado">Ver mais projetos <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
     </section>
-    <aside class="home-ranking" id="ranking-do-ambiente" aria-labelledby="ranking-title">
-      <header class="home-ranking-heading"><span class="home-ranking-symbol"><svg class="camp-icon" aria-hidden="true"><use href="#i-star"/></svg></span><p class="home-eyebrow">Reconhecidos pela comunidade</p><h3 id="ranking-title">Ranking de projetos</h3><p>Ideias que estão fazendo a diferença por aqui.</p></header>
-      <ol class="home-ranking-list">{% for projeto in ranking_projetos %}<li><span class="home-rank-position" aria-label="{{ forloop.counter }}º lugar">{{ forloop.counter|stringformat:"02d" }}</span><div><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a><span>{{ projeto.owner.get_full_name|default:projeto.owner.username }}</span><small><svg class="camp-icon" aria-hidden="true"><use href="#i-star"/></svg> {{ projeto.total_estrelas }} reconhecimento{{ projeto.total_estrelas|pluralize:"s" }}</small></div></li>{% empty %}<li class="home-ranking-empty"><p>O ranking começa com a comunidade.</p><span>Explore os projetos e reconheça as ideias que achar úteis.</span></li>{% endfor %}</ol>
-      <a class="home-ranking-more" href="{% url 'plataforma:projects' %}?ordering=relevance">Explorar por relevância <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </div>
+    <section class="home-ranking" id="ranking-do-ambiente" aria-labelledby="ranking-title">
+      <header class="home-ranking-heading"><span class="home-ranking-symbol"><svg class="camp-icon" aria-hidden="true"><use href="#i-bulb"/></svg></span><p class="home-eyebrow">Reconhecidos pela comunidade</p><h3 id="ranking-title">Ranking de projetos</h3><p>Projetos reconhecidos como úteis pela comunidade. Abra um projeto e acenda a lâmpada para reconhecê-lo.</p></header>
+      <ol class="home-ranking-list">{% for projeto in ranking_projetos %}<li class="home-ranking-entry{% if forloop.counter <= 3 %} home-ranking-entry--podium{% endif %}"><span class="home-rank-position" aria-label="{{ forloop.counter }}º lugar">{{ forloop.counter }}º</span><div class="home-ranking-content"><span class="home-ranking-place">{{ forloop.counter }}º lugar{% if forloop.first %} · Mais reconhecido{% endif %}</span><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a><span>{{ projeto.owner.get_full_name|default:projeto.owner.username }}</span><p>{{ projeto.direction|default:"Uma ideia em construção."|truncatechars:120 }}</p></div><span class="home-ranking-score"><svg class="camp-icon" aria-hidden="true"><use href="#i-bulb"/></svg><strong>{{ projeto.total_estrelas }}</strong><span>reconhecimento{{ projeto.total_estrelas|pluralize:"s" }}</span></span></li>{% empty %}<li class="home-ranking-empty"><p>O ranking começa com a comunidade.</p><span>Explore os projetos e reconheça as ideias que achar úteis.</span></li>{% endfor %}</ol>
       <p class="home-ranking-note">Projetos públicos deste ambiente, ordenados por relevância acumulada.</p>
-    </aside>
-  </div>
+    </section>
 </div>
 {% endblock %}

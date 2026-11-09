@@ -174,7 +174,7 @@
           <div class="camp-profile-group-head">
             <h2 id="pessoais-perfil-titulo">
               <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-folder"/></svg></span>
-              Projetos Pessoais
+              Meus projetos
             </h2>
             <a class="camp-inline-link" href="{% url 'plataforma:project_create' %}">
               <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
@@ -210,6 +210,7 @@
                   <div class="camp-profile-project-foot">
                     <span class="camp-profile-project-date">Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
                     <div class="camp-profile-project-actions">
+                      <a class="camp-btn camp-btn--primary camp-btn--sm" href="{% url 'plataforma:project_detail' projeto.pk %}">Continuar projeto</a>
                       <a class="camp-btn camp-btn--ghost camp-btn--sm" href="{% url 'plataforma:project_edit' projeto.pk %}">
                         <svg class="camp-icon" aria-hidden="true"><use href="#i-edit"/></svg>
                         Editar
@@ -263,7 +264,7 @@
                       <div class="camp-own-meta">
                         <span>{{ projeto.category|default:"Sem categoria" }}</span>
                         <span>{{ projeto.total_membros }} aluno{{ projeto.total_membros|pluralize }}</span>
-                        <span>{{ projeto.total_estrelas }} estrela{{ projeto.total_estrelas|pluralize }}</span>
+                        <span>{{ projeto.total_estrelas }} reconhecimento{{ projeto.total_estrelas|pluralize:"s" }}</span>
                         <span>Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
                       </div>
                     </div>

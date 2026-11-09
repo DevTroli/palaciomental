@@ -88,7 +88,8 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ambiente institucional")
+        self.assertContains(response, "Projetos da comunidade")
+        self.assertEqual(response.context["organizacao"], self.organization)
         self.assertContains(response, "Ranking de projetos")
 
     def test_tenant_home_shows_only_published_current_tenant_content(self):

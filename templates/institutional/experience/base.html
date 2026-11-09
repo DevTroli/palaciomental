@@ -9,9 +9,10 @@
   <title>{% block title %}{{ tenant_display_name }} · Palácio Mental{% endblock %}</title>
   <link rel="icon" href="{% static 'img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/institutional.css' %}">
+  {% block extra_global_css %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/institutional-experience.css' %}">
   {% include "institutional/partials/theme.html" %}
-  <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}?v=20261109-5">
+  <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}?v=20261109-7">
   <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-13">
   {% block extra_css %}{% endblock %}
 </head>
@@ -31,6 +32,7 @@
     <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z"/><path d="M4 14h4l1.5 2h5L16 14h4"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M8 14.5a7 7 0 1 1 8 0c-.9.6-1.4 1.4-1.5 2.5h-5C9.4 15.9 8.9 15.1 8 14.5Z"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></symbol>
     <symbol id="i-life" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="m6 6 3.5 3.5M18 6l-3.5 3.5M18 18l-3.5-3.5M6 18l3.5-3.5"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h9"/></symbol>

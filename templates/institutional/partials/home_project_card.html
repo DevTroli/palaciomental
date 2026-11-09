@@ -4,5 +4,5 @@
   <h4><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h4>
   <p class="home-project-direction">{{ projeto.direction|default:"Uma ideia em construção."|truncatechars:115 }}</p>
   <div class="home-project-author"><span aria-hidden="true">{{ projeto.owner.get_full_name|default:projeto.owner.username|first|upper }}</span><span>{{ projeto.owner.get_full_name|default:projeto.owner.username }}</span></div>
-  <footer class="home-project-meta"><span><svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>{{ projeto.total_membros }} colaborador{{ projeto.total_membros|pluralize:"es" }}</span><span><svg class="camp-icon" aria-hidden="true"><use href="#i-star"/></svg>{{ projeto.total_estrelas }}</span></footer>
+  <footer class="home-project-meta"><span><svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>{{ projeto.total_membros }} colaborador{{ projeto.total_membros|pluralize:"es" }}</span><span><svg class="camp-icon" aria-hidden="true"><use href="#i-bulb"/></svg>{{ projeto.total_estrelas }} reconhecimento{{ projeto.total_estrelas|pluralize:"s" }}</span></footer>
 </article>

@@ -24,7 +24,7 @@ def index(request):
             vinculo_institucional__turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
             vinculo_institucional__turma__programa__organizacao=organizacao,
         ).order_by("-updated_at", "-pk")
-        ranking = ranked_projects(projetos, tenant_id=organizacao.pk)[:5]
+        ranking = ranked_projects(projetos.filter(votes__isnull=False).distinct(), tenant_id=organizacao.pk)[:5]
         agenda = EventoCalendario.objects.filter(
             organizacao=organizacao, aluno=request.user, data__gte=timezone.localdate(),
         ).exclude(tipo=EventoCalendario.TIPO_TRABALHO, status=EventoCalendario.STATUS_ENTREGUE).order_by(
