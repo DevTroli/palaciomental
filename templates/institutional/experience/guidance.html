@@ -1,0 +1,20 @@
+{% extends "institutional/experience/base.html" %}
+
+{% block title %}Orientações · {{ tenant_display_name }}{% endblock %}
+{% block content %}
+<section class="camp-hero" aria-labelledby="guidance-title">
+  <div class="camp-hero-copy">
+    <p class="camp-eyebrow">Informações da organização</p>
+    <h1 class="camp-hero-title" id="guidance-title">Orientações e avisos</h1>
+    <p class="camp-hero-subtitle">Conheça {{ tenant_display_name }} e acompanhe as informações deste ambiente.</p>
+  </div>
+</section>
+<section class="camp-panel" aria-labelledby="guidance-about">
+  <h2 id="guidance-about">Sobre {{ tenant_display_name }}</h2>
+  <p>{% if tenant_presentation %}{{ tenant_presentation|linebreaksbr }}{% else %}A apresentação da organização ainda não foi cadastrada.{% endif %}</p>
+</section>
+<section class="camp-panel" aria-labelledby="guidance-notices">
+  <h2 id="guidance-notices">Avisos da organização</h2>
+  <p>A área de avisos está em desenvolvimento.</p>
+</section>
+{% endblock %}

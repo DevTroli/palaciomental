@@ -242,6 +242,14 @@ def classes_and_teams(request):
 
 @tenant_required
 @login_required
+@require_safe
+def guidance(request):
+    """Exibe informações institucionais e o espaço reservado a avisos."""
+    return render(request, "institutional/experience/guidance.html", _contexto_base(request))
+
+
+@tenant_required
+@login_required
 def profile(request):
     """Perfil do aluno: dados, calendário, projetos, colaborações e ajustes."""
     context = _contexto_base(request)

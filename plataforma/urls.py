@@ -9,6 +9,7 @@ app_name = "plataforma"
 urlpatterns = [
     path("perfil/", experience.profile, name="institutional_profile"),
     path("turmas-e-equipes/", experience.classes_and_teams, name="classes_and_teams"),
+    path("orientacoes/", experience.guidance, name="guidance"),
     path("calendario/", agenda.calendar_view, name="calendar"),
     path("calendario/publicar/", agenda.event_publish, name="event_publish"),
     path("calendario/novo/", agenda.event_create, name="event_create"),
