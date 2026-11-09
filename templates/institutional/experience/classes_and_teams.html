@@ -1,0 +1,22 @@
+{% extends "institutional/experience/base.html" %}
+
+{% block title %}Turmas e equipes · {{ tenant_display_name }}{% endblock %}
+
+{% block content %}
+  <section class="camp-hero" aria-labelledby="turmas-equipes-titulo">
+    <div class="camp-hero-copy">
+      <p class="camp-eyebrow">Comunidade</p>
+      <h1 class="camp-hero-title" id="turmas-equipes-titulo">Turmas e equipes</h1>
+      <p class="camp-hero-subtitle">Um espaço para acompanhar as turmas e equipes da sua organização.</p>
+    </div>
+  </section>
+
+  <section class="camp-panel" aria-labelledby="turmas-equipes-em-breve">
+    <div class="camp-empty">
+      <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-teams"/></svg></span>
+      <h2 id="turmas-equipes-em-breve">Este espaço está em preparação</h2>
+      <p>Em breve você poderá acompanhar suas turmas e equipes por aqui.</p>
+      <a class="camp-btn camp-btn--primary" href="{% url 'core:index' %}">Voltar à home</a>
+    </div>
+  </section>
+{% endblock %}

@@ -232,6 +232,16 @@ def _contexto_base(request):
 
 @tenant_required
 @login_required
+@require_safe
+def classes_and_teams(request):
+    """Apresenta o espaço institucional reservado a turmas e equipes."""
+    context = _contexto_base(request)
+    context["nav_ativo"] = "turmas_e_equipes"
+    return render(request, "institutional/experience/classes_and_teams.html", context)
+
+
+@tenant_required
+@login_required
 def profile(request):
     """Perfil do aluno: dados, calendário, projetos, colaborações e ajustes."""
     context = _contexto_base(request)

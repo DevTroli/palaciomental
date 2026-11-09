@@ -39,6 +39,7 @@
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h8m4 0h4M4 17h4m4 0h8"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
   </svg>
 
   <a class="camp-skip" href="#main-content">Pular para o conteúdo principal</a>
@@ -133,56 +134,34 @@
       <div class="tenant-sidebar-heading"><span>Navegação</span><button class="tenant-sidebar-close" type="button" data-sidebar-close aria-label="Fechar menu">×</button></div>
 
       <nav class="camp-nav" aria-label="Navegação do ambiente">
-        <a class="camp-nav-link" href="{% url 'core:index' %}" aria-label="Início"{% if nav_ativo == 'inicio' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'core:index' %}" aria-label="Home"{% if nav_ativo == 'inicio' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-home"/></svg>
-          <span>Início</span>
+          <span>Home</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}" aria-label="Meus Projetos">
+        <a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}?aba=projetos#painel-projetos" aria-label="Meus Projetos">
           <svg class="camp-icon" aria-hidden="true"><use href="#i-folder"/></svg>
-          <span>Meus projetos neste ambiente</span>
+          <span>Meus Projetos</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'plataforma:projects' %}" aria-label="Explorar Projetos"{% if nav_ativo == 'explorar' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'plataforma:projects' %}" aria-label="Explorar"{% if nav_ativo == 'explorar' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg>
-          <span>Explorar Projetos</span>
+          <span>Explorar</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'plataforma:projects' %}?vista=alunos" aria-label="Alunos"{% if nav_ativo == 'alunos' %} aria-current="page"{% endif %}>
-          <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
-          <span>Alunos</span>
-          {% if total_membros %}<span class="camp-nav-badge">{{ total_membros }}</span>{% endif %}
-        </a>
-
-        <a class="camp-nav-link" href="#" data-em-breve="Equipes" title="Em breve" aria-label="Equipes">
-          <svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg>
-          <span>Equipes</span>
-        </a>
-
-        <a class="camp-nav-link" href="{% url 'plataforma:calendar' %}" aria-label="Calendário"{% if nav_ativo == 'calendario' %} aria-current="page"{% endif %}>
+        <a class="camp-nav-link" href="{% url 'plataforma:calendar' %}" aria-label="Calendário de atividades"{% if nav_ativo == 'calendario' %} aria-current="page"{% endif %}>
           <svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
-          <span>Calendário</span>
+          <span>Calendário de atividades</span>
         </a>
 
-        <a class="camp-nav-link" href="#" data-em-breve="Recursos" title="Em breve" aria-label="Recursos">
-          <svg class="camp-icon" aria-hidden="true"><use href="#i-book"/></svg>
-          <span>Recursos</span>
+        <a class="camp-nav-link" href="{% url 'plataforma:classes_and_teams' %}" aria-label="Turmas e equipes"{% if nav_ativo == 'turmas_e_equipes' %} aria-current="page"{% endif %}>
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg>
+          <span>Turmas e equipes</span>
         </a>
 
-        <a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}" aria-label="Perfil"{% if nav_ativo == 'perfil' %} aria-current="page"{% endif %}>
-          <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
-          <span>Perfil</span>
-        </a>
-
-        {% if pode_gerenciar %}
-          <a class="camp-nav-link" href="{% url 'plataforma:institutional_management' %}" aria-label="Gestão"{% if nav_ativo == 'gestao' %} aria-current="page"{% endif %}>
-            <svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg>
-            <span>Gestão</span>
-          </a>
-        {% endif %}
       </nav>
 
-      <div class="tenant-sidebar-utilities"><a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}?aba=configuracoes" aria-label="Configurações"><svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg><span>Configurações</span></a></div>
+      <div class="tenant-sidebar-utilities"><a class="camp-nav-link" href="{% url 'plataforma:institutional_profile' %}?aba=configuracoes" aria-label="Configurações"{% if nav_ativo == 'perfil' and aba_ativa == 'configuracoes' %} aria-current="page"{% endif %}><svg class="camp-icon" aria-hidden="true"><use href="#i-settings"/></svg><span>Configurações</span></a></div>
     </aside>
 
     {# ── Conteúdo ──────────────────────────────────────────────────── #}
