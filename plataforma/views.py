@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Case, Count, Exists, OuterRef, Q, When
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -135,7 +135,7 @@ def profile(request, username):
         return institutional_profile(request)
     user = get_object_or_404(User, username=username)
     MemberProfile.objects.get_or_create(user=user)
-    project_scope = _project_scope(request)
+    project_scope = _project_scope(request).annotate(relevance=Count("votes", distinct=True))
     owned = project_scope.filter(owner=user)
     if request.user != user:
         owned = owned.filter(visibility=Project.VISIBILITY_PUBLIC)
@@ -785,13 +785,14 @@ def project_detail(request, pk):
     comments = project.comments.filter(parent__isnull=True).select_related("author").prefetch_related("replies__author")
     voted = request.user.is_authenticated and project.votes.filter(user=request.user).exists()
     can_manage = _can_manage_milestones(project, request.user)
+    is_project_member = bool(request.user.is_authenticated and project.memberships.filter(user=request.user).exists())
     collaboration_request = project.collaboration_requests.filter(requester=request.user).first() if request.user.is_authenticated else None
     ranking_posicao = None
     if getattr(request, "membro_organizacao", None) and project.organizacao_id == request.organizacao.pk and project.visibility == Project.VISIBILITY_PUBLIC:
         from core.rankings import ranked_projects
         ranked = ranked_projects(Project.objects.filter(organizacao=request.organizacao, votes__isnull=False).distinct(), tenant_id=request.organizacao.pk)
         ranking_posicao = next((index for index, item in enumerate(ranked[:5], 1) if item.pk == project.pk), None)
-    return render(request, "projects/detail.html", {"project": project, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
+    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
     organizacao = getattr(request, "organizacao", None)
@@ -861,6 +862,8 @@ def add_comment(request, pk):
     project = _project_for_request(request, pk=pk)
     if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
+    if project.owner_id == request.user.pk:
+        return HttpResponseForbidden("O autor não pode comentar no próprio projeto.")
     form = CommentForm(request.POST)
     if form.is_valid():
         comment = form.save(commit=False)
@@ -887,6 +890,8 @@ def edit_comment(request, comment_id):
         author=request.user,
         project__in=_project_scope(request),
     )
+    if comment.project.owner_id == request.user.pk:
+        return HttpResponseForbidden("O autor não pode comentar no próprio projeto.")
     form = CommentForm(request.POST, instance=comment)
     if form.is_valid():
         form.save()
@@ -913,6 +918,8 @@ def toggle_vote(request, pk):
     project = _project_for_request(request, pk=pk)
     if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
+    if project.owner_id == request.user.pk:
+        return HttpResponseForbidden("O autor não pode reconhecer o próprio projeto.")
     vote, created = ProjectVote.objects.get_or_create(project=project, user=request.user)
     if not created:
         vote.delete()

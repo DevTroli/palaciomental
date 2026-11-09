@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from plataforma.models import (
     CollaborationRequest, DominioOrganizacao, IdentidadeOrganizacao,
-    MembroOrganizacao, Notification, Organizacao, Project,
+    MembroOrganizacao, Notification, Organizacao, Project, ProjectMember,
 )
 from plataforma.navigation import project_notification_url
 
@@ -138,6 +138,37 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Notification.objects.get(recipient=other).url, expected)
+
+    def test_workspace_only_for_members_and_no_duplicate_collaboration_action(self):
+        other = get_user_model().objects.create_user(username="membro-equipe")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=other)
+        self.project.visibility = Project.VISIBILITY_PUBLIC
+        self.project.seeking_collaborators = True
+        self.project.save()
+        self.client.force_login(other)
+        url = reverse("plataforma:project_detail", args=[self.project.pk])
+        self.assertNotContains(self.client.get(url, HTTP_HOST=HOST), "Você colabora neste projeto")
+        ProjectMember.objects.create(project=self.project, user=other)
+        response = self.client.get(url, HTTP_HOST=HOST)
+        self.assertContains(response, "Você colabora neste projeto")
+        self.assertNotContains(response, "Tenho interesse")
+        public_profile = self.client.get(reverse("plataforma:profile", args=[self.user.username]), HTTP_HOST=HOST)
+        self.assertContains(public_profile, "tenant-member.css")
+        self.assertNotContains(public_profile, "Abrir meu espaço pessoal")
+
+    def test_restricted_share_requires_token_and_active_tenant_affiliation(self):
+        self.project.visibility = Project.VISIBILITY_RESTRICTED
+        self.project.save(update_fields=["visibility"])
+        url = reverse("plataforma:project_detail", args=[self.project.pk])
+        response = self.client.get(url, HTTP_HOST=HOST, secure=True)
+        self.assertContains(response, f"?access={self.project.access_token}")
+        outsider = get_user_model().objects.create_user(username="sem-afiliacao")
+        self.client.force_login(outsider)
+        self.assertEqual(self.client.get(url + f"?access={self.project.access_token}", HTTP_HOST=HOST).status_code, 403)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=outsider)
+        self.assertEqual(self.client.get(url, HTTP_HOST=HOST).status_code, 404)
+        self.assertEqual(self.client.get(url + "?access=invalido", HTTP_HOST=HOST).status_code, 404)
+        self.assertEqual(self.client.get(url + f"?access={self.project.access_token}", HTTP_HOST=HOST).status_code, 200)
 
     def test_outro_tenant_continua_sem_acesso(self):
         other = Organizacao.objects.create(slug="outra", nome="Outra", status=Organizacao.STATUS_ATIVA)

@@ -171,7 +171,8 @@ class RedirectsAbertosTests(TestCase):
         )
         url = reverse("plataforma:toggle_vote", kwargs={"pk": projeto.pk})
         padrao = reverse("plataforma:project_detail", kwargs={"pk": projeto.pk})
-        self.client.force_login(self.user)
+        eleitor = User.objects.create_user(username="eleitor-global")
+        self.client.force_login(eleitor)
         for next_url in self.NEXT_EXTERNOS:
             with self.subTest(next_url=next_url):
                 response = self.client.post(url, {"next": next_url}, HTTP_HOST=HOST_GLOBAL)
@@ -187,6 +188,7 @@ class RedirectsAbertosTests(TestCase):
         )
         url = reverse("plataforma:toggle_vote", kwargs={"pk": projeto.pk})
         destino = reverse("plataforma:projects")
-        self.client.force_login(self.user)
+        eleitor = User.objects.create_user(username="eleitor-global")
+        self.client.force_login(eleitor)
         response = self.client.post(url, {"next": destino}, HTTP_HOST=HOST_GLOBAL)
         self.assertRedirects(response, destino, fetch_redirect_response=False)

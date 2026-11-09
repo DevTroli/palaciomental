@@ -1,0 +1,47 @@
+/* Detalhes do projeto institucional: superfícies e textos seguem o tema ativo. */
+.tenant-shell .context-hero { align-items: flex-start; gap: 24px; padding: 18px 0 24px; color: var(--tenant-ink); }
+.tenant-shell .context-hero h1 { color: var(--tenant-link); font-family: inherit; font-size: clamp(28px, 3vw, 42px); line-height: 1.15; overflow-wrap: anywhere; }
+.tenant-shell .context-hero .eyebrow, .tenant-shell .context-hero .back-link { color: var(--tenant-link); }
+.tenant-shell .context-hero .eyebrow, .tenant-shell .context-hero .tag-row span { display: inline-block; padding: 4px 8px; border-radius: 6px; background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
+.tenant-shell .context-title-row { align-items: flex-start; margin: 20px 0 10px; }
+.tenant-shell .context-title-row > div { min-width: 0; }
+.tenant-shell .context-actions { justify-content: flex-end; gap: 8px; }
+.tenant-shell .context-layout { grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: 20px; padding-bottom: 32px; align-items: start; }
+.tenant-shell .context-main, .tenant-shell .context-aside { min-width: 0; gap: 16px; }
+.tenant-shell .project-workspace { padding: 20px 24px; border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 20%, var(--tenant-surface)); border-left: 4px solid var(--tenant-primary); border-radius: 16px; background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.tenant-shell .project-workspace h2 { margin: 5px 0 8px; font-size: 20px; }
+.tenant-shell .project-workspace p { margin: 0 0 12px; }
+.tenant-shell .project-workspace .eyebrow { color: var(--tenant-surface-link); }
+.tenant-shell .project-workspace nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.tenant-shell .project-workspace nav a { display: inline-flex; min-height: 40px; align-items: center; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 35%, var(--tenant-surface)); border-radius: 8px; color: var(--tenant-surface-link); font-weight: 650; text-decoration: none; }
+.tenant-shell .project-workspace nav a:hover { text-decoration: underline; }
+.tenant-shell .context-block, .tenant-shell .info-card, .tenant-shell .share-panel { background: var(--tenant-surface); color: var(--tenant-surface-ink); border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 20%, var(--tenant-surface)); box-shadow: none; padding: clamp(18px, 2vw, 26px); min-width: 0; overflow-wrap: anywhere; }
+.tenant-shell .context-block h2, .tenant-shell .info-card h3 { font-family: inherit; color: var(--tenant-surface-ink); font-size: 20px; line-height: 1.35; }
+.tenant-shell .context-block .eyebrow, .tenant-shell .info-card .eyebrow { color: var(--tenant-surface-link); }
+.tenant-shell .info-card .eyebrow { display: inline-block; padding: 4px 8px; border-radius: 6px; background: var(--tenant-secondary); color: var(--tenant-secondary-text); }
+.tenant-shell .context-layout .relevance-row { justify-content: flex-start; gap: 10px; }
+.tenant-shell .context-layout .relevance-row .lamp-icon, .tenant-shell .context-layout .relevance-row strong { flex: 0 0 auto; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+.tenant-shell .context-layout .relevance-row span:last-child { flex: 1 1 auto; min-width: 0; }
+.tenant-shell .context-copy { font-size: 16px; line-height: 1.75; color: var(--tenant-surface-ink); overflow-wrap: anywhere; }
+.tenant-shell .context-block .muted, .tenant-shell .info-card .muted, .tenant-shell .info-card small, .tenant-shell .milestone-meta, .tenant-shell .comment-header time, .tenant-shell .permission-form { color: var(--tenant-surface-ink); }
+.tenant-shell .context-layout a, .tenant-shell .share-panel a { color: var(--tenant-surface-link); }
+.tenant-shell .context-layout .button-outline, .tenant-shell .context-hero .button-outline { background: transparent; color: var(--tenant-link); border-color: currentColor; }
+.tenant-shell .context-layout .button-outline { color: var(--tenant-surface-link); }
+.tenant-shell .context-layout .button-purple, .tenant-shell .share-panel .button-green { background: var(--tenant-accent); color: var(--tenant-accent-text); border-color: transparent; }
+.tenant-shell .context-layout .lamp-button { background: var(--tenant-surface); color: var(--tenant-surface-ink); border-color: var(--tenant-surface-ink); }
+.tenant-shell .context-layout .lamp-button.is-active { background: var(--tenant-selection); color: var(--tenant-selection-text); border-color: transparent; }
+.tenant-shell .context-layout .comment-form, .tenant-shell .context-layout .reply-box form, .tenant-shell .context-layout .collaboration-card form, .tenant-shell .context-layout .comment-item, .tenant-shell .context-layout .milestone-item, .tenant-shell .context-layout .project-link { background: color-mix(in srgb, var(--tenant-surface-ink) 5%, var(--tenant-surface)); color: var(--tenant-surface-ink); border-color: color-mix(in srgb, var(--tenant-surface-ink) 20%, var(--tenant-surface)); }
+.tenant-shell .context-layout .comment-item p, .tenant-shell .context-layout .milestone-item p, .tenant-shell .context-layout .milestone-item h3, .tenant-shell .context-layout .relevance-row strong, .tenant-shell .context-layout .relevance-row span:last-child { color: var(--tenant-surface-ink); }
+.tenant-shell .context-layout textarea, .tenant-shell .share-panel input { width: 100%; background: var(--tenant-surface); color: var(--tenant-surface-ink); border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 45%, var(--tenant-surface)); border-radius: 8px; padding: 10px; }
+.tenant-shell .context-layout textarea::placeholder { color: var(--tenant-surface-ink); opacity: .8; }
+.tenant-shell .comment-form label, .tenant-shell .reply-box label { font-weight: 650; }
+.tenant-shell .comment-form .button, .tenant-shell .reply-box .button { justify-self: start; }
+.tenant-shell .context-layout .community-count, .tenant-shell .context-layout .link-icon { background: var(--tenant-selection); color: var(--tenant-selection-text); }
+.tenant-shell .context-layout .danger-zone .eyebrow, .tenant-shell .context-layout .danger-button { color: var(--tenant-surface-ink); }
+.tenant-shell .context-layout .danger-button:hover { background: var(--tenant-surface-ink); color: var(--tenant-surface); border-color: var(--tenant-surface-ink); }
+.tenant-shell .project-admin { color: var(--tenant-surface-ink); background: var(--tenant-surface); border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 20%, var(--tenant-surface)); border-radius: 16px; padding: 18px; }
+.tenant-shell .project-admin summary { cursor: pointer; font-weight: 700; }
+.tenant-shell .project-admin .info-card { margin-top: 14px; padding: 16px; }
+.tenant-shell .context-layout :focus-visible, .tenant-shell .context-hero :focus-visible, .tenant-shell .share-panel :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+@media(max-width:900px) { .tenant-shell .context-layout { grid-template-columns: 1fr; }.tenant-shell .context-hero { flex-direction: column; }.tenant-shell .context-actions { justify-content: flex-start; } }
+@media(max-width:500px) { .tenant-shell .context-actions { width: 100%; }.tenant-shell .context-hero .button { padding: 10px 14px; }.tenant-shell .block-heading { align-items: flex-start; flex-wrap: wrap; } }
