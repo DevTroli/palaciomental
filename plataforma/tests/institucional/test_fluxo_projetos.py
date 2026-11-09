@@ -129,6 +129,9 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         self.assertEqual(Notification.objects.get(recipient=self.user).url, expected)
         collaboration = CollaborationRequest.objects.get(project=self.project)
         self.client.force_login(self.user)
+        inbox = self.client.get(reverse("plataforma:inbox"), HTTP_HOST=HOST, secure=True)
+        self.assertContains(inbox, reverse("plataforma:decide_collaboration", args=[collaboration.pk]))
+        self.assertContains(inbox, "Quero colaborar")
         response = self.client.post(
             reverse("plataforma:decide_collaboration", args=[collaboration.pk]),
             {"decision": CollaborationRequest.ACCEPTED}, HTTP_HOST=HOST, secure=True,

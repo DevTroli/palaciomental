@@ -42,12 +42,12 @@
                 {% if pedido.message %}<p>{{ pedido.message }}</p>{% endif %}
                 <span class="camp-inbox-meta">Pedido em {{ pedido.created_at|date:"d/m/Y" }} · @{{ pedido.requester.username }}</span>
                 <div class="camp-inbox-actions">
-                  <form method="post" action="{% url 'plataforma:inbox_decide' pedido.pk %}">
+                  <form method="post" action="{% url 'plataforma:decide_collaboration' pedido.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="decision" value="aceita">
                     <button class="camp-btn camp-btn--primary camp-btn--xs" type="submit">Aceitar</button>
                   </form>
-                  <form method="post" action="{% url 'plataforma:inbox_decide' pedido.pk %}">
+                  <form method="post" action="{% url 'plataforma:decide_collaboration' pedido.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="decision" value="recusada">
                     <button class="camp-btn camp-btn--ghost camp-btn--xs" type="submit">Recusar</button>
