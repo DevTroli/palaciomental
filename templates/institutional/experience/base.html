@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="{% static 'css/institutional-experience.css' %}">
   {% include "institutional/partials/theme.html" %}
   <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}">
-  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}">
+  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-2">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="camp-body tenant-shell">
@@ -51,8 +51,8 @@
         <svg class="camp-icon" aria-hidden="true"><use href="#i-menu"/></svg>
       </button>
 
-      <a class="camp-brand" href="{% url 'core:index' %}" aria-label="Início de {{ tenant_display_name }}">
-        {% if tenant_logo_url %}<img class="camp-brand-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% endif %}
+      <a class="camp-brand" href="{% url 'core:index' %}" aria-label="Início de {{ tenant_display_name }}" title="{{ tenant_display_name }}">
+        {% if tenant_logo_url %}<img class="camp-brand-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ tenant_display_name }}">{% else %}<span class="camp-brand-logo-fallback" aria-hidden="true">{{ tenant_display_name|first|upper }}</span>{% endif %}
         <span class="camp-brand-name">{{ tenant_display_name }}</span>
       </a>
 
@@ -87,11 +87,6 @@
               <span>{{ papel_usuario }}{% if organizacao %} · {{ organizacao.nome }}{% endif %}</span>
             </div>
 
-            <a class="camp-account-item" href="{% url 'plataforma:institutional_profile' %}">
-              <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
-              <span>Meus projetos neste ambiente</span>
-            </a>
-
             <a class="camp-account-item" href="{% url 'plataforma:inbox' %}">
               <svg class="camp-icon" aria-hidden="true"><use href="#i-inbox"/></svg>
               <span>Caixa de entrada</span>
@@ -105,7 +100,10 @@
               </a>
             {% endif %}
 
-            <a class="camp-account-item" href="{{ personal_workspace_url }}">Meu espaço pessoal</a>
+            <a class="camp-account-item" href="{% url 'plataforma:institutional_profile' %}">
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg>
+              <span>Meu espaço</span>
+            </a>
 
             <form class="camp-account-logout" method="post" action="{% url 'plataforma:logout' %}">
               {% csrf_token %}

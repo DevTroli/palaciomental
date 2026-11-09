@@ -22,6 +22,10 @@
               {{ tenant_display_name|upper }} - {{ papel_usuario|upper }}
             </p>
             <p class="camp-profile-handle">@{{ request.user.username }}{% if request.user.email %} · {{ request.user.email }}{% endif %}</p>
+            <a class="camp-global-profile-link" href="{{ personal_workspace_url }}">
+              Ver meu perfil no Palácio Mental global
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </a>
 
             <div class="camp-profile-quickstats" aria-label="Resumo do perfil">
               <span><strong>{{ total_projetos }}</strong> projeto{{ total_projetos|pluralize }}</span>
