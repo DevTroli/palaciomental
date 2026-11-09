@@ -21,22 +21,97 @@
             <p class="camp-profile-role-line">
               {{ tenant_display_name|upper }} - {{ papel_usuario|upper }}
             </p>
-            <p class="camp-profile-handle">@{{ request.user.username }}{% if request.user.email %} · {{ request.user.email }}{% endif %}</p>
+            <p class="camp-profile-handle">@{{ request.user.username }}</p>
             <a class="camp-global-profile-link" href="{{ personal_workspace_url }}">
               Ver meu perfil no Palácio Mental global
               <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
             </a>
 
-            <div class="camp-profile-quickstats" aria-label="Resumo do perfil">
-              <span><strong>{{ total_projetos }}</strong> projeto{{ total_projetos|pluralize }}</span>
-              <span><strong>{{ total_inscricoes }}</strong> colabora{{ total_inscricoes|pluralize:"ção,ções" }}</span>
-              <span><strong>{{ total_concluidos }}</strong> concluído{{ total_concluidos|pluralize }}</span>
+          </div>
+        </div>
+
+
+      </div>
+
+      <aside class="camp-profile-calendar" aria-labelledby="perfil-calendario-titulo">
+        <div class="camp-profile-cal-head">
+          <h2 id="perfil-calendario-titulo">Meu calendário</h2>
+          <div class="camp-profile-cal-tools">
+            <div class="camp-profile-cal-nav" aria-label="Navegação do calendário">
+              <a href="?ano={{ ano_anterior }}&amp;mes={{ mes_anterior }}&amp;aba={{ aba_ativa }}" aria-label="Mês anterior" rel="prev">
+                <svg class="camp-icon camp-icon--prev" aria-hidden="true"><use href="#i-arrow"/></svg>
+              </a>
+              <span>{{ mes_nome|capfirst }} {{ ano }}</span>
+              <a href="?ano={{ ano_proximo }}&amp;mes={{ mes_proximo }}&amp;aba={{ aba_ativa }}" aria-label="Próximo mês" rel="next">
+                <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+              </a>
             </div>
           </div>
         </div>
 
+        <div class="camp-profile-cal-body">
+        <table class="camp-mini-calendar">
+          <caption class="camp-sr-only">Calendário de {{ mes_nome }} de {{ ano }}</caption>
+          <thead>
+            <tr>
+              <th scope="col" abbr="Segunda-feira">S</th>
+              <th scope="col" abbr="Terça-feira">T</th>
+              <th scope="col" abbr="Quarta-feira">Q</th>
+              <th scope="col" abbr="Quinta-feira">Q</th>
+              <th scope="col" abbr="Sexta-feira">S</th>
+              <th scope="col" abbr="Sábado">S</th>
+              <th scope="col" abbr="Domingo">D</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for semana in semanas %}
+              <tr>
+                {% for dia in semana %}
+                  <td class="camp-mini-day{% if dia.fora_do_mes %} is-outside{% endif %}{% if dia.hoje %} is-today{% endif %}{% if dia.eventos %} has-event{% endif %}">
+                    <span>{{ dia.numero }}</span>
+                    {% if dia.hoje %}<span class="camp-sr-only">, hoje</span>{% endif %}
+                    {% if dia.eventos %}
+                      <span class="camp-sr-only">. Eventos: {% for evento in dia.eventos %}{{ evento.titulo }}{% if not forloop.last %}; {% endif %}{% endfor %}</span>
+                      <i class="camp-mini-dot" aria-hidden="true"></i>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="camp-profile-upcoming">
+          <div class="camp-profile-upcoming-head">
+            <h3>Próximas atividades</h3>
+            <a href="{% url 'plataforma:calendar' %}">Ver calendário</a>
+          </div>
+
+          {% for evento in proximas_atividades %}
+            <article class="camp-profile-upcoming-item">
+              <span class="camp-profile-upcoming-date" aria-hidden="true">
+                <strong>{{ evento.data|date:"d" }}</strong>
+                <span>{{ evento.data|date:"M"|upper }}</span>
+              </span>
+              <div>
+                <strong>{{ evento.titulo }}</strong>
+                <span>
+                  {{ evento.data|date:"d/m/Y" }}
+                  {% if evento.horario %}· {{ evento.horario|time:"H:i" }}{% endif %}
+                  · {{ evento.get_tipo_display }}
+                </span>
+              </div>
+            </article>
+          {% empty %}
+            <p class="camp-profile-upcoming-empty">Nenhuma atividade próxima por enquanto.</p>
+          {% endfor %}
+        </div>
+        </div>
+      </aside>
+    </header>
+
         {# Abas do perfil #}
-        <nav class="camp-profile-tabs" role="tablist" aria-label="Seções do perfil">
+        <nav class="camp-profile-tabs" role="tablist" aria-label="Seções do perfil" hidden>
           <button
             class="camp-profile-tab{% if aba_ativa == 'projetos' %} is-active{% endif %}"
             type="button"
@@ -78,86 +153,11 @@
             Configurações
           </button>
         </nav>
-      </div>
-
-      <aside class="camp-profile-calendar" aria-labelledby="perfil-calendario-titulo">
-        <div class="camp-profile-cal-head">
-          <h2 id="perfil-calendario-titulo">Meu calendário</h2>
-          <div class="camp-profile-cal-tools">
-            <div class="camp-profile-cal-nav" aria-label="Navegação do calendário">
-              <a href="?ano={{ ano_anterior }}&amp;mes={{ mes_anterior }}&amp;aba={{ aba_ativa }}" aria-label="Mês anterior" rel="prev">
-                <svg class="camp-icon camp-icon--prev" aria-hidden="true"><use href="#i-arrow"/></svg>
-              </a>
-              <span>{{ mes_nome|capfirst }} {{ ano }}</span>
-              <a href="?ano={{ ano_proximo }}&amp;mes={{ mes_proximo }}&amp;aba={{ aba_ativa }}" aria-label="Próximo mês" rel="next">
-                <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
-              </a>
-            </div>
-            <button class="camp-profile-cal-toggle" type="button" aria-expanded="true" aria-controls="perfil-calendario-corpo" title="Minimizar calendário" data-calendar-toggle>
-              <svg class="camp-icon" aria-hidden="true"><use href="#i-chevron"/></svg>
-              <span class="camp-sr-only">Minimizar calendário</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="camp-profile-cal-body" id="perfil-calendario-corpo" data-calendar-body>
-        <table class="camp-mini-calendar">
-          <caption class="camp-sr-only">Calendário de {{ mes_nome }} de {{ ano }}</caption>
-          <thead>
-            <tr>
-              <th scope="col">S</th>
-              <th scope="col">T</th>
-              <th scope="col">Q</th>
-              <th scope="col">Q</th>
-              <th scope="col">S</th>
-              <th scope="col">S</th>
-              <th scope="col">D</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for semana in semanas %}
-              <tr>
-                {% for dia in semana %}
-                  <td class="camp-mini-day{% if dia.fora_do_mes %} is-outside{% endif %}{% if dia.hoje %} is-today{% endif %}{% if dia.eventos %} has-event{% endif %}">
-                    <span>{{ dia.numero }}</span>
-                    {% if dia.eventos %}
-                      <i class="camp-mini-dot" title="{% for evento in dia.eventos %}{{ evento.titulo }}{% if not forloop.last %}, {% endif %}{% endfor %}"></i>
-                    {% endif %}
-                  </td>
-                {% endfor %}
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-
-        <div class="camp-profile-upcoming">
-          <div class="camp-profile-upcoming-head">
-            <h3>Próximas atividades</h3>
-            <a href="{% url 'plataforma:calendar' %}">Ver calendário</a>
-          </div>
-
-          {% for evento in proximas_atividades %}
-            <article class="camp-profile-upcoming-item">
-              <span class="camp-profile-upcoming-date" aria-hidden="true">
-                <strong>{{ evento.data|date:"d" }}</strong>
-                <span>{{ evento.data|date:"M"|upper }}</span>
-              </span>
-              <div>
-                <strong>{{ evento.titulo }}</strong>
-                <span>
-                  {{ evento.data|date:"d/m/Y" }}
-                  {% if evento.horario %}· {{ evento.horario|time:"H:i" }}{% endif %}
-                  · {{ evento.get_tipo_display }}
-                </span>
-              </div>
-            </article>
-          {% empty %}
-            <p class="camp-profile-upcoming-empty">Nenhuma atividade próxima por enquanto.</p>
-          {% endfor %}
-        </div>
-        </div>
-      </aside>
-    </header>
+        <noscript><nav class="camp-profile-tabs camp-profile-tabs--links" aria-label="Seções do perfil">
+          <a href="?aba=projetos"{% if aba_ativa == 'projetos' %} aria-current="page"{% endif %}>Meus projetos</a>
+          <a href="?aba=colaboracoes"{% if aba_ativa == 'colaboracoes' %} aria-current="page"{% endif %}>Colaborações</a>
+          <a href="?aba=configuracoes"{% if aba_ativa == 'configuracoes' %} aria-current="page"{% endif %}>Configurações</a>
+        </nav></noscript>
 
     <div class="camp-profile-panels">
 
@@ -390,11 +390,21 @@
             {% endif %}
 
             {% for field in form_perfil %}
+              {% if field.name == 'remover_avatar' %}
+                {% if perfil_usuario.avatar %}
+                  <div class="camp-avatar-remove">
+                    <label class="camp-avatar-remove-fallback" for="{{ field.id_for_label }}">{{ field }} <span>Remover foto atual</span></label>
+                    <p id="avatar-remove-status" role="status"{% if not field.value %} hidden{% endif %}>A foto será removida quando você salvar as alterações.</p>
+                    {% for error in field.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+                  </div>
+                {% endif %}
+              {% else %}
               <div class="camp-field">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
                 {% for error in field.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
               </div>
+              {% endif %}
             {% endfor %}
 
             <div class="camp-settings-readonly">
@@ -439,9 +449,35 @@
 
   <script>
     (() => {
+      const checkbox = document.getElementById('id_remover_avatar');
+      const fallback = checkbox?.closest('.camp-avatar-remove-fallback');
+      const status = document.getElementById('avatar-remove-status');
+      if (!checkbox || !fallback || !status) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'camp-avatar-remove-button';
+      button.setAttribute('aria-describedby', 'avatar-remove-status');
+      button.innerHTML = '<span class="camp-avatar-remove-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-trash"/></svg></span><span></span>';
+      fallback.before(button);
+      fallback.hidden = true;
+      const sync = () => {
+        button.lastElementChild.textContent = checkbox.checked ? 'Desfazer remoção' : 'Remover foto atual';
+        status.hidden = !checkbox.checked;
+      };
+      button.addEventListener('click', () => {
+        if (!checkbox.checked && !window.confirm('Remover a foto atual? Ela será removida ao salvar as alterações.')) return;
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+        sync();
+      });
+      sync();
+    })();
+
+    (() => {
       const tabs = Array.from(document.querySelectorAll('[data-profile-tab]'));
       const panels = Array.from(document.querySelectorAll('[data-profile-panel]'));
       if (!tabs.length) return;
+      tabs[0].closest('[role="tablist"]').hidden = false;
 
       const activate = (name) => {
         tabs.forEach((tab) => {
@@ -474,42 +510,6 @@
       activate(activeTab.dataset.profileTab);
     })();
 
-    (() => {
-      const head = document.querySelector('.camp-profile-head');
-      const toggle = document.querySelector('[data-calendar-toggle]');
-      const body = document.querySelector('[data-calendar-body]');
-      if (!head || !toggle || !body) return;
-
-      const storageKey = 'tenant:perfil-calendario-minimizado';
-
-      const setCollapsed = (collapsed) => {
-        head.classList.toggle('is-calendar-collapsed', collapsed);
-        body.hidden = collapsed;
-        toggle.setAttribute('aria-expanded', String(!collapsed));
-        const label = collapsed ? 'Expandir calendário' : 'Minimizar calendário';
-        toggle.setAttribute('title', label);
-        const srLabel = toggle.querySelector('.camp-sr-only');
-        if (srLabel) srLabel.textContent = label;
-      };
-
-      let collapsed = false;
-      try {
-        collapsed = window.localStorage.getItem(storageKey) === '1';
-      } catch (error) {
-        collapsed = false;
-      }
-      setCollapsed(collapsed);
-
-      toggle.addEventListener('click', () => {
-        collapsed = !collapsed;
-        setCollapsed(collapsed);
-        try {
-          window.localStorage.setItem(storageKey, collapsed ? '1' : '0');
-        } catch (error) {
-          // Sem persistência quando o navegador bloqueia o armazenamento local.
-        }
-      });
-    })();
   </script>
 
 {% endblock %}

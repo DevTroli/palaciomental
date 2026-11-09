@@ -106,6 +106,34 @@ class ExperienceM6Tests(PortalInstitucionalBase):
             with avatar.open("rb") as stream:
                 self.assertEqual(Image.open(stream).format, "WEBP")
 
+    def test_avatar_removal_is_confirmed_on_save_and_survives_validation_errors(self):
+        with TemporaryDirectory() as media, override_settings(MEDIA_ROOT=media):
+            data = BytesIO(); Image.new("RGB", (100, 100), "blue").save(data, format="PNG")
+            payload = {"form": "perfil", "first_name": "Participante", "email": self.user.email}
+            self.client.post("/perfil/", {**payload, "avatar": SimpleUploadedFile("real.png", data.getvalue(), content_type="image/png")}, HTTP_HOST=HOST)
+            response = self.client.post("/perfil/", {**payload, "first_name": "x", "remover_avatar": "on"}, HTTP_HOST=HOST)
+            self.assertContains(response, 'id="id_remover_avatar"')
+            self.assertTrue(response.context["form_perfil"]["remover_avatar"].value())
+            self.assertTrue(MemberProfile.objects.get(user=self.user).avatar)
+            self.assertEqual(self.client.post("/perfil/", {**payload, "remover_avatar": "on"}, HTTP_HOST=HOST).status_code, 302)
+            self.assertFalse(MemberProfile.objects.get(user=self.user).avatar)
+            self.assertNotContains(self.client.get("/perfil/?aba=configuracoes", HTTP_HOST=HOST), 'id="id_remover_avatar"')
+
+    def test_registration_rejects_username_ignoring_letter_case(self):
+        from plataforma.forms import MemberCreationForm
+        form = MemberCreationForm(data={"username": self.user.username.upper(), "first_name": "Pessoa", "email": "novo@example.com", "password1": "Senha-forte-123", "password2": "Senha-forte-123"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("username", form.errors)
+
+    def test_profile_has_navigation_fallback_and_calendar_event_text(self):
+        EventoCalendario.objects.create(organizacao=self.organization, aluno=self.user, titulo="Oficina acessível", tipo="atividade", data=date.today())
+        response = self.client.get("/perfil/?aba=colaboracoes", HTTP_HOST=HOST)
+        self.assertContains(response, '<noscript>')
+        self.assertContains(response, '?aba=configuracoes')
+        self.assertContains(response, 'abbr="Segunda-feira"')
+        self.assertContains(response, 'Eventos: Oficina acessível')
+        self.assertEqual(response.context['aba_ativa'], 'colaboracoes')
+
     def test_inactive_membership_cannot_use_new_agenda(self):
         self.membership.status = "suspensa"; self.membership.save()
         self.assertEqual(self.client.post("/calendario/novo/", HTTP_HOST=HOST).status_code, 403)

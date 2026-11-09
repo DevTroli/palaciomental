@@ -1,6 +1,9 @@
 /* Layout e fluxo CAMP preservados; marca e dados pertencem ao tenant do host. */
 .camp-body { --camp-bg: var(--tenant-background); --camp-card: var(--tenant-surface); --camp-ink: var(--tenant-surface-ink); --camp-muted: var(--tenant-surface-ink); --camp-navy: var(--tenant-primary); --camp-yellow: var(--tenant-accent); --camp-blue: var(--tenant-primary); }
-.ranking-honour { display: inline-block; margin: 10px 0 0; padding: 7px 12px; border: 1px solid #806518; border-radius: 8px; background: #fff2bf; color: #302300; font-size: 13px; font-weight: 700; line-height: 1.5; }
+.ranking-honour { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; margin-top: 10px; padding: 6px 12px 6px 6px; border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 30%, var(--tenant-surface)); border-radius: 12px; background: var(--tenant-surface); color: var(--tenant-surface-ink); font-size: 12px; line-height: 1.4; }
+.ranking-honour strong, .ranking-honour small { display: block; }.ranking-honour small { margin-top: 2px; font-size: 11px; }
+.ranking-medal { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 3px double #735d1c; border-radius: 50%; background: #f5d76e; color: #281e00; font-size: 15px; font-weight: 800; }
+.ranking-honour--2 .ranking-medal { background: #d9e0e7; border-color: #596979; color: #1b2934; }.ranking-honour--3 .ranking-medal { background: #e4b28a; border-color: #75492d; color: #321907; }.ranking-honour--4 .ranking-medal, .ranking-honour--5 .ranking-medal { background: var(--tenant-primary); border-color: var(--tenant-primary-text); color: var(--tenant-primary-text); }
 .camp-profile-project-card { border-top: 3px solid var(--tenant-primary); }
 .camp-profile-project-name { font-size: 17px; }
 .camp-body.tenant-shell { display: block; }
@@ -57,6 +60,42 @@
 .camp-body .camp-explore-tab:not([aria-current="page"]) { background: var(--tenant-surface); color: var(--tenant-surface-ink); border-color: currentColor; }
 .camp-body .camp-explore-tab:not([aria-current="page"]) span { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
 .camp-body .camp-explore-cta { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.tenant-page-frame { width: 100%; max-width: 1480px; margin-inline: auto; }
+.tenant-shell .camp-profile-page { padding-top: 0; }
+.tenant-shell .camp-profile-head { grid-template-columns: minmax(0, 1fr) minmax(270px, 340px); align-items: stretch; gap: 20px; padding: 0; border: 0; background: transparent; color: var(--tenant-surface-ink); }
+.tenant-shell .camp-profile-head::before { display: none; }
+.tenant-shell .camp-profile-left { justify-content: center; gap: 22px; min-height: 100%; padding: clamp(24px, 3vw, 40px); border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 18%, var(--tenant-surface)); border-radius: 18px; background: var(--tenant-surface); }
+.tenant-shell .camp-profile-id { align-items: center; gap: 18px; padding: 0; }
+.tenant-shell .camp-profile-avatar-xl { width: 104px; height: 104px; font-size: 40px; background: var(--tenant-primary); color: var(--tenant-primary-text); box-shadow: none; }
+.tenant-shell .camp-profile-name { color: var(--tenant-surface-ink); font-size: clamp(30px, 3.5vw, 44px); }
+.tenant-shell .camp-profile-info .camp-eyebrow, .tenant-shell .camp-profile-role-line, .tenant-shell .camp-profile-handle { color: var(--tenant-surface-ink); }
+.tenant-shell .camp-profile-role-line { margin-top: 8px; font-size: 13px; letter-spacing: .04em; }
+.tenant-shell .camp-profile-handle { margin-top: 7px; font-size: 14px; font-weight: 400; }
+.tenant-shell .camp-profile-calendar { width: 100%; min-width: 0; box-shadow: none; }
+.tenant-shell .camp-profile-cal-head, .tenant-shell .camp-profile-cal-tools { flex-wrap: wrap; }
+.tenant-shell .camp-profile-upcoming-head { flex-wrap: wrap; gap: 8px; }
+.tenant-shell .camp-profile-upcoming-head a { white-space: normal; }
+.tenant-shell .camp-profile-upcoming-item > div strong { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.tenant-shell .camp-profile-tabs { box-shadow: none; }
+.tenant-shell .camp-profile-tabs[hidden] { display: none; }
+.tenant-shell .camp-profile-tabs--links a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; border-radius: 999px; color: var(--tenant-surface-ink); font-size: 12px; font-weight: 700; text-decoration: none; }
+.tenant-shell .camp-profile-tabs--links a[aria-current="page"] { background: var(--tenant-selection); color: var(--tenant-selection-text); }
+.tenant-shell .camp-profile-project-actions { flex-wrap: wrap; }
+.tenant-shell .camp-profile-project-actions form { flex: 0 1 auto; }
+.tenant-shell .camp-profile-project-actions .camp-btn { flex: 0 1 auto; white-space: normal; }
+.camp-avatar-remove-button { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 5px 10px; border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 35%, var(--tenant-surface)); border-radius: 9px; background: var(--tenant-surface); color: var(--tenant-surface-ink); font: inherit; font-weight: 650; cursor: pointer; }
+.camp-avatar-remove-button:hover { background: color-mix(in srgb, var(--tenant-surface-ink) 6%, var(--tenant-surface)); }
+.camp-avatar-remove-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; background: #a21c2d; color: #fff; }
+.camp-avatar-remove-icon .camp-icon { width: 18px; height: 18px; }
+.camp-avatar-remove-fallback[hidden], .camp-avatar-remove p[hidden] { display: none; }
+.camp-avatar-remove-fallback { display: inline-flex; align-items: center; gap: 8px; }
+.camp-avatar-remove p { margin: 8px 0; font-size: 12px; line-height: 1.5; }
+@media(max-width:900px) { .tenant-shell .camp-profile-head { grid-template-columns: 1fr; }.tenant-shell .camp-profile-left { min-height: 0; }.tenant-shell .camp-profile-calendar { max-width: none; } }
+@media(max-width:500px) { .tenant-shell .camp-profile-id { align-items: flex-start; gap: 12px; }.tenant-shell .camp-profile-avatar-xl { width: 60px; height: 60px; font-size: 24px; }.tenant-shell .camp-profile-tabs { width: 100%; overflow: visible; flex-wrap: wrap; }.tenant-shell .camp-profile-tab { white-space: normal; } }
+.camp-explore-start { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 20px 0; padding: 16px 20px; border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 20%, var(--tenant-surface)); border-left: 4px solid var(--tenant-primary); border-radius: 14px; background: var(--tenant-surface); color: var(--tenant-surface-ink); }
+.camp-explore-start p { margin: 0; line-height: 1.6; }
+.camp-explore-start .camp-btn { flex: none; }
+@media(max-width:600px) { .camp-explore-start { align-items: flex-start; flex-direction: column; } }
 .camp-body .camp-calendar-new { background: var(--tenant-accent); color: var(--tenant-accent-text); }
 .camp-body .camp-calendar-today, .camp-body .camp-calendar-today:hover { color: #fff; }
 .camp-body .camp-calendar-table th { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
