@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{% static 'css/institutional-experience.css' %}">
   {% include "institutional/partials/theme.html" %}
   <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}?v=20261109-5">
-  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-5">
+  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-7">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="camp-body tenant-shell">
@@ -186,10 +186,11 @@
 
       {% block content %}{% endblock %}
 
+      <div class="tenant-footer-spacer" aria-hidden="true"></div>
       <footer class="camp-footer tenant-footer tenant-workspace-footer">
-        <a class="tenant-footer-platform" href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span><strong>Palácio Mental</strong><small>Um espaço para ideias ganharem forma.</small></span></a>
+        <a class="tenant-footer-platform" href="{{ global_home_url }}" aria-label="Ir para a página inicial do Palácio Mental"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span><strong>Palácio Mental</strong><small>Dê continuidade às suas ideias.</small></span></a>
         <div class="tenant-footer-context"><strong>{{ tenant_display_name }}</strong><span>Seu ambiente de projetos e conexões.</span></div>
-        <nav aria-label="Links do rodapé"><a href="{% url 'core:index' %}">Início do ambiente</a><a href="{{ personal_workspace_url }}">Meu espaço pessoal</a><a href="{% url 'plataforma:status' %}">Status do sistema</a><button class="tenant-footer-mode" type="button" data-display-toggle aria-label="Modo escuro" aria-pressed="false"><svg class="camp-icon" aria-hidden="true"><use href="#i-moon"/></svg><span data-display-label>Tema: claro</span></button></nav>
+        <nav aria-label="Links do rodapé"><a href="{% url 'plataforma:status' %}">Status do sistema</a><button class="tenant-footer-mode" type="button" data-display-toggle aria-label="Modo escuro" aria-pressed="false"><svg class="camp-icon" aria-hidden="true"><use href="#i-moon"/></svg><span data-display-label>Tema: claro</span></button></nav>
       </footer>
 
     </main>

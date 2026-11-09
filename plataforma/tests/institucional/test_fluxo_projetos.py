@@ -35,7 +35,7 @@ class FluxoProjetosTests(PortalInstitucionalBase):
     def test_home_separa_criacao_institucional_e_espaco_pessoal(self):
         response = self.client.get("/", HTTP_HOST=HOST, secure=True)
         self.assertContains(response, 'href="/projetos/novo/"')
-        self.assertContains(response, 'href="https://palaciomental.com.br/perfil/participante/"')
+        self.assertContains(response, 'href="https://palaciomental.com.br/" aria-label="Ir para a página inicial do Palácio Mental"')
         self.assertContains(response, "Meus Projetos")
 
     def test_fluxo_criar_salvar_contexto_reabrir_e_editar_sem_sair_do_tenant(self):

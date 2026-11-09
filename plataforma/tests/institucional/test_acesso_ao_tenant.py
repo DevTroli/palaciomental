@@ -132,7 +132,12 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         self.assertContains(response, "Pular para o conteúdo principal")
         self.assertContains(response, 'aria-label="Navegação do ambiente"')
         self.assertContains(response, "Meus Projetos")
-        self.assertContains(response, "Meu espaço pessoal")
+        self.assertContains(response, 'href="http://palaciomental.com.br/" aria-label="Ir para a página inicial do Palácio Mental"')
+        self.assertContains(response, "Dê continuidade às suas ideias.")
+        footer = response.content.decode().split('<footer class="camp-footer', 1)[1].split('</footer>', 1)[0]
+        self.assertNotIn("Início do ambiente", footer)
+        self.assertNotIn("Meu espaço pessoal", footer)
+        self.assertIn("Status do sistema", footer)
         self.assertContains(response, "tenant-footer")
         self.assertNotContains(response, "Vitrine global")
         self.assertNotContains(response, "Projeto de outro tenant")
