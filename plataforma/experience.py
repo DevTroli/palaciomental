@@ -391,6 +391,137 @@ def _chave_ordenacao(evento):
     return (evento.data, evento.horario or time.min, evento.titulo)
 
 
+def _filtrar_projetos_explorar(queryset, request, organizacao, busca, categoria, aluno_filtro):
+    if busca:
+        queryset = queryset.filter(
+            Q(title__icontains=busca)
+            | Q(direction__icontains=busca)
+            | Q(category__icontains=busca)
+            | Q(tags__icontains=busca)
+            | Q(collaboration_description__icontains=busca)
+            | Q(owner__username__icontains=busca)
+            | Q(owner__first_name__icontains=busca)
+            | Q(owner__last_name__icontains=busca)
+        )
+    if categoria:
+        queryset = queryset.filter(category__iexact=categoria)
+    if aluno_filtro:
+        queryset = queryset.filter(owner__username=aluno_filtro)
+    if request.GET.get("status"):
+        queryset = queryset.filter(status=request.GET["status"])
+    if request.GET.get("tag"):
+        queryset = queryset.filter(tags__icontains=request.GET["tag"])
+    return queryset
+
+
+def _filtrar_tipo_projetos_explorar(queryset, request, organizacao):
+    tipo = request.GET.get("tipo", "")
+    if tipo == "autonomo":
+        return queryset.filter(vinculo_institucional__isnull=True)
+    if tipo == "vinculado":
+        from .models import ProgramaInstitucional
+
+        return queryset.filter(
+            vinculo_institucional__turma__programa__organizacao=organizacao,
+            vinculo_institucional__turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+        )
+    return queryset
+
+
+def _projetos_explorar(request, organizacao, busca, categoria, aluno_filtro):
+    from core.rankings import ranked_projects
+
+    projetos = Project.objects.filter(
+        organizacao=organizacao,
+        visibility=Project.VISIBILITY_PUBLIC,
+    ).select_related("owner").annotate(total_membros=Count("memberships", distinct=True))
+    projetos = _filtrar_tipo_projetos_explorar(projetos, request, organizacao)
+    total = projetos.count()
+    projetos = _filtrar_projetos_explorar(
+        projetos, request, organizacao, busca, categoria, aluno_filtro
+    ).annotate(relevance=Count("votes", distinct=True))
+    if request.GET.get("ordering", "recent") == "relevance":
+        projetos = ranked_projects(projetos, tenant_id=organizacao.pk)
+    else:
+        projetos = projetos.order_by("-updated_at")
+    page = Paginator(projetos, 24).get_page(request.GET.get("page"))
+    return page, _decorar_projetos(list(page.object_list)), total
+
+
+def _filtrar_membros_explorar(queryset, organizacao, busca, categoria):
+    if busca:
+        queryset = queryset.filter(
+            Q(usuario__username__icontains=busca)
+            | Q(usuario__first_name__icontains=busca)
+            | Q(usuario__last_name__icontains=busca)
+            | Q(
+                usuario__owned_projects__title__icontains=busca,
+                usuario__owned_projects__organizacao=organizacao,
+                usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
+            )
+            | Q(
+                usuario__owned_projects__category__icontains=busca,
+                usuario__owned_projects__organizacao=organizacao,
+                usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
+            )
+        ).distinct()
+    if categoria:
+        queryset = queryset.filter(
+            usuario__owned_projects__category__iexact=categoria,
+            usuario__owned_projects__organizacao=organizacao,
+            usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
+        ).distinct()
+    return queryset
+
+
+def _decorar_membros_explorar(membros):
+    for membro in membros:
+        membro.nome = _nome_usuario(membro.usuario)
+        membro.inicial = membro.nome[:1].upper()
+        membro.papel_rotulo = PAPEL_ROTULO.get(membro.papel, membro.get_papel_display())
+        projetos = getattr(membro.usuario, "projetos_publicos", [])
+        membro.total_projetos = len(projetos)
+        membro.categorias = sorted({projeto.category for projeto in projetos if projeto.category})[:4]
+    return membros
+
+
+def _membros_explorar(request, organizacao, busca, categoria):
+    membros = MembroOrganizacao.objects.filter(
+        organizacao=organizacao,
+        status=MembroOrganizacao.STATUS_ATIVA,
+    ).exclude(usuario=request.user)
+    total = membros.count()
+    participacoes = ProjectMember.objects.filter(
+        user=request.user,
+        project__organizacao=organizacao,
+    ).count()
+    projetos_publicos = Project.objects.filter(
+        organizacao=organizacao,
+        visibility=Project.VISIBILITY_PUBLIC,
+    ).only("id", "owner_id", "title", "category")
+    membros = membros.select_related("usuario").prefetch_related(
+        Prefetch("usuario__owned_projects", queryset=projetos_publicos, to_attr="projetos_publicos")
+    )
+    membros = _filtrar_membros_explorar(membros, organizacao, busca, categoria)
+    page = Paginator(
+        membros.order_by("usuario__first_name", "usuario__username"), 24
+    ).get_page(request.GET.get("page"))
+    return page, _decorar_membros_explorar(list(page.object_list)), total, participacoes
+
+
+def _categorias_explorar(organizacao):
+    return list(
+        Project.objects.filter(
+            organizacao=organizacao,
+            visibility=Project.VISIBILITY_PUBLIC,
+        )
+        .exclude(category="")
+        .values_list("category", flat=True)
+        .distinct()
+        .order_by("category")
+    )
+
+
 
 @tenant_required
 @login_required
@@ -416,117 +547,13 @@ def explore(request):
     total_participacoes = 0
 
     if organizacao:
-        base_projetos = (
-            Project.objects.filter(
-                organizacao=organizacao,
-                visibility=Project.VISIBILITY_PUBLIC,
-            )
-            .select_related("owner")
-            .annotate(total_membros=Count("memberships", distinct=True))
+        page, projetos_abertos, total_projetos_abertos = _projetos_explorar(
+            request, organizacao, busca, categoria, aluno_filtro
         )
-        tipo = request.GET.get("tipo", "")
-        if tipo == "autonomo":
-            base_projetos = base_projetos.filter(vinculo_institucional__isnull=True)
-        elif tipo == "vinculado":
-            from .models import ProgramaInstitucional
-            base_projetos = base_projetos.filter(
-                vinculo_institucional__turma__programa__organizacao=organizacao,
-                vinculo_institucional__turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-            )
-        total_projetos_abertos = base_projetos.count()
-
-        if busca:
-            base_projetos = base_projetos.filter(
-                Q(title__icontains=busca)
-                | Q(direction__icontains=busca)
-                | Q(category__icontains=busca)
-                | Q(tags__icontains=busca)
-                | Q(collaboration_description__icontains=busca)
-                | Q(owner__username__icontains=busca)
-                | Q(owner__first_name__icontains=busca)
-                | Q(owner__last_name__icontains=busca)
-            )
-        if categoria:
-            base_projetos = base_projetos.filter(category__iexact=categoria)
-        if aluno_filtro:
-            base_projetos = base_projetos.filter(owner__username=aluno_filtro)
-        from core.rankings import ranked_projects
-        ordering = request.GET.get("ordering", "recent")
-        if request.GET.get("status"):
-            base_projetos = base_projetos.filter(status=request.GET["status"])
-        if request.GET.get("tag"):
-            base_projetos = base_projetos.filter(tags__icontains=request.GET["tag"])
-        base_projetos = base_projetos.annotate(relevance=Count("votes", distinct=True))
-        if ordering == "relevance":
-            base_projetos = ranked_projects(base_projetos, tenant_id=organizacao.pk)
-        else:
-            base_projetos = base_projetos.order_by("-updated_at")
-        page = Paginator(base_projetos, 24).get_page(request.GET.get("page"))
-        projetos_abertos = _decorar_projetos(list(page.object_list))
-
-        membros_ativos = MembroOrganizacao.objects.filter(
-            organizacao=organizacao,
-            status=MembroOrganizacao.STATUS_ATIVA,
-        ).exclude(usuario=request.user)
-        total_colaboradores = membros_ativos.count()
-        total_participacoes = ProjectMember.objects.filter(
-            user=request.user,
-            project__organizacao=organizacao,
-        ).count()
-
-        projetos_publicos = Project.objects.filter(
-            organizacao=organizacao,
-            visibility=Project.VISIBILITY_PUBLIC,
-        ).only("id", "owner_id", "title", "category")
-        membros_qs = (
-            membros_ativos.select_related("usuario")
-            .prefetch_related(
-                Prefetch(
-                    "usuario__owned_projects",
-                    queryset=projetos_publicos,
-                    to_attr="projetos_publicos",
-                )
-            )
+        people_page, colaboradores, total_colaboradores, total_participacoes = _membros_explorar(
+            request, organizacao, busca, categoria
         )
-        if busca:
-            membros_qs = membros_qs.filter(
-                Q(usuario__username__icontains=busca)
-                | Q(usuario__first_name__icontains=busca)
-                | Q(usuario__last_name__icontains=busca)
-                | Q(usuario__owned_projects__title__icontains=busca, usuario__owned_projects__organizacao=organizacao, usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC)
-                | Q(usuario__owned_projects__category__icontains=busca, usuario__owned_projects__organizacao=organizacao, usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC)
-            ).distinct()
-        if categoria:
-            membros_qs = membros_qs.filter(
-                usuario__owned_projects__category__iexact=categoria,
-                usuario__owned_projects__organizacao=organizacao,
-                usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
-            ).distinct()
-
-        people_page = Paginator(membros_qs.order_by("usuario__first_name", "usuario__username"), 24).get_page(request.GET.get("page"))
-        for membro in people_page.object_list:
-            membro.nome = _nome_usuario(membro.usuario)
-            membro.inicial = membro.nome[:1].upper()
-            membro.papel_rotulo = PAPEL_ROTULO.get(
-                membro.papel, membro.get_papel_display()
-            )
-            projetos = getattr(membro.usuario, "projetos_publicos", [])
-            membro.total_projetos = len(projetos)
-            membro.categorias = sorted(
-                {projeto.category for projeto in projetos if projeto.category}
-            )[:4]
-            colaboradores.append(membro)
-
-        categorias = list(
-            Project.objects.filter(
-                organizacao=organizacao,
-                visibility=Project.VISIBILITY_PUBLIC,
-            )
-            .exclude(category="")
-            .values_list("category", flat=True)
-            .distinct()
-            .order_by("category")
-        )
+        categorias = _categorias_explorar(organizacao)
 
         if aluno_filtro:
             usuario = get_user_model().objects.filter(username=aluno_filtro).first()
