@@ -57,6 +57,26 @@ for (const [key, value] of Object.entries(identity)) pm.variables.set("identity_
 pm.test("Snapshot de identidade completo", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));`;
 const preserved = Object.fromEntries(["nome_exibicao", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo"].map(key => [key, "{{identity_" + key + "}}"]));
 
+group("00 · Saúde pública", "Checks GET seguros contra o domínio público de produção. Não exigem login nem alteram dados.");
+add("00.1 · Saúde da aplicação", "/saude", {
+  auth: false,
+  base: "global_base",
+  code: `${ok}
+const payload = pm.response.json();
+pm.test("Status da aplicação está ok", () => pm.expect(payload.status).to.eql("ok"));
+pm.test("Resposta JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/^application\/json/));`,
+  description: "Consulta pública de saúde da aplicação em https://palaciomental.com.br. Somente GET, sem autenticação e sem efeitos colaterais.",
+});
+add("00.2 · Readiness do banco e migrations", "/pronto", {
+  auth: false,
+  base: "global_base",
+  code: `${ok}
+const payload = pm.response.json();
+pm.test("Readiness está ok", () => pm.expect(payload.status).to.eql("ok"));
+pm.test("Resposta JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/^application\/json/));`,
+  description: "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
+});
+
 group("01 · Sessão e entrada", "Execute a coleção inteira no Runner/Newman, em ordem. A senha fica no environment local e não é exportada neste repositório.");
 add("01.1 · Login institucional e CSRF", "/entrar/", {
   auth: false, code: `${ok}\n${csrf}`,
@@ -249,7 +269,7 @@ function guard() {
 }
 const guards = [blockRequest, guardIdentity, guardMedia, guardWrite, guardInvitation].map(fn => fn.toString()).join("\n");
 const collection = {
-  info: {_postman_id: id("collection"), name: "Palácio Mental · Homologação institucional", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", description: "Formulários reais Django; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."},
+  info: {_postman_id: id("collection"), name: "Palácio Mental · Saúde pública e homologação", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", description: "Checks públicos de saúde em produção e formulários reais Django para homologação; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."},
   event: [script("prerequest", `${guards}\n(${guard.toString()})();`)],
   item: folders,
 };
@@ -262,7 +282,7 @@ const defaults = {
   username: "", password: "", invite_path: "", new_username: "", new_password: "",
 };
 const env = {
-  id: id("environment"), name: "Palácio Mental · Seguro por padrão", _postman_variable_scope: "environment",
+  id: id("environment"), name: "Palácio Mental · Produção segura por padrão", _postman_variable_scope: "environment",
   values: Object.entries(defaults).map(([key, value]) => ({key, value, enabled: true, type: ["password", "new_password", "invite_path"].includes(key) ? "secret" : "default"})),
 };
 writeFileSync(`${out}/palacio-mental.postman_collection.json`, JSON.stringify(collection, null, 2) + "\n");

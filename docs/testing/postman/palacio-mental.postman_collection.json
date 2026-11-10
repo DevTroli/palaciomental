@@ -1,9 +1,9 @@
 {
   "info": {
     "_postman_id": "ffa217cd-d204-4584-a931-e43e523ffa3e",
-    "name": "Palácio Mental · Homologação institucional",
+    "name": "Palácio Mental · Saúde pública e homologação",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Formulários reais Django; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."
+    "description": "Checks públicos de saúde em produção e formulários reais Django para homologação; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."
   },
   "event": [
     {
@@ -74,6 +74,86 @@
     }
   ],
   "item": [
+    {
+      "name": "00 · Saúde pública",
+      "description": "Checks GET seguros contra o domínio público de produção. Não exigem login nem alteram dados.",
+      "item": [
+        {
+          "id": "680048e8-b854-4981-af85-c70a5bbdffc8",
+          "name": "00.1 · Saúde da aplicação",
+          "description": "Consulta pública de saúde da aplicação em https://palaciomental.com.br. Somente GET, sem autenticação e sem efeitos colaterais.",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/saude",
+            "description": "Consulta pública de saúde da aplicação em https://palaciomental.com.br. Somente GET, sem autenticação e sem efeitos colaterais.",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json();",
+                  "pm.test(\"Status da aplicação está ok\", () => pm.expect(payload.status).to.eql(\"ok\"));",
+                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application/json/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f9350d39-e4ec-4510-aba5-3e718e7e7ca8",
+          "name": "00.2 · Readiness do banco e migrations",
+          "description": "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/pronto",
+            "description": "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json();",
+                  "pm.test(\"Readiness está ok\", () => pm.expect(payload.status).to.eql(\"ok\"));",
+                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application/json/));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
     {
       "name": "01 · Sessão e entrada",
       "description": "Execute a coleção inteira no Runner/Newman, em ordem. A senha fica no environment local e não é exportada neste repositório.",

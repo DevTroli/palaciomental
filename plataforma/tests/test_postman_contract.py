@@ -15,7 +15,8 @@ class PostmanContractTests(SimpleTestCase):
         self.environment = json.loads((ROOT / "palacio-mental.postman_environment.json").read_text())
 
     def test_collection_routes_and_request_ids(self):
-        self.assertEqual(len(self.collection["item"]), 5)
+        self.assertEqual(len(self.collection["item"]), 6)
+        self.assertEqual(self.collection["item"][0]["name"], "00 · Saúde pública")
         ids = []
         for folder in self.collection["item"]:
             for item in folder["item"]:
@@ -42,7 +43,8 @@ class PostmanContractTests(SimpleTestCase):
         self.assertNotIn("Cookie", json.dumps(self.collection))
 
     def test_multipart_preserves_non_upload_identity_fields(self):
-        items = self.collection["item"][1]["item"]
+        folder = next(folder for folder in self.collection["item"] if folder["name"] == "02 · Gestão e identidade")
+        items = folder["item"]
         upload = next(item for item in items if item["name"].startswith("02.3a"))
         fields = {entry["key"]: entry for entry in upload["request"]["body"]["formdata"]}
         for key in ("nome_exibicao", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo"):

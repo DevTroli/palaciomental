@@ -4,7 +4,7 @@ Coleção importável de formulários Django reais, não uma API REST fictícia.
 
 ## Começar com segurança
 
-Importe `palacio-mental.postman_collection.json` e `palacio-mental.postman_environment.json`. Duplique o environment para uso privado e selecione-o no Runner. Não publique senhas, cookies, tokens de convite ou environments preenchidos.
+Importe `palacio-mental.postman_collection.json` e `palacio-mental.postman_environment.json`. A pasta **00 · Saúde pública** consulta `https://palaciomental.com.br/saude` e `/pronto` em produção usando somente GET, sem login e sem efeitos colaterais. Duplique o environment para uso privado e selecione-o no Runner. Não publique senhas, cookies, tokens de convite ou environments preenchidos.
 
 - **Padrão seguro:** todos os `allow_*` vêm como `"false"`. A execução faz somente o GET público inicial; os fluxos dependentes ficam sem execução, não “aprovados”.
 - **Escrita controlada:** em um tenant descartável, preencha `username`, `password`, `allow_writes="true"` e `approved_write_host` com o host exato, incluindo porta se houver. Exemplo: `homolog-a.palaciomental.com.br`. Divergência bloqueia a requisição antes do POST e encerra o fluxo.
@@ -27,6 +27,7 @@ Não use `--insecure` em produção. A QA local usou certificado de teste e reso
 
 | Pasta | Pré-requisito | Verifica | Efeito |
 |---|---|---|---|
+| Saúde pública | Nenhum | `/saude` e `/pronto` no domínio global de produção | Somente GET; não altera dados |
 | Sessão e entrada | Login válido no tenant A | Formulário, CSRF, redirect de autenticação, home institucional e projetos | Sessão de teste |
 | Gestão e identidade | Gestor ativo e sessão | Cinco cores, releitura, membros/programas; uploads e envio opcionais | Marca/envio somente com flags próprios |
 | Projeto e contexto | Sessão e novo CSRF | Básico → ID do Location → contexto sem 4xx → salvar → detalhe → comentário → marco → releitura | Um projeto privado por execução |
