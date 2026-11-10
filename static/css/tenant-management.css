@@ -7,3 +7,23 @@
 .tenant-chart-table th, .tenant-chart-table td { padding: 10px 4px; border-bottom: 1px solid currentColor; text-align: left; }
 .tenant-chart-table td:last-child, .tenant-chart-table th:last-child { text-align: right; }
 @media (max-width: 760px) { .tenant-dashboard-charts { grid-template-columns: 1fr; } }
+
+.tenant-members-page { display: grid; gap: 24px; }
+.tenant-members-page .tenant-card { min-width: 0; overflow-wrap: anywhere; background: var(--tenant-surface); color: var(--tenant-surface-ink); border: 1px solid var(--tenant-border); }
+.tenant-members-page .tenant-card h2, .tenant-members-page .tenant-card p, .tenant-members-page .tenant-card label { color: inherit; }
+.tenant-members-page .tenant-card form { display: grid; gap: 10px; margin-top: 18px; }
+.tenant-members-page .tenant-card input:not([type=hidden]), .tenant-members-page .tenant-card select { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--tenant-border); border-radius: 8px; background: var(--tenant-surface); color: var(--tenant-surface-ink); font: inherit; }
+.tenant-members-page .tenant-card button { justify-self: start; }
+.tenant-members-page .tenant-flow-grid { align-items: start; }
+.tenant-members-page .tenant-flow-grid > .tenant-card { height: 100%; }
+.tenant-member-filters, .tenant-member-pagination { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 18px 0; }
+.tenant-member-filters a, .tenant-member-pagination a { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid var(--tenant-border); border-radius: 999px; background: var(--tenant-surface); color: var(--tenant-surface-ink); text-decoration: none; }
+.tenant-member-filters a[aria-current=page] { background: var(--tenant-selection); color: var(--tenant-selection-text); border-color: transparent; }
+.tenant-member-filters span { font-size: .85em; }
+.tenant-member-filters a:focus-visible, .tenant-member-pagination a:focus-visible { outline: 3px solid var(--tenant-link); outline-offset: 3px; }
+.tenant-members-page .tenant-button { background: var(--tenant-solid); color: #fff; border: 0; }
+.tenant-members-page .tenant-hero { max-width: none; margin: 0; padding: 8px 0 8px 20px; border-left: 4px solid var(--tenant-accent); color: var(--tenant-ink); background: transparent; }
+.tenant-members-page .tenant-hero .tenant-eyebrow { color: var(--tenant-link); }
+.tenant-members-page .tenant-hero > p:last-child { color: inherit; }
+.tenant-members-page .tenant-members-invite { border-top: 3px solid var(--tenant-accent); }
+.tenant-members-page .tenant-members-invite .tenant-button { background: var(--tenant-accent); color: var(--tenant-accent-text); }

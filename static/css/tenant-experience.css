@@ -123,3 +123,8 @@
 .camp-body .camp-profile-project-meta { color: var(--tenant-surface-ink); }
 .camp-body .camp-inbox-item, .camp-body .camp-inbox-item.is-new, .camp-body .camp-inbox-item--pedido, .camp-body .camp-inbox-date, .camp-body .camp-manage-person { background: var(--tenant-surface); color: var(--tenant-surface-ink); }
 .camp-body .camp-inbox-new, .camp-body .camp-manage-table .camp-manage-open { color: #14532d; }
+
+@media (max-width: 700px) {
+  .camp-explore-search .camp-explore-search-field { flex: none; display: block; width: 100%; }
+  .camp-explore-search-field .camp-icon { top: 50%; transform: translateY(-50%); }
+}

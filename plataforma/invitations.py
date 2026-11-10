@@ -89,9 +89,7 @@ def _accept(invitation, user, kind):
     )
     if kind == "organization":
         if not created and affiliation.status != MembroOrganizacao.STATUS_ATIVA:
-            affiliation.status = MembroOrganizacao.STATUS_ATIVA
-            affiliation.papel = invitation.papel
-            affiliation.save(update_fields=["status", "papel"])
+            raise PermissionDenied("Sua afiliação está suspensa. Procure a gestão.")
         elif not created and affiliation.papel != invitation.papel:
             raise PermissionDenied("Sua conta já possui outro papel neste ambiente.")
     else:
@@ -135,13 +133,10 @@ def invitation_accept(request, token, kind):
             with transaction.atomic():
                 invitation = _invitation(request, token, kind, locked=True)
                 _accept(invitation, request.user, kind)
-            if kind == "group":
-                assert isinstance(invitation, ConviteGrupo)
-                return redirect(
-                    "plataforma:institutional_program_detail",
-                    programa_id=invitation.grupo.turma.programa_id,
-                )
-            return redirect("plataforma:projects")
+            affiliation = MembroOrganizacao.objects.get(organizacao=_organization(invitation, kind), usuario=request.user)
+            if affiliation.papel in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
+                return redirect("plataforma:institutional_management")
+            return redirect("core:index")
         else:
             return HttpResponseBadRequest("Ação de convite inválida.")
 

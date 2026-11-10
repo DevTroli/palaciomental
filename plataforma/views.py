@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Case, Count, Exists, OuterRef, Q, When
 from django.http import Http404, HttpResponseForbidden, JsonResponse
@@ -313,6 +314,8 @@ def _alterar_status_membro(request, organizacao, membro, acao):
 
 
 def _alterar_papel_membro(request, organizacao, membro):
+    if request.membro_organizacao.papel != MembroOrganizacao.PAPEL_PROPRIETARIO:
+        return JsonResponse({"detail": "Somente o proprietário pode alterar papéis."}, status=403)
     novo_papel = request.POST.get("papel")
     if novo_papel not in dict(MembroOrganizacao.PAPEL_CHOICES):
         return JsonResponse({"detail": "Papel institucional inválido."}, status=400)
@@ -327,9 +330,17 @@ def _alterar_papel_membro(request, organizacao, membro):
 
 
 def _gerenciar_membro(request, organizacao):
+    # Serialize owner changes for this organization, including changes to
+    # different members, so concurrent requests cannot remove both owners.
+    with transaction.atomic():
+        type(organizacao).objects.select_for_update().get(pk=organizacao.pk)
+        return _gerenciar_membro_locked(request, organizacao)
+
+
+def _gerenciar_membro_locked(request, organizacao):
     membro = get_object_or_404(MembroOrganizacao, pk=request.POST.get("membro_id"), organizacao=organizacao)
     acao = request.POST.get("acao")
-    if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.user != membro.usuario:
+    if membro.papel == MembroOrganizacao.PAPEL_PROPRIETARIO and request.membro_organizacao.papel != MembroOrganizacao.PAPEL_PROPRIETARIO:
         return JsonResponse({"detail": "Apenas o proprietário pode alterar outro proprietário."}, status=403)
     if acao in {"suspender", "remover", "ativar"}:
         erro = _alterar_status_membro(request, organizacao, membro, acao)
@@ -356,9 +367,16 @@ def institutional_members(request):
         return _gerenciar_membro(request, organizacao)
     if convite_form is None:
         convite_form = ConviteOrganizacaoForm(papeis_permitidos=papeis)
-    membros = organizacao.afiliacoes.select_related("usuario").order_by("papel", "usuario__username")
+    afiliacoes = organizacao.afiliacoes.select_related("usuario")
+    papel_filtro = request.GET.get("papel", "")
+    if papel_filtro not in dict(MembroOrganizacao.PAPEL_CHOICES):
+        papel_filtro = ""
+    membros = afiliacoes.filter(papel=papel_filtro) if papel_filtro else afiliacoes
+    membros = Paginator(membros.order_by("usuario__username", "pk"), 12).get_page(request.GET.get("pagina"))
+    contagens = dict(afiliacoes.order_by().values_list("papel").annotate(total=Count("pk")))
+    filtros_papeis = [(value, label, contagens.get(value, 0)) for value, label in MembroOrganizacao.PAPEL_CHOICES]
     convites = organizacao.convites.filter(status=ConviteOrganizacao.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por").order_by("expira_em")
-    return render(request, "institutional/members.html", {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "membros": membros, "papeis": MembroOrganizacao.PAPEL_CHOICES, "convite_form": convite_form, "convites": convites, "papeis_convidaveis": papeis})
+    return render(request, "institutional/members.html", {"organizacao": organizacao, "identidade": getattr(organizacao, "identidade", None), "membros": membros, "papeis": MembroOrganizacao.PAPEL_CHOICES, "convite_form": convite_form, "convites": convites, "papeis_convidaveis": papeis, "papel_filtro": papel_filtro, "filtros_papeis": filtros_papeis, "total_afiliacoes": sum(contagens.values())})
 
 
 def _can_manage_institutional_structure(request):
@@ -625,7 +643,11 @@ def institutional_group_members(request, group_id):
             return JsonResponse({"detail": "Você não pode convidar pessoas para este grupo."}, status=403)
         if form.is_valid():
             email = form.cleaned_data["email"]
-            if MembroGrupo.objects.filter(grupo=grupo, usuario__email__iexact=email, status=MembroGrupo.STATUS_ATIVO).exists():
+            existing_affiliation = MembroOrganizacao.objects.filter(organizacao=organizacao, usuario__email__iexact=email).first()
+            if (request.membro_organizacao.papel == MembroOrganizacao.PAPEL_PROFESSOR
+                    and existing_affiliation and existing_affiliation.papel != MembroOrganizacao.PAPEL_MEMBRO):
+                form.add_error("email", "Professores podem convidar apenas alunos para suas turmas.")
+            elif MembroGrupo.objects.filter(grupo=grupo, usuario__email__iexact=email, status=MembroGrupo.STATUS_ATIVO).exists():
                 form.add_error("email", "Esta pessoa já participa do grupo.")
             else:
                 raw_token = secrets.token_urlsafe(32)

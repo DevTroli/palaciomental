@@ -9,9 +9,9 @@ from .models import ConviteOrganizacao, MembroOrganizacao, Organizacao
 
 
 PAPEIS_CONVIDAVEIS = {
-    MembroOrganizacao.PAPEL_PROPRIETARIO: (MembroOrganizacao.PAPEL_GESTOR,),
+    MembroOrganizacao.PAPEL_PROPRIETARIO: (MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR, MembroOrganizacao.PAPEL_PROFESSOR, MembroOrganizacao.PAPEL_MEMBRO),
     MembroOrganizacao.PAPEL_GESTOR: (MembroOrganizacao.PAPEL_PROFESSOR, MembroOrganizacao.PAPEL_MEMBRO),
-    MembroOrganizacao.PAPEL_PROFESSOR: (MembroOrganizacao.PAPEL_MEMBRO,),
+    MembroOrganizacao.PAPEL_PROFESSOR: (),
     MembroOrganizacao.PAPEL_MEMBRO: (),
 }
 

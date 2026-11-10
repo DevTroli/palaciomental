@@ -14,18 +14,19 @@
       <p class="camp-hero-subtitle">Descubra projetos abertos a novos colaboradores e alunos com interesses parecidos com os seus.</p>
 
       <form class="camp-explore-search" method="get" role="search">
-        <input type="hidden" name="vista" value="{{ vista }}">
+        <label class="camp-sr-only" for="explorar-tipo-busca">Buscar em</label>
+        <select id="explorar-tipo-busca" name="vista"><option value="projetos"{% if vista == 'projetos' %} selected{% endif %}>Projetos</option><option value="alunos"{% if vista == 'alunos' %} selected{% endif %}>Pessoas</option></select>
         {% if request.GET.tipo == "autonomo" or request.GET.tipo == "vinculado" %}<input type="hidden" name="tipo" value="{{ request.GET.tipo }}">{% endif %}
         {% if aluno_filtro %}<input type="hidden" name="aluno" value="{{ aluno_filtro }}">{% endif %}
         <label class="camp-sr-only" for="explorar-busca">Buscar projetos ou alunos</label>
         <span class="camp-explore-search-field">
           <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
-          <input id="explorar-busca" type="search" name="q" value="{{ busca }}" placeholder="Busque por projeto, pessoa ou tema...">
+          <input id="explorar-busca" type="search" name="q" value="{{ busca }}" placeholder="Projeto, pessoa ou @usuário">
         </span>
-        <label class="camp-sr-only" for="explorar-categoria">Filtrar por categoria</label>
+        <label class="camp-sr-only" for="explorar-categoria">Filtrar projetos por categoria</label>
         <select name="ordering" aria-label="Ordenar projetos"><option value="recent">Recentes</option><option value="relevance" {% if request.GET.ordering == "relevance" %}selected{% endif %}>Mais relevantes</option></select>
         <select id="explorar-categoria" name="categoria">
-          <option value="">Todas as categorias</option>
+          <option value="">Categorias de projetos</option>
           {% for item in categorias %}
             <option value="{{ item }}"{% if item == categoria %} selected{% endif %}>{{ item }}</option>
           {% endfor %}
@@ -69,7 +70,7 @@
       </a>
       <a class="camp-explore-tab" href="?vista=alunos{% if request.GET.tipo == 'autonomo' or request.GET.tipo == 'vinculado' %}&amp;tipo={{ request.GET.tipo|urlencode }}{% endif %}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'alunos' %} aria-current="page"{% endif %}>
         <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
-        Alunos
+        Pessoas
         <span>{{ total_colaboradores }}</span>
       </a>
     </nav>

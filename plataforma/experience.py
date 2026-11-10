@@ -450,21 +450,24 @@ def _projetos_explorar(request, organizacao, busca, categoria, aluno_filtro):
 
 def _filtrar_membros_explorar(queryset, organizacao, busca, categoria):
     if busca:
-        queryset = queryset.filter(
-            Q(usuario__username__icontains=busca)
-            | Q(usuario__first_name__icontains=busca)
-            | Q(usuario__last_name__icontains=busca)
-            | Q(
-                usuario__owned_projects__title__icontains=busca,
-                usuario__owned_projects__organizacao=organizacao,
-                usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
-            )
-            | Q(
-                usuario__owned_projects__category__icontains=busca,
-                usuario__owned_projects__organizacao=organizacao,
-                usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
-            )
-        ).distinct()
+        if busca.startswith("@"):
+            queryset = queryset.filter(usuario__username__icontains=busca[1:])
+        else:
+            queryset = queryset.filter(
+                Q(usuario__username__icontains=busca)
+                | Q(usuario__first_name__icontains=busca)
+                | Q(usuario__last_name__icontains=busca)
+                | Q(
+                    usuario__owned_projects__title__icontains=busca,
+                    usuario__owned_projects__organizacao=organizacao,
+                    usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
+                )
+                | Q(
+                    usuario__owned_projects__category__icontains=busca,
+                    usuario__owned_projects__organizacao=organizacao,
+                    usuario__owned_projects__visibility=Project.VISIBILITY_PUBLIC,
+                )
+            ).distinct()
     if categoria:
         queryset = queryset.filter(
             usuario__owned_projects__category__iexact=categoria,
@@ -551,7 +554,7 @@ def explore(request):
             request, organizacao, busca, categoria, aluno_filtro
         )
         people_page, colaboradores, total_colaboradores, total_participacoes = _membros_explorar(
-            request, organizacao, busca, categoria
+            request, organizacao, busca, "" if vista == "alunos" else categoria
         )
         categorias = _categorias_explorar(organizacao)
 

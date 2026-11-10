@@ -3,6 +3,7 @@ from io import BytesIO
 from tempfile import TemporaryDirectory
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth import get_user_model
 from django.test import override_settings
 from PIL import Image
 
@@ -34,6 +35,27 @@ class ExperienceM6Tests(PortalInstitucionalBase):
                 self.assertContains(response, "Campus personalizado")
                 self.assertNotContains(response, 'href="/camp/')
                 self.assertNotContains(response, "CAMP-PG")
+
+    def test_people_search_accepts_at_username_and_stays_in_tenant(self):
+        user = get_user_model().objects.create_user(username="ana123", first_name="Ana")
+        outsider = get_user_model().objects.create_user(username="ana_externa", first_name="Ana")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=user)
+        MembroOrganizacao.objects.create(organizacao=self.other, usuario=outsider)
+        response = self.client.get("/projetos/", {"vista": "alunos", "q": "@ana123"}, HTTP_HOST=HOST)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ana123")
+        self.assertNotContains(response, "ana_externa")
+        self.assertContains(response, 'name="vista"')
+
+    def test_shared_navigation_search_offers_projects_and_people_on_each_screen(self):
+        for path in ("/", "/perfil/", "/projetos/", "/calendario/"):
+            with self.subTest(path=path):
+                response = self.client.get(path, HTTP_HOST=HOST)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, '<legend>Buscar em</legend>', html=True)
+                self.assertContains(response, 'name="vista" value="projetos" checked')
+                self.assertContains(response, 'name="vista" value="alunos"')
+                self.assertContains(response, 'action="/projetos/"')
 
     def test_classes_and_teams_page_is_available_only_in_an_affiliated_tenant(self):
         path = "/turmas-e-equipes/"
