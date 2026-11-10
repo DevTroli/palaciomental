@@ -12,8 +12,8 @@
   {% block extra_global_css %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/institutional-experience.css' %}">
   {% include "institutional/partials/theme.html" %}
-  <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}?v=20261109-15">
-  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261109-13">
+  <link rel="stylesheet" href="{% static 'css/tenant-experience.css' %}?v=20261110-1">
+  <link rel="stylesheet" href="{% static 'css/tenant-shell.css' %}?v=20261110-1">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="camp-body tenant-shell">
@@ -131,12 +131,19 @@
 
       <div class="camp-topbar-search" id="camp-topbar-search" hidden>
         <form method="get" action="{% url 'plataforma:projects' %}" role="search">
-          <label class="camp-sr-only" for="camp-topbar-busca">Buscar projetos e alunos</label>
-          <span class="camp-topbar-search-field">
-            <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
-            <input id="camp-topbar-busca" type="search" name="q" placeholder="Buscar projetos e alunos..." autocomplete="off">
-          </span>
-          <button class="camp-btn camp-btn--primary camp-btn--sm" type="submit">Buscar</button>
+          <fieldset class="tenant-quick-search-scope">
+            <legend>Buscar em</legend>
+            <label><input type="radio" name="vista" value="projetos" checked> <span>Projetos</span></label>
+            <label><input type="radio" name="vista" value="alunos"> <span>Pessoas</span></label>
+          </fieldset>
+          <div class="tenant-quick-search-controls">
+            <label class="camp-sr-only" for="camp-topbar-busca">Termo de busca</label>
+            <span class="camp-topbar-search-field">
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
+              <input id="camp-topbar-busca" type="search" name="q" placeholder="Nome ou tema do projeto" autocomplete="off">
+            </span>
+            <button class="camp-btn camp-btn--primary camp-btn--sm" type="submit">Buscar</button>
+          </div>
         </form>
       </div>
     </header>
@@ -305,6 +312,11 @@
       const searchToggle = document.querySelector('[data-search-toggle]');
       const searchPanel = document.getElementById('camp-topbar-search');
       const searchInput = searchPanel?.querySelector('input[type="search"]');
+      searchPanel?.querySelectorAll('input[name="vista"]').forEach(option => {
+        option.addEventListener('change', () => {
+          if (searchInput) searchInput.placeholder = option.value === 'alunos' ? 'Nome ou @usuário' : 'Nome ou tema do projeto';
+        });
+      });
 
       const setSearch = (open) => {
         if (!searchToggle || !searchPanel) return;
