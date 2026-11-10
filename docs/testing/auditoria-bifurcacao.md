@@ -34,7 +34,7 @@ Milestone: [#12](https://github.com/DevTroli/palaciomental/milestone/12). Os PRs
 | Django/PostgreSQL | `manage.py test` | 215 testes, sem falha |
 | Boot | `unittest` de `test_release_contract.py` | 7 testes, sem falha |
 | Links Admin | `unittest` de `test_tenant_admin_links.py` | 8 testes, sem falha |
-| Parser e guardas | `node --test tools/test_postman_*.mjs` | 8 testes, sem falha; executados também no CI |
+| Parser e guardas | `node --test tools/test_postman_*.mjs` | Registro histórico: 8 testes sem falha; hoje são experimentais e executados sob demanda |
 | Newman 6.2.1 | Sessão, branding, multipart, projeto/contexto, comentário, marco, bordas, cadastro/aceite | 31 requests, 55 asserções, sem falha |
 | Upload sem branding | `allow_branding=false`, uploads habilitados | 30 requests, 53 asserções; nome/apresentação/cores preservados |
 | Modo padrão | Flags de mutação desligados | 1 GET, 2 asserções; nenhum POST |

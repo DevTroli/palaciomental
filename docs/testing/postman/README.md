@@ -73,7 +73,7 @@ Os itens de mídia validam HTTP 200 e Content-Type de imagem. Isso não comprova
 - Testes de RLS/isolamento: executar no PostgreSQL com role comum, conforme o CI.
 - `core` e testes de comentários: cache/rankings e integrações NoSQL/fallbacks da `main` atualizada.
 - `plataforma.tests.administracao`: links seguros do Admin para abrir tenant.
-- `plataforma.tests.test_postman_contract`: rotas existentes, IDs únicos, redirects e export seguro.
+- `tools.postman_contract`: testes experimentais de rotas, IDs, redirects e export seguro. Execute sob demanda com `python manage.py test tools.postman_contract`; eles não fazem parte da suíte padrão ou da CI.
 - `scripts/tests`: contratos de boot e links do Admin, executados separadamente do runner Django.
 
 ```sh
