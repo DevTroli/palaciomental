@@ -201,7 +201,7 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         )
         self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
 
-    def test_owner_dashboard_shows_owner_governance_action_and_tenant_metrics(self):
+    def test_owner_dashboard_shows_member_management_and_tenant_metrics(self):
         MembroOrganizacao.objects.create(
             organizacao=self.organization,
             usuario=self.user,
@@ -220,7 +220,8 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
             HTTP_HOST="camppg.palaciomental.com.br",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Responsabilidade do proprietário")
+        self.assertContains(response, "Membros e convites")
+        self.assertNotContains(response, "Governança e papéis")
         self.assertContains(response, "Programas publicados")
         self.assertContains(response, "1", html=False)
 

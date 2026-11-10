@@ -14,7 +14,7 @@
         Painel do gestor
         <span>{{ tenant_display_name }} em um só lugar.</span>
       </h1>
-      <p class="camp-hero-subtitle">Acompanhe alunos, projetos e pedidos de colaboração da organização.</p>
+      <p class="camp-hero-subtitle">Acompanhe pessoas, programas e projetos da organização.</p>
     </div>
 
     <div class="camp-profile-identity camp-manage-identity">
@@ -42,20 +42,13 @@
           <span>Projeto{{ total_projetos|pluralize }} na organização</span>
         </div>
       </article>
-      <article class="camp-stat">
-        <span class="camp-stat-icon camp-stat-icon--green" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
-        <div>
-          <strong>{{ total_abertos }}</strong>
-          <span>Aberto{{ total_abertos|pluralize }} a colaboração</span>
-        </div>
-      </article>
       <article class="camp-stat"><div><strong>{{ metricas.programas }}</strong><span>Programas publicados</span></div></article>
       <article class="camp-stat"><div><strong>{{ metricas.convites }}</strong><span>Convites pendentes</span></div></article>
     </section>
 
     <section aria-labelledby="distribution-title">
       <div class="tenant-section-heading"><div><p class="tenant-eyebrow">Visão do ambiente</p><h2 id="distribution-title">Projetos e participação</h2></div></div>
-      <p>Contagens atuais deste ambiente. A distribuição inclui projetos privados, sem revelar seu conteúdo.</p>
+      <p>Contagens atuais, sem histórico ou estimativas. Os projetos incluem itens privados, sem revelar seu conteúdo.</p>
       <div class="tenant-dashboard-charts">
         <article class="tenant-card">
           <h3>Projetos por situação</h3>
@@ -73,12 +66,10 @@
     </section>
 
     <section aria-labelledby="actions-title"><div class="tenant-section-heading"><div><p class="tenant-eyebrow">Ações administrativas</p><h2 id="actions-title">Fluxos de gestão</h2></div></div><div class="tenant-flow-grid tenant-flow-grid--compact">
-      <a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_members' %}"><p class="tenant-eyebrow">Acessos</p><h3>Membros e convites</h3><p>Convide pessoas, ajuste papéis e suspenda acessos quando necessário.</p></a>
-      <a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_programs' %}"><p class="tenant-eyebrow">Estrutura</p><h3>Programas, turmas e grupos</h3><p>Organize iniciativas, turmas e grupos do ambiente institucional.</p></a>
+      <a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_members' %}"><p class="tenant-eyebrow">Acessos</p><h3>Membros e convites</h3><p>Envie convites, altere papéis e gerencie acessos.</p></a>
+      <a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_programs' %}"><p class="tenant-eyebrow">Estrutura</p><h3>Programas, turmas e grupos</h3><p>Organize programas e suas turmas e equipes.</p></a>
       <a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_identity' %}"><p class="tenant-eyebrow">Identidade</p><h3>Identidade visual</h3><p>Personalize cores, logo, capa e apresentação do ambiente.</p></a>
-      <a class="tenant-card tenant-card--link" href="{% url 'plataforma:event_publish' %}"><p class="tenant-eyebrow">Agenda institucional</p><h3>Publicar atividade</h3><p>Defina atividades e prazos para participantes do ambiente.</p></a>
-      <a class="tenant-card tenant-card--link" href="{% url 'core:index' %}"><p class="tenant-eyebrow">Experiência</p><h3>Ver home do tenant</h3><p>Confira a experiência que professores e membros encontram no ambiente.</p></a>
-      {% if afiliacao.papel == 'proprietario' %}<a class="tenant-card tenant-card--link" href="{% url 'plataforma:institutional_members' %}"><p class="tenant-eyebrow">Responsabilidade do proprietário</p><h3>Governança e papéis</h3><p>Conceda ou retire responsabilidades de gestão respeitando a proteção do último proprietário.</p></a>{% endif %}
+      <a class="tenant-card tenant-card--link" href="{% url 'plataforma:event_publish' %}"><p class="tenant-eyebrow">Agenda institucional</p><h3>Publicar atividade</h3><p>Adicione um compromisso ou prazo ao calendário de um participante.</p></a>
     </div></section>
 
     <section class="camp-manage-panel" aria-labelledby="gestao-projetos">
@@ -91,6 +82,7 @@
       </div>
 
       {% if projetos %}
+        <p>Até 25 projetos públicos atualizados recentemente. Os totais acima incluem projetos privados.</p>
         <div class="camp-manage-table-wrap">
           <table class="camp-manage-table">
             <thead>
@@ -139,10 +131,11 @@
           <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
           Alunos e equipe
         </h2>
-        <span class="camp-inbox-count">{{ membros|length }}</span>
+          <span class="camp-inbox-count">{{ membros|length }}</span>
       </div>
 
       {% if membros %}
+        <p>Até 50 pessoas ativas. Consulte a lista completa em Membros e convites.</p>
         <ul class="camp-manage-people">
           {% for membro in membros %}
             <li class="camp-manage-person">
