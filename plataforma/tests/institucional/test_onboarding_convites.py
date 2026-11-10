@@ -185,6 +185,37 @@ class OnboardingConvitesTests(PortalInstitucionalBase):
         self.assertEqual(self.client.post(path, {"action": "accept"}, HTTP_HOST=HOST).status_code, 403)
         self.assertFalse(MembroOrganizacao.objects.filter(usuario=user).exists())
 
+    def test_wrong_session_can_switch_account_and_continue_same_invitation(self):
+        for kind in ("organization", "group"):
+            with self.subTest(kind=kind):
+                self.client.logout()
+                invitation, path = self.make_invitation(kind, email=f"novo-{kind}@example.com")
+                self.client.force_login(self.user)
+                response = self.client.get(path, HTTP_HOST=HOST)
+                self.assertEqual(response.status_code, 403)
+                self.assertContains(response, "Troque de conta para continuar", status_code=403)
+                self.assertContains(response, 'value="switch_account"', status_code=403)
+                self.assertEqual(response["Referrer-Policy"], "strict-origin")
+                self.assertIn("no-store", response["Cache-Control"])
+                self.assertEqual(self.client.post(path, {"action": "accept"}, HTTP_HOST=HOST).status_code, 403)
+                response = self.client.post(path, {"action": "switch_account"}, HTTP_HOST=HOST)
+                self.assertRedirects(response, path, fetch_redirect_response=False)
+                self.assertNotIn("_auth_user_id", self.client.session)
+                self.assertContains(self.client.get(path, HTTP_HOST=HOST), "Criar conta e continuar")
+                response = self.register(path, username=f"troca-{kind}")
+                self.assertRedirects(response, path, fetch_redirect_response=False)
+                response = self.client.post(path, {"action": "accept"}, HTTP_HOST=HOST)
+                self.assertEqual(response.status_code, 302)
+                invitation.refresh_from_db()
+                self.assertEqual(invitation.status, "aceito")
+
+    def test_switch_account_requires_csrf(self):
+        _, path = self.make_invitation()
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        response = client.post(path, {"action": "switch_account"}, HTTP_HOST=HOST)
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("_auth_user_id", client.session)
     def test_login_exception_does_not_allow_arbitrary_next(self):
         user = self.make_existing_recipient()
         for path in ("/gestao/", "//evil.example/", "/convites/organizacao/invalido/aceitar/"):

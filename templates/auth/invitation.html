@@ -1,6 +1,14 @@
 {% extends "auth/institutional_base.html" %}
 {% block title %}Convite para {{ tenant_display_name }} · Palácio Mental{% endblock %}
 {% block auth_content %}
+  {% if conta_incorreta %}
+    <p class="auth-eyebrow">Convite para outra conta</p>
+    <h1 id="auth-title">Troque de conta para continuar.</h1>
+    <p class="auth-form-intro">Você está conectado como <strong>{{ user.username }}</strong>. Este convite foi enviado para <strong>{{ convite.email }}</strong>.</p>
+    <p class="auth-form-intro">Saia desta conta para criar uma nova ou entrar com a conta correspondente ao convite.</p>
+    <form method="post" class="auth-form">{% csrf_token %}<button class="auth-submit" name="action" value="switch_account" type="submit">Sair desta conta e continuar <span aria-hidden="true">→</span></button></form>
+    <p class="auth-invite-expiry">Sair encerra sua sessão neste ambiente. O convite continua disponível até {{ convite.expira_em|date:"d/m/Y H:i" }}.</p>
+  {% else %}
   <p class="auth-eyebrow">Você recebeu um convite</p>
   <h1 id="auth-title">{% if user.is_authenticated %}Seu lugar na <br>comunidade.{% else %}Vamos construir <br>algo juntos?{% endif %}</h1>
   <p class="auth-form-intro">{% if user.is_authenticated %}Confirme sua entrada em{% else %}Crie sua conta para participar de{% endif %} <strong>{{ tenant_display_name }}</strong>.</p>
@@ -14,4 +22,5 @@
     <form method="post" class="auth-form" novalidate>{% csrf_token %}{% include "auth/partials/institutional_fields.html" with compact=True %}<button class="auth-submit" name="action" value="register" type="submit">Criar conta e continuar <span aria-hidden="true">→</span></button></form>
   {% endif %}
   <p class="auth-invite-expiry">Válido até {{ convite.expira_em|date:"d/m/Y H:i" }}. A afiliação exige aceite na etapa 2 e vale somente para este ambiente.</p>
+  {% endif %}
 {% endblock %}

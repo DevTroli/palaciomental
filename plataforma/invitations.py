@@ -3,7 +3,7 @@
 import hashlib
 from urllib.parse import urlencode
 
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404, HttpResponseBadRequest
@@ -115,7 +115,17 @@ def _accept(invitation, user, kind):
 def invitation_accept(request, token, kind):
     invitation = _invitation(request, token, kind)
     if request.user.is_authenticated and request.user.email.casefold() != invitation.email.casefold():
-        raise PermissionDenied("Este convite foi emitido para outro endereço de e-mail.")
+        if request.method == "POST" and request.POST.get("action") == "switch_account":
+            logout(request)
+            response = redirect(request.path)
+        else:
+            response = render(request, "auth/invitation.html", {
+                "convite": invitation,
+                "grupo": invitation.grupo if isinstance(invitation, ConviteGrupo) else None,
+                "conta_incorreta": True,
+            }, status=403)
+        response["Referrer-Policy"] = "strict-origin"
+        return response
 
     form = InvitationRegistrationForm(invited_email=invitation.email)
     if request.method == "POST":
