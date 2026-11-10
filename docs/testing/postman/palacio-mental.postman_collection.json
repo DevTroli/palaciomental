@@ -96,9 +96,7 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
+                "exec": [""]
               }
             },
             {
@@ -109,7 +107,7 @@
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
                   "const payload = pm.response.json();",
                   "pm.test(\"Status da aplicação está ok\", () => pm.expect(payload.status).to.eql(\"ok\"));",
-                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application/json/));"
+                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application\\/json/));"
                 ]
               }
             }
@@ -133,9 +131,7 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
+                "exec": [""]
               }
             },
             {
@@ -146,7 +142,7 @@
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
                   "const payload = pm.response.json();",
                   "pm.test(\"Readiness está ok\", () => pm.expect(payload.status).to.eql(\"ok\"));",
-                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application/json/));"
+                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application\\/json/));"
                 ]
               }
             }
@@ -176,9 +172,7 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
+                "exec": [""]
               }
             },
             {
@@ -247,9 +241,7 @@
               "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
+                "exec": [""]
               }
             },
             {
@@ -293,7 +285,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Home institucional, não vitrine global\", () => pm.expect(pm.response.text()).to.include('id=\"tenant-home-title\"'));"
+                  "pm.test(\"Home institucional, não vitrine global\", () => { const html = pm.response.text(); pm.expect(html).to.include('class=\"tenant-home\"'); pm.expect(html).to.include('id=\"community-title\"'); });"
                 ]
               }
             }
@@ -1238,11 +1230,11 @@
         {
           "id": "2b661cbf-2034-4ced-acec-5ff2a983ee02",
           "name": "03.6 · Adicionar comentário",
-          "description": "03.6 · Adicionar comentário",
+          "description": "O fluxo cria o projeto com o usuário autenticado; a main atual bloqueia comentário do próprio autor com HTTP 403. Este item verifica a regra negativa, não uma persistência de comentário.",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/projetos/{{project_id}}/comentarios/",
-            "description": "03.6 · Adicionar comentário",
+            "description": "O fluxo cria o projeto com o usuário autenticado; a main atual bloqueia comentário do próprio autor com HTTP 403. Este item verifica a regra negativa, não uma persistência de comentário.",
             "header": [
               {
                 "key": "Origin",
@@ -1263,7 +1255,7 @@
                 },
                 {
                   "key": "content",
-                  "value": "Contexto de teste Postman: comentário persistido.",
+                  "value": "Contexto de teste Postman: comentário bloqueado para o autor.",
                   "type": "text"
                 }
               ]
@@ -1288,7 +1280,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                  "pm.test(\"Autor não pode comentar no próprio projeto\", () => pm.response.to.have.status(403)); pm.test(\"Motivo da restrição\", () => pm.expect(pm.response.text()).to.include(\"O autor não pode comentar no próprio projeto\"));"
                 ]
               }
             }
@@ -1393,7 +1385,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Comentário e marco persistiram\", () => { pm.expect(pm.response.text()).to.include(\"Contexto de teste Postman\"); pm.expect(pm.response.text()).to.include(\"Marco de homologação Postman\"); });"
+                  "pm.test(\"Marco persistiu\", () => pm.expect(pm.response.text()).to.include(\"Marco de homologação Postman\")); pm.test(\"Comentário do autor não persistiu\", () => pm.expect(pm.response.text()).not.to.include(\"comentário bloqueado para o autor\"));"
                 ]
               }
             }
