@@ -37,7 +37,7 @@ class CatalogoRLSTests(TestCase):
                     [tabela],
                 )
                 self.assertEqual(cursor.fetchone(), (True, True), tabela)
-                cursor.execute("SELECT count(*) FROM pg_policies WHERE format('%%I', tablename) = %s", [tabela])
+                cursor.execute("SELECT count(*) FROM pg_policy WHERE polrelid = %s::regclass", [tabela])
                 self.assertGreaterEqual(cursor.fetchone()[0], 1, tabela)
 
     def test_role_da_aplicacao_nao_ignora_rls(self):

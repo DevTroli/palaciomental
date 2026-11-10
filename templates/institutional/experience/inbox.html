@@ -1,0 +1,133 @@
+{% extends "institutional/experience/base.html" %}
+
+{% block title %}Caixa de entrada · {{ tenant_display_name }}{% endblock %}
+
+{% block content %}
+
+  <section class="camp-hero camp-inbox-hero" aria-labelledby="inbox-titulo">
+    <div class="camp-hero-copy">
+      <p class="camp-eyebrow">Caixa de entrada</p>
+      <h1 class="camp-hero-title" id="inbox-titulo">
+        Novidades do seu {{ tenant_display_name }}
+        <span>atividades e novas colaborações.</span>
+      </h1>
+      <p class="camp-hero-subtitle">Acompanhe as próximas atividades da organização e as pessoas que se juntaram aos seus projetos.</p>
+    </div>
+
+    <div class="camp-inbox-summary">
+      <strong>{{ total_novas }}</strong>
+      <span>novidade{{ total_novas|pluralize }} desde sua última visita</span>
+    </div>
+  </section>
+
+  <div class="camp-inbox-page">
+    {% for notification in notifications %}<article class="camp-inbox-panel"><p>{{ notification.message }}</p><small>{{ notification.created_at|date:"d/m/Y H:i" }}</small>{% if notification.url %}<a href="{{ notification.url }}">Ver projeto</a>{% endif %}</article>{% endfor %}
+
+    {% if pedidos %}
+      <section class="camp-inbox-panel" aria-labelledby="inbox-pedidos">
+        <div class="camp-block-head">
+          <h2 class="camp-block-title" id="inbox-pedidos">
+            <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+            Pedidos de colaboração
+          </h2>
+          <span class="camp-inbox-count">{{ pedidos|length }}</span>
+        </div>
+
+        <ul class="camp-inbox-list">
+          {% for pedido in pedidos %}
+            <li class="camp-inbox-item camp-inbox-item--pedido">
+              <span class="camp-inbox-avatar" aria-hidden="true">{{ pedido.nome|first|upper }}</span>
+              <div class="camp-inbox-body">
+                <strong>{{ pedido.nome }} quer colaborar em “{{ pedido.project.title }}”</strong>
+                {% if pedido.message %}<p>{{ pedido.message }}</p>{% endif %}
+                <span class="camp-inbox-meta">Pedido em {{ pedido.created_at|date:"d/m/Y" }} · @{{ pedido.requester.username }}</span>
+                <div class="camp-inbox-actions">
+                  <form method="post" action="{% url 'plataforma:decide_collaboration' pedido.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="aceita">
+                    <button class="camp-btn camp-btn--primary camp-btn--xs" type="submit">Aceitar</button>
+                  </form>
+                  <form method="post" action="{% url 'plataforma:decide_collaboration' pedido.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="recusada">
+                    <button class="camp-btn camp-btn--ghost camp-btn--xs" type="submit">Recusar</button>
+                  </form>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    <section class="camp-inbox-panel" aria-labelledby="inbox-atividades">
+      <div class="camp-block-head">
+        <h2 class="camp-block-title" id="inbox-atividades">
+          <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+          Novas atividades
+        </h2>
+        <a class="camp-inline-link" href="{% url 'plataforma:calendar' %}">Ver calendário</a>
+      </div>
+
+      {% if atividades %}
+        <ul class="camp-inbox-list">
+          {% for evento in atividades %}
+            <li class="camp-inbox-item{% if evento.novo %} is-new{% endif %}">
+              <span class="camp-inbox-date" aria-hidden="true">
+                <strong>{{ evento.data|date:"d" }}</strong>
+                <span>{{ evento.data|date:"M" }}</span>
+              </span>
+              <div class="camp-inbox-body">
+                <strong>{{ evento.titulo }}{% if evento.novo %}<span class="camp-inbox-new">Nova</span>{% endif %}</strong>
+                <p>{{ evento.descricao|default:"Atividade publicada pela organização." }}</p>
+                <span class="camp-inbox-meta">
+                  {{ evento.data|date:"d/m/Y" }}{% if evento.horario %} às {{ evento.horario|time:"H:i" }}{% endif %}{% if evento.projeto_visivel %} · {{ evento.projeto_visivel.title }}{% endif %}
+                </span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="camp-empty camp-empty--compact">
+          <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+          <strong>Nenhuma atividade futura.</strong>
+          <p>Quando a organização publicar encontros, eles aparecem aqui.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="camp-inbox-panel" aria-labelledby="inbox-colaboradores">
+      <div class="camp-block-head">
+        <h2 class="camp-block-title" id="inbox-colaboradores">
+          <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+          Novos colaboradores
+        </h2>
+        <a class="camp-inline-link" href="{% url 'plataforma:institutional_profile' %}#meus-projetos">Meus projetos</a>
+      </div>
+
+      {% if colaboradores %}
+        <ul class="camp-inbox-list">
+          {% for membro in colaboradores %}
+            <li class="camp-inbox-item{% if membro.novo %} is-new{% endif %}">
+              <span class="camp-inbox-avatar" aria-hidden="true">{{ membro.nome|first|upper }}</span>
+              <div class="camp-inbox-body">
+                <strong>{{ membro.nome }}{% if membro.novo %}<span class="camp-inbox-new">Novo</span>{% endif %}</strong>
+                <p>Entrou na colaboração de “{{ membro.project.title }}”.</p>
+                <span class="camp-inbox-meta">{{ membro.joined_at|date:"d/m/Y" }} · {{ membro.role }}</span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="camp-empty camp-empty--compact">
+          <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+          <strong>Nenhum colaborador ainda.</strong>
+          <p>Quando alguém entrar nos seus projetos, a novidade aparece aqui.</p>
+          <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:projects' %}">Explorar projetos</a>
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+
+{% endblock %}

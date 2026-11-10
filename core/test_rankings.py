@@ -1,9 +1,10 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from django.test import TestCase, override_settings
 
-from plataforma.models import Project, ProjectVote
+from plataforma.models import Project, ProjectVote, Organizacao
 
 from .rankings import (
     public_ranking_ids,
@@ -34,9 +35,29 @@ class FakeRedis:
         for key in keys:
             self.data.pop(key, None)
 
+    def expire(self, key, timeout):
+        return True
+
+    def persist(self, key):
+        return True
+
+    def rename(self, source, target):
+        self.data[target] = self.data.pop(source)
+
+    def pipeline(self, transaction=True):
+        return self
+
+    def execute(self):
+        return []
+
     def zrevrange(self, key, start, stop):
         members = sorted(self.data.get(key, {}).items(), key=lambda item: (-item[1], int(item[0])))
         return [member for member, _score in members[start : stop + 1]]
+
+    def zrange(self, key, start, stop, withscores=False):
+        members = sorted(self.data.get(key, {}).items(), key=lambda item: (item[1], int(item[0])))
+        selected = members[start : stop + 1 if stop >= 0 else None]
+        return selected if withscores else [member for member, _score in selected]
 
 
 @override_settings(REDIS_URL="redis://fake/1")
@@ -72,12 +93,16 @@ class RankingProjectionTests(TestCase):
             self.assertNotIn(str(self.private.pk), self.redis.data[key])
 
     def test_global_and_institutional_sets_are_separate(self):
+        org = Organizacao.objects.create(nome="Organização A", slug="org-a", status="ativa")
+        institutional = Project.objects.create(owner=self.owner, organizacao=org,
+                                               title="Projeto institucional", visibility="publico")
         with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            update_project_projection(self.public.pk, tenant_id="org-a")
-
+            update_project_projection(self.public.pk)
+            update_project_projection(institutional.pk)
             self.assertIn(str(self.public.pk), self.redis.data[ranking_key("all")])
-            self.assertIn(str(self.public.pk), self.redis.data[ranking_key("all", "org-a")])
-            self.assertNotIn(ranking_key("all", "org-b"), self.redis.data)
+            self.assertNotIn(str(institutional.pk), self.redis.data[ranking_key("all")])
+            self.assertIn(str(institutional.pk), self.redis.data[ranking_key("all", org.pk)])
+            self.assertNotIn(str(self.public.pk), self.redis.data[ranking_key("all", org.pk)])
 
     def test_confirmed_vote_uses_increment_without_duplicate_score(self):
         from core.rankings import adjust_project_projection
@@ -109,3 +134,26 @@ class RankingProjectionTests(TestCase):
         with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
             update_project_projection(self.public.pk)
             self.assertEqual(public_ranking_ids(), [self.public.pk])
+
+    def test_partial_projection_falls_back_to_sql_ordering(self):
+        from core.rankings import ranked_projects
+
+        older = Project.objects.create(
+            owner=self.owner,
+            title="Projeto com relevância SQL",
+            direction="Direção",
+            category="Pesquisa",
+            visibility=Project.VISIBILITY_PUBLIC,
+        )
+        for index in range(3):
+            ProjectVote.objects.create(
+                project=older,
+                user=User.objects.create_user(username=f"voter-{index}"),
+            )
+        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
+            self.redis.zadd(ranking_key("all"), {str(self.public.pk): 1})
+            queryset = Project.objects.filter(
+                pk__in=[self.public.pk, older.pk]
+            ).annotate(relevance=Count("votes", distinct=True))
+            result = list(ranked_projects(queryset, tenant_id=None))
+        self.assertEqual([project.pk for project in result], [older.pk, self.public.pk])

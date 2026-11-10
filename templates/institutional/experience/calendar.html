@@ -1,0 +1,267 @@
+{% extends "institutional/experience/base.html" %}
+
+{% block title %}Calendário · {{ tenant_display_name }}{% endblock %}
+
+{% block content %}
+
+  <section class="camp-hero camp-calendar-hero" aria-labelledby="calendario-titulo">
+    <div class="camp-hero-copy">
+      <p class="camp-eyebrow">Calendário do aluno</p>
+      <h1 class="camp-hero-title" id="calendario-titulo">
+        Atividades e entregas
+        <span>{{ mes_nome|capfirst }} de {{ ano }}</span>
+      </h1>
+      <p class="camp-hero-subtitle">Acompanhe os encontros das atividades em que você está inscrito e os trabalhos com prazo de entrega.</p>
+    </div>
+
+    <div class="camp-calendar-hero-actions">
+      <div class="camp-calendar-nav" aria-label="Navegação do calendário">
+        <a class="camp-calendar-nav-btn" href="?ano={{ ano_anterior }}&amp;mes={{ mes_anterior }}" aria-label="Mês anterior" rel="prev">
+          <svg class="camp-icon camp-icon--prev" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+        <span class="camp-calendar-month" aria-live="polite">{{ mes_nome|capfirst }} {{ ano }}</span>
+        <a class="camp-calendar-nav-btn" href="?ano={{ ano_proximo }}&amp;mes={{ mes_proximo }}" aria-label="Próximo mês" rel="next">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+      <div class="camp-calendar-hero-links">
+        <a class="camp-calendar-new" href="{% url 'plataforma:event_create' %}?data={{ hoje|date:'Y-m-d' }}">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+          Novo evento
+        </a>
+        <a class="camp-calendar-today" href="{% url 'plataforma:calendar' %}">Ir para hoje</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="camp-calendar-page">
+
+    <section class="camp-stats" aria-label="Resumo do calendário">
+      <article class="camp-stat">
+        <span class="camp-stat-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+        <div>
+          <strong>{{ total_atividades_mes }}</strong>
+          <span>Atividade{{ total_atividades_mes|pluralize }} no mês</span>
+        </div>
+      </article>
+      <article class="camp-stat">
+        <span class="camp-stat-icon camp-stat-icon--purple" aria-hidden="true"><svg class="camp-icon"><use href="#i-book"/></svg></span>
+        <div>
+          <strong>{{ total_pendentes }}</strong>
+          <span>Trabalho{{ total_pendentes|pluralize }} pendente{{ total_pendentes|pluralize }}</span>
+        </div>
+      </article>
+      <article class="camp-stat">
+        <span class="camp-stat-icon camp-stat-icon--green" aria-hidden="true"><svg class="camp-icon"><use href="#i-star"/></svg></span>
+        <div>
+          <strong>{{ total_entregues }}</strong>
+          <span>Trabalho{{ total_entregues|pluralize }} entregue{{ total_entregues|pluralize }}</span>
+        </div>
+      </article>
+    </section>
+
+    <div class="camp-calendar-layout">
+
+      {# ── Grade do mês ──────────────────────────────────────────── #}
+      <section class="camp-calendar-card" aria-labelledby="grade-titulo">
+        <div class="camp-block-head">
+          <h2 class="camp-block-title" id="grade-titulo">
+            <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+            {{ mes_nome|capfirst }} de {{ ano }}
+          </h2>
+          <span class="camp-calendar-legend" aria-hidden="true">
+            <span class="camp-legend camp-legend--atividade">Atividade</span>
+            <span class="camp-legend camp-legend--trabalho">Trabalho</span>
+          </span>
+        </div>
+
+        <table class="camp-calendar-table">
+          <caption class="camp-sr-only">Calendário de {{ mes_nome }} de {{ ano }}</caption>
+          <thead>
+            <tr>
+              <th scope="col" abbr="Segunda-feira">Seg</th>
+              <th scope="col" abbr="Terça-feira">Ter</th>
+              <th scope="col" abbr="Quarta-feira">Qua</th>
+              <th scope="col" abbr="Quinta-feira">Qui</th>
+              <th scope="col" abbr="Sexta-feira">Sex</th>
+              <th scope="col" abbr="Sábado">Sáb</th>
+              <th scope="col" abbr="Domingo">Dom</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for semana in semanas %}
+              <tr>
+                {% for dia in semana %}
+                  <td class="camp-calendar-day{% if dia.fora_do_mes %} is-outside{% endif %}{% if dia.hoje %} is-today{% endif %}">
+                    <span class="camp-calendar-daynum">{{ dia.numero }}</span>
+                    <div class="camp-calendar-events">
+                      {% for evento in dia.eventos %}
+                        <span class="camp-event camp-event--{{ evento.tipo }}{% if evento.status == 'entregue' %} is-done{% endif %}" title="{{ evento.titulo }}{% if evento.horario %} · {{ evento.horario|time:'H:i' }}{% endif %}">
+                          {% if evento.horario %}<span class="camp-event-time">{{ evento.horario|time:"H:i" }}</span>{% endif %}
+                          <span class="camp-event-title">{{ evento.titulo }}</span>
+                        </span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {# Agenda vertical: substitui a grade em telas pequenas. #}
+        <div class="camp-agenda" aria-label="Agenda do mês">
+          {% for dia in dias_com_eventos %}
+            <section class="camp-agenda-day">
+              <h3>{{ dia.data|date:"l, d \d\e F" }}</h3>
+              {% for evento in dia.eventos %}
+                <article class="camp-agenda-item camp-agenda-item--{{ evento.tipo }}">
+                  <span class="camp-agenda-time">{% if evento.horario %}{{ evento.horario|time:"H:i" }}{% else %}—{% endif %}</span>
+                  <div>
+                    <strong>{{ evento.titulo }}</strong>
+                    {% if evento.descricao %}<p class="camp-agenda-description">{{ evento.descricao }}</p>{% endif %}
+                    <span>{% if evento.projeto_visivel %}{{ evento.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}{% if evento.status == 'entregue' %} · Entregue{% endif %}</span>
+                  </div>
+                </article>
+              {% endfor %}
+            </section>
+          {% empty %}
+            <div class="camp-empty camp-empty--compact">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+              <strong>Nenhum evento neste mês.</strong>
+              <p>Navegue para outro mês para ver suas atividades e entregas.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      {# ── Painéis laterais ──────────────────────────────────────── #}
+      <aside class="camp-calendar-side">
+
+        <section class="camp-calendar-panel" aria-labelledby="entregas-titulo">
+          <div class="camp-block-head">
+            <h2 class="camp-block-title" id="entregas-titulo">
+              <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-book"/></svg></span>
+              Trabalhos para entregar
+            </h2>
+            {% if total_pendentes %}
+              <span class="camp-pill camp-pill--amber">{{ total_pendentes }} pendente{{ total_pendentes|pluralize }}</span>
+            {% endif %}
+          </div>
+
+          {% if trabalhos_pendentes %}
+            <div class="camp-delivery-list">
+              {% for trabalho in trabalhos_pendentes %}
+                <article class="camp-delivery">
+                  <div class="camp-delivery-info">
+                    <strong>{{ trabalho.titulo }}</strong>
+                    <span class="camp-delivery-project">{% if trabalho.projeto_visivel %}{{ trabalho.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}</span>
+                    {% if trabalho.descricao %}<p class="camp-delivery-description">{{ trabalho.descricao }}</p>{% endif %}
+                    <span class="camp-delivery-date">
+                      <svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+                      {{ trabalho.data|date:"d/m/Y" }}{% if trabalho.horario %} · {{ trabalho.horario|time:"H:i" }}{% endif %}
+                    </span>
+                  </div>
+                  <form method="post" action="{% url 'plataforma:calendar_toggle' trabalho.pk %}">
+                    {% csrf_token %}
+                    <button class="camp-btn camp-btn--ghost camp-btn--sm" type="submit">Marcar entregue</button>
+                  </form>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="camp-empty camp-empty--compact">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-star"/></svg></span>
+              <strong>Nenhum trabalho pendente.</strong>
+              <p>Você está em dia com as entregas do {{ tenant_display_name }}.</p>
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="camp-calendar-panel" aria-labelledby="atividades-calendario-titulo">
+          <div class="camp-block-head">
+            <h2 class="camp-block-title" id="atividades-calendario-titulo">
+              <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+              Atividades do aluno
+            </h2>
+          </div>
+
+          {% if proximas_atividades %}
+            <ul class="camp-calendar-activities">
+              {% for atividade in proximas_atividades %}
+                <li class="camp-calendar-activity">
+                  <span class="camp-calendar-activity-date">
+                    <strong>{{ atividade.data|date:"d" }}</strong>
+                    {{ atividade.data|date:"M" }}
+                  </span>
+                  <div>
+                    <strong>{{ atividade.titulo }}</strong>
+                    {% if atividade.descricao %}<p class="camp-calendar-activity-description">{{ atividade.descricao }}</p>{% endif %}
+                    <span>{% if atividade.projeto_visivel %}{{ atividade.projeto_visivel.title }}{% else %}{{ tenant_display_name }}{% endif %}{% if atividade.horario %} · {{ atividade.horario|time:"H:i" }}{% endif %}</span>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="camp-empty camp-empty--compact">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-calendar"/></svg></span>
+              <strong>Nenhuma atividade futura.</strong>
+              <p>Quando a organização publicar encontros, eles aparecem aqui.</p>
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="camp-calendar-panel" aria-labelledby="meus-eventos-titulo">
+          <div class="camp-block-head">
+            <h2 class="camp-block-title" id="meus-eventos-titulo">
+              <span class="camp-block-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-plus"/></svg></span>
+              Meus eventos
+            </h2>
+            <a class="camp-inline-link" href="{% url 'plataforma:event_create' %}?data={{ hoje|date:'Y-m-d' }}">
+              <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+              Novo
+            </a>
+          </div>
+
+          {% if meus_eventos_mes %}
+            <ul class="camp-own-events">
+              {% for evento in meus_eventos_mes %}
+                <li class="camp-own-event">
+                  <div class="camp-own-event-head">
+                    <strong>{{ evento.titulo }}</strong>
+                    <span class="camp-event-kind camp-event-kind--{{ evento.tipo }}">{{ evento.get_tipo_display }}</span>
+                  </div>
+                  <span class="camp-own-event-meta">
+                    {{ evento.data|date:"d/m/Y" }}{% if evento.horario %} · {{ evento.horario|time:"H:i" }}{% endif %}{% if evento.projeto_visivel %} · {{ evento.projeto_visivel.title }}{% endif %}
+                  </span>
+                  <div class="camp-own-event-actions">
+                    <a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'plataforma:event_edit' evento.pk %}">
+                      <svg class="camp-icon" aria-hidden="true"><use href="#i-edit"/></svg>
+                      Editar
+                    </a>
+                    <form method="post" action="{% url 'plataforma:event_delete' evento.pk %}" data-confirm="Excluir o evento “{{ evento.titulo }}”? Essa ação não pode ser desfeita.">
+                      {% csrf_token %}
+                      <button class="camp-btn camp-btn--danger camp-btn--xs" type="submit">
+                        <svg class="camp-icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                        Excluir
+                      </button>
+                    </form>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="camp-empty camp-empty--compact">
+              <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-plus"/></svg></span>
+              <strong>Nenhum evento seu neste mês.</strong>
+              <p>Crie atividades e entregas pessoais para organizar sua rotina.</p>
+              <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:event_create' %}?data={{ hoje|date:'Y-m-d' }}">Criar evento</a>
+            </div>
+          {% endif %}
+        </section>
+
+      </aside>
+    </div>
+  </div>
+
+{% endblock %}

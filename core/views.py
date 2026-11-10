@@ -1,7 +1,10 @@
 from django.shortcuts import redirect, render
-from django.db.models import Count, Q
+from django.db.models import Count
+from django.utils import timezone
+from plataforma.experience import _decorar_projetos
+from core.rankings import ranked_projects
 
-from plataforma.models import Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, Turma
+from plataforma.models import EventoCalendario, ProgramaInstitucional, Project
 
 
 def index(request):
@@ -9,57 +12,36 @@ def index(request):
     organizacao = getattr(request, "organizacao", None)
     afiliacao = getattr(request, "membro_organizacao", None)
     if organizacao is not None and afiliacao is not None:
-        identidade = getattr(organizacao, "identidade", None)
-        programas = organizacao.programas.filter(
-            status=ProgramaInstitucional.STATUS_PUBLICADO,
-        ).prefetch_related("turmas__grupos")[:6]
-        grupos_base = Grupo.objects.filter(
-            turma__programa__organizacao=organizacao,
-            turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-            status=Grupo.STATUS_ATIVO,
-        ).select_related("turma__programa", "turma__professor_responsavel").annotate(membros_count=Count("membros", distinct=True))
-        projetos_base = organizacao.projetos.filter(
+        projetos = organizacao.projetos.filter(
             visibility=Project.VISIBILITY_PUBLIC,
-        ).select_related("owner").annotate(relevance=Count("votes", distinct=True))
-        projetos = projetos_base.order_by("-relevance", "-updated_at")[:6]
-        autonomos = projetos_base.filter(vinculo_institucional__isnull=True).order_by("-updated_at")[:6]
-        vinculados = projetos_base.filter(vinculo_institucional__turma__programa__organizacao=organizacao).order_by("-updated_at")[:6]
-        grupos = grupos_base[:8]
-        turmas = Turma.objects.filter(
-            programa__organizacao=organizacao,
-            programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-            status=Turma.STATUS_ATIVO,
-        ).select_related("programa", "professor_responsavel").annotate(membros_count=Count("membros", distinct=True))
-        if afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
-            turmas = turmas.filter(
-                Q(professor_responsavel=request.user)
-                | Q(membros__usuario=request.user, membros__status=MembroTurma.STATUS_ATIVO),
-                programa__organizacao=organizacao,
-                programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
-                status=Turma.STATUS_ATIVO,
-            ).distinct()[:8]
-            grupos = grupos_base.filter(
-                Q(turma__professor_responsavel=request.user)
-                | Q(membros__usuario=request.user, membros__status=MembroGrupo.STATUS_ATIVO),
-            ).distinct()[:8]
-        else:
-            turmas = turmas[:8]
-        return render(
-            request,
-            "institutional/home.html",
-            {
-                "organizacao": organizacao,
-                "afiliacao": afiliacao,
-                "identidade": identidade,
-                "programas": programas,
-                "turmas": turmas,
-                "grupos_abertos": grupos,
-                "projetos": projetos,
-                "projetos_autonomos": autonomos,
-                "projetos_vinculados": vinculados,
-                "ranking_provisorio": True,
-            },
+        ).select_related("owner", "vinculo_institucional__turma__programa").annotate(
+            relevance=Count("votes", distinct=True),
+            total_estrelas=Count("votes", distinct=True),
+            total_membros=Count("memberships", distinct=True),
         )
+        autonomos = projetos.filter(vinculo_institucional__isnull=True).order_by("-updated_at", "-pk")
+        vinculados = projetos.filter(
+            vinculo_institucional__turma__programa__status=ProgramaInstitucional.STATUS_PUBLICADO,
+            vinculo_institucional__turma__programa__organizacao=organizacao,
+        ).order_by("-updated_at", "-pk")
+        ranking = ranked_projects(projetos.filter(votes__isnull=False).distinct(), tenant_id=organizacao.pk)[:5]
+        agenda = EventoCalendario.objects.filter(
+            organizacao=organizacao, aluno=request.user, data__gte=timezone.localdate(),
+        ).exclude(tipo=EventoCalendario.TIPO_TRABALHO, status=EventoCalendario.STATUS_ENTREGUE).order_by(
+            "data", "horario", "pk",
+        ).only("titulo", "data", "horario", "tipo")[:2]
+        return render(request, "institutional/home.html", {
+            "organizacao": organizacao,
+            "afiliacao": afiliacao,
+            "nav_ativo": "inicio",
+            "projetos_autonomos": _decorar_projetos(list(autonomos[:4])),
+            "projetos_vinculados": _decorar_projetos(list(vinculados[:4])),
+            "total_autonomos": autonomos.count(),
+            "total_vinculados": vinculados.count(),
+            "ranking_projetos": _decorar_projetos(list(ranking)),
+            "agenda_proximos": list(agenda),
+            "agenda_hoje": timezone.localdate(),
+        })
     latest_projects = Project.objects.filter(
         visibility=Project.VISIBILITY_PUBLIC,
         organizacao__isnull=True,

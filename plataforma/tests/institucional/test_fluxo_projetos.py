@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from plataforma.models import (
     CollaborationRequest, DominioOrganizacao, IdentidadeOrganizacao,
-    MembroOrganizacao, Notification, Organizacao, Project,
+    MembroOrganizacao, Notification, Organizacao, Project, ProjectMember,
 )
 from plataforma.navigation import project_notification_url
 
@@ -35,8 +35,8 @@ class FluxoProjetosTests(PortalInstitucionalBase):
     def test_home_separa_criacao_institucional_e_espaco_pessoal(self):
         response = self.client.get("/", HTTP_HOST=HOST, secure=True)
         self.assertContains(response, 'href="/projetos/novo/"')
-        self.assertContains(response, 'href="https://palaciomental.com.br/perfil/participante/"')
-        self.assertContains(response, "Meus projetos institucionais")
+        self.assertContains(response, 'href="https://palaciomental.com.br/" aria-label="Ir para a página inicial do Palácio Mental"')
+        self.assertContains(response, "Meus Projetos")
 
     def test_fluxo_criar_salvar_contexto_reabrir_e_editar_sem_sair_do_tenant(self):
         response = self.client.post(reverse("plataforma:project_create"), {
@@ -89,11 +89,11 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         for path in paths:
             with self.subTest(path=path):
                 response = self.client.get(path, HTTP_HOST=HOST)
-                self.assertContains(response, 'class="tenant-header tenant-project-header"')
+                self.assertContains(response, 'class="camp-topbar"')
                 self.assertNotContains(response, 'class="mvp-brand"')
                 self.assertContains(response, "Instituição de teste")
                 self.assertContains(response, 'id="main-content"')
-                header = response.content.decode().split('<header class="tenant-header tenant-project-header">', 1)[1].split("</header>", 1)[0]
+                header = response.content.decode().split('<header class="camp-topbar">', 1)[1].split("</header>", 1)[0]
                 self.assertNotIn("mind_palace_logo.png", header)
 
     def test_global_mantem_marca_e_criacao_pessoal(self):
@@ -129,12 +129,58 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         self.assertEqual(Notification.objects.get(recipient=self.user).url, expected)
         collaboration = CollaborationRequest.objects.get(project=self.project)
         self.client.force_login(self.user)
+        inbox = self.client.get(reverse("plataforma:inbox"), HTTP_HOST=HOST, secure=True)
+        self.assertContains(inbox, reverse("plataforma:decide_collaboration", args=[collaboration.pk]))
+        self.assertContains(inbox, "Quero colaborar")
         response = self.client.post(
             reverse("plataforma:decide_collaboration", args=[collaboration.pk]),
             {"decision": CollaborationRequest.ACCEPTED}, HTTP_HOST=HOST, secure=True,
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Notification.objects.get(recipient=other).url, expected)
+
+    def test_decisao_de_colaboracao_aparece_no_badge_antes_de_abrir_inbox(self):
+        Notification.objects.create(
+            recipient=self.user,
+            kind="collaboration_decision",
+            message="Seu pedido foi aceito.",
+            url=f"https://{HOST}/projetos/{self.project.pk}/",
+        )
+        response = self.client.get(
+            reverse("plataforma:notification_summary"), HTTP_HOST=HOST, secure=True
+        )
+        self.assertEqual(response.json()["count"], 1)
+
+    def test_workspace_only_for_members_and_no_duplicate_collaboration_action(self):
+        other = get_user_model().objects.create_user(username="membro-equipe")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=other)
+        self.project.visibility = Project.VISIBILITY_PUBLIC
+        self.project.seeking_collaborators = True
+        self.project.save()
+        self.client.force_login(other)
+        url = reverse("plataforma:project_detail", args=[self.project.pk])
+        self.assertNotContains(self.client.get(url, HTTP_HOST=HOST), "Você colabora neste projeto")
+        ProjectMember.objects.create(project=self.project, user=other)
+        response = self.client.get(url, HTTP_HOST=HOST)
+        self.assertContains(response, "Você colabora neste projeto")
+        self.assertNotContains(response, "Tenho interesse")
+        public_profile = self.client.get(reverse("plataforma:profile", args=[self.user.username]), HTTP_HOST=HOST)
+        self.assertContains(public_profile, "tenant-member.css")
+        self.assertNotContains(public_profile, "Abrir meu espaço pessoal")
+
+    def test_restricted_share_requires_token_and_active_tenant_affiliation(self):
+        self.project.visibility = Project.VISIBILITY_RESTRICTED
+        self.project.save(update_fields=["visibility"])
+        url = reverse("plataforma:project_detail", args=[self.project.pk])
+        response = self.client.get(url, HTTP_HOST=HOST, secure=True)
+        self.assertContains(response, f"?access={self.project.access_token}")
+        outsider = get_user_model().objects.create_user(username="sem-afiliacao")
+        self.client.force_login(outsider)
+        self.assertEqual(self.client.get(url + f"?access={self.project.access_token}", HTTP_HOST=HOST).status_code, 403)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=outsider)
+        self.assertEqual(self.client.get(url, HTTP_HOST=HOST).status_code, 404)
+        self.assertEqual(self.client.get(url + "?access=invalido", HTTP_HOST=HOST).status_code, 404)
+        self.assertEqual(self.client.get(url + f"?access={self.project.access_token}", HTTP_HOST=HOST).status_code, 200)
 
     def test_outro_tenant_continua_sem_acesso(self):
         other = Organizacao.objects.create(slug="outra", nome="Outra", status=Organizacao.STATUS_ATIVA)

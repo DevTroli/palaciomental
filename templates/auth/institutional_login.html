@@ -1,1 +1,14 @@
-{% load static %}<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Entrar em {{ identidade.nome_exibicao|default:organizacao.nome }}</title><link rel="stylesheet" href="{% static 'css/institutional.css' %}">{% include "institutional/partials/theme.html" %}</head><body><main class="tenant-container tenant-centered-message"><section class="tenant-card tenant-card--active" aria-labelledby="login-title">{% if identidade and identidade.logo %}<img class="tenant-overview-logo" src="{{ tenant_logo_url }}" alt="Logo de {{ identidade.nome_exibicao|default:organizacao.nome }}">{% endif %}<p class="tenant-eyebrow">Ambiente institucional privado · {{ identidade.nome_exibicao|default:organizacao.nome }}</p><h1 id="login-title">Entrar</h1><p>Use uma conta convidada ou já afiliada a este ambiente. O cadastro aberto não fica disponível aqui.</p><form method="post" novalidate>{% csrf_token %}{% for field in form %}<p class="tenant-form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<span class="tenant-form-error">{{ error }}</span>{% endfor %}</p>{% endfor %}{% if form.non_field_errors %}<p class="tenant-form-error">{{ form.non_field_errors }}</p>{% endif %}<button class="tenant-button" type="submit">Entrar</button></form><p class="tenant-muted">Precisa entrar neste ambiente? Solicite um convite à pessoa responsável pela organização.</p><p><a class="tenant-link" href="{{ global_home_url }}">Voltar ao início do Palácio Mental</a></p></section></main></body></html>
+{% extends "auth/institutional_base.html" %}
+{% block title %}Entrar em {{ tenant_display_name }} · Palácio Mental{% endblock %}
+{% block auth_content %}
+  <p class="auth-eyebrow">Seu próximo passo começa aqui</p>
+  <h1 id="auth-title">Que bom ter você <br>por aqui.</h1>
+  <p class="auth-form-intro">Entre para continuar seus projetos em <strong>{{ tenant_display_name }}</strong>.</p>
+  <form method="post" class="auth-form" novalidate>
+    {% csrf_token %}
+    {% include "auth/partials/institutional_fields.html" %}
+    <button class="auth-submit" type="submit">Entrar no ambiente <span aria-hidden="true">→</span></button>
+  </form>
+  <div class="auth-invitation-note"><strong>Ainda não recebeu um convite?</strong><p>Solicite um convite à pessoa responsável pela organização. O cadastro aberto não fica disponível aqui.</p></div>
+  <a class="auth-back-link" href="{{ global_home_url }}">← Voltar ao início do Palácio Mental</a>
+{% endblock %}

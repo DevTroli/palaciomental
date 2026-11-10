@@ -23,7 +23,7 @@ class Command(BaseCommand):
             for t in rls.PROTECTED_TABLES:
                 c.execute("SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid = %s::regclass", [t])
                 on, force = c.fetchone()
-                c.execute("SELECT policyname FROM pg_policies WHERE format('%%I', tablename) = %s", [t])
+                c.execute("SELECT polname FROM pg_policy WHERE polrelid = %s::regclass", [t])
                 pols = [r[0] for r in c.fetchall()]
                 self.stdout.write(f"{t}: enable={on} force={force} policies={pols}")
                 if not (on and force and pols):

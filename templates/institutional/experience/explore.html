@@ -1,0 +1,184 @@
+{% extends "institutional/experience/base.html" %}
+
+{% block title %}Explorar · {{ tenant_display_name }}{% endblock %}
+
+{% block content %}
+
+  <section class="camp-hero camp-explore-hero" aria-labelledby="explorar-titulo">
+    <div class="camp-hero-copy">
+      <p class="camp-eyebrow">Projetos da {{ tenant_display_name }}</p>
+      <h1 class="camp-hero-title" id="explorar-titulo">
+        Encontre pessoas e projetos
+        <span>para construir junto.</span>
+      </h1>
+      <p class="camp-hero-subtitle">Descubra projetos abertos a novos colaboradores e alunos com interesses parecidos com os seus.</p>
+
+      <form class="camp-explore-search" method="get" role="search">
+        <input type="hidden" name="vista" value="{{ vista }}">
+        {% if request.GET.tipo == "autonomo" or request.GET.tipo == "vinculado" %}<input type="hidden" name="tipo" value="{{ request.GET.tipo }}">{% endif %}
+        {% if aluno_filtro %}<input type="hidden" name="aluno" value="{{ aluno_filtro }}">{% endif %}
+        <label class="camp-sr-only" for="explorar-busca">Buscar projetos ou alunos</label>
+        <span class="camp-explore-search-field">
+          <svg class="camp-icon" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="explorar-busca" type="search" name="q" value="{{ busca }}" placeholder="Busque por projeto, pessoa ou tema...">
+        </span>
+        <label class="camp-sr-only" for="explorar-categoria">Filtrar por categoria</label>
+        <select name="ordering" aria-label="Ordenar projetos"><option value="recent">Recentes</option><option value="relevance" {% if request.GET.ordering == "relevance" %}selected{% endif %}>Mais relevantes</option></select>
+        <select id="explorar-categoria" name="categoria">
+          <option value="">Todas as categorias</option>
+          {% for item in categorias %}
+            <option value="{{ item }}"{% if item == categoria %} selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+        <button class="camp-btn camp-btn--primary" type="submit">Buscar</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="camp-explore-page">
+
+    <section class="camp-stats" aria-label="Resumo da colaboração">
+      <article class="camp-stat">
+        <span class="camp-stat-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
+        <div>
+          <strong>{{ total_projetos_abertos }}</strong>
+          <span>Projeto{{ total_projetos_abertos|pluralize }} aberto{{ total_projetos_abertos|pluralize }} a colaboração</span>
+        </div>
+      </article>
+      <article class="camp-stat">
+        <span class="camp-stat-icon camp-stat-icon--purple" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+        <div>
+          <strong>{{ total_colaboradores }}</strong>
+          <span>Aluno{{ total_colaboradores|pluralize }} para conhecer</span>
+        </div>
+      </article>
+      <article class="camp-stat">
+        <span class="camp-stat-icon camp-stat-icon--green" aria-hidden="true"><svg class="camp-icon"><use href="#i-folder"/></svg></span>
+        <div>
+          <strong>{{ total_participacoes }}</strong>
+          <span>Colaboração{{ total_participacoes|pluralize }} ativa{{ total_participacoes|pluralize }}</span>
+        </div>
+      </article>
+    </section>
+
+    <nav class="camp-explore-tabs" aria-label="Explorar">
+      <a class="camp-explore-tab" href="?vista=projetos{% if request.GET.tipo == 'autonomo' or request.GET.tipo == 'vinculado' %}&amp;tipo={{ request.GET.tipo|urlencode }}{% endif %}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'projetos' %} aria-current="page"{% endif %}>
+        <svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg>
+        Projetos
+        <span>{{ total_projetos_abertos }}</span>
+      </a>
+      <a class="camp-explore-tab" href="?vista=alunos{% if request.GET.tipo == 'autonomo' or request.GET.tipo == 'vinculado' %}&amp;tipo={{ request.GET.tipo|urlencode }}{% endif %}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}"{% if vista == 'alunos' %} aria-current="page"{% endif %}>
+        <svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>
+        Alunos
+        <span>{{ total_colaboradores }}</span>
+      </a>
+    </nav>
+
+    {% if request.GET.tipo == "autonomo" or request.GET.tipo == "vinculado" %}<p class="camp-explore-note">Mostrando projetos {% if request.GET.tipo == "autonomo" %}autônomos{% else %}de programas ativos{% endif %}. <a href="{% url 'plataforma:projects' %}">Ver todos os projetos</a></p>{% endif %}
+    {% if aluno_filtro %}
+      <p class="camp-explore-note">
+        Mostrando projetos de <strong>{{ aluno_filtro_nome|default:aluno_filtro }}</strong>.
+        <a href="?vista={{ vista }}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}{% if categoria %}&amp;categoria={{ categoria|urlencode }}{% endif %}">Limpar filtro</a>
+      </p>
+    {% endif %}
+
+    {% if vista == 'projetos' %}
+
+      <section class="camp-explore-start" aria-label="Criar projeto">
+        <p>Tem uma ideia? Crie um projeto e encontre pessoas para construí-la com você.</p>
+        <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:project_create' %}">Criar projeto</a>
+      </section>
+
+      {% if projetos_abertos %}
+        <div class="camp-explore-grid">
+          {% for projeto in projetos_abertos %}
+            <article class="camp-open-project">
+              <div class="camp-open-cover">
+                <span class="camp-cover-grid" aria-hidden="true"></span>
+                <span class="camp-open-category">{{ projeto.category|default:"Projeto" }}</span>
+                <span class="camp-badge camp-badge--{{ projeto.status }}">{{ projeto.rotulo_status }}</span>
+                <span class="camp-open-initial" aria-hidden="true">{{ projeto.inicial }}</span>
+              </div>
+              <div class="camp-open-body">
+                <h2 class="camp-open-title"><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h2>
+                <p class="camp-open-desc">{{ projeto.direction|default:"Sem descrição por enquanto."|truncatechars:150 }}</p>
+                {% if projeto.collaboration_description %}
+                  <p class="camp-open-need"><strong>Procura:</strong> {{ projeto.collaboration_description }}</p>
+                {% endif %}
+                <div class="camp-open-meta">
+                  <span><svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg> {{ projeto.owner.get_full_name|default:projeto.owner.username }}</span>
+                  <span><svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg> {{ projeto.total_membros }} aluno{{ projeto.total_membros|pluralize }}</span>
+                  <span>Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
+                </div>
+                {% if projeto.tag_list %}
+                  <div class="camp-tag-row">
+                    {% for tag in projeto.tag_list %}<span class="camp-tag">{{ tag }}</span>{% endfor %}
+                  </div>
+                {% endif %}
+                {% if projeto.seeking_collaborators and projeto.owner != request.user %}<form class="camp-open-action" method="post" action="{% url 'plataforma:request_collaboration' projeto.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="message" value="Gostaria de colaborar neste projeto.">
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button class="camp-btn camp-btn--primary" type="submit">
+                    <svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                    Solicitar colaboração
+                  </button>
+                </form>{% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="camp-empty">
+          <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-compass"/></svg></span>
+          <strong>Nenhum projeto aberto encontrado.</strong>
+          <p>{% if busca or categoria %}Tente outra busca ou remova os filtros.{% else %}Quando um aluno abrir seu projeto para colaboração, ele aparece aqui.{% endif %}</p>
+          <a class="camp-btn camp-btn--primary" href="{% url 'plataforma:project_create' %}">Criar meu projeto</a>
+        </div>
+      {% endif %}
+
+    {% else %}
+
+      {% if colaboradores %}
+        <div class="camp-people-grid">
+          {% for membro in colaboradores %}
+            <article class="camp-person">
+              <span class="camp-person-avatar" aria-hidden="true">{{ membro.inicial }}</span>
+              <div class="camp-person-body">
+                <div class="camp-person-head">
+                  <div>
+                    <h2>{{ membro.nome }}</h2>
+                    <span class="camp-person-handle">@{{ membro.usuario.username }}</span>
+                  </div>
+                  <span class="camp-badge camp-badge--ideia">{{ membro.papel_rotulo }}</span>
+                </div>
+                <p class="camp-person-meta">
+                  {{ membro.total_projetos }} projeto{{ membro.total_projetos|pluralize }} público{{ membro.total_projetos|pluralize }} no {{ tenant_display_name }}
+                </p>
+                {% if membro.categorias %}
+                  <div class="camp-tag-row">
+                    {% for item in membro.categorias %}<span class="camp-tag">{{ item }}</span>{% endfor %}
+                  </div>
+                {% endif %}
+                <a class="camp-btn camp-btn--ghost camp-btn--sm" href="?vista=projetos&amp;aluno={{ membro.usuario.username|urlencode }}">
+                  Ver projetos
+                  <svg class="camp-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+                </a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="camp-empty">
+          <span class="camp-empty-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-users"/></svg></span>
+          <strong>Nenhum aluno encontrado.</strong>
+          <p>{% if busca or categoria %}Tente outro nome ou remova os filtros.{% else %}Quando novos alunos entrarem no {{ tenant_display_name }}, eles aparecem aqui.{% endif %}</p>
+        </div>
+      {% endif %}
+
+    {% endif %}
+
+  </div>
+
+  {% if page_obj.has_other_pages %}<nav aria-label="Paginação" class="camp-form-actions">{% if page_obj.has_previous %}<a href="?{{ pagination_query }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{{ pagination_query }}&amp;page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}
+{% endblock %}

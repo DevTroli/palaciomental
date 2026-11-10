@@ -75,7 +75,7 @@ def normalizar_logo(arquivo, nome, max_dimension=NORMALIZED_LOGO_MAX_DIMENSION):
     elif formato == "PNG" and imagem.mode not in {"RGB", "RGBA"}:
         imagem = imagem.convert("RGBA")
     buffer = BytesIO()
-    opcoes = {"optimize": True}
+    opcoes: dict[str, bool | int] = {"optimize": True}
     if formato in {"JPEG", "WEBP"}:
         opcoes["quality"] = NORMALIZED_LOGO_QUALITY
     imagem.save(buffer, format=formato, **opcoes)
@@ -85,7 +85,9 @@ def normalizar_logo(arquivo, nome, max_dimension=NORMALIZED_LOGO_MAX_DIMENSION):
 
 def caminho_logo(instance, filename):
     organizacao_id = instance.organizacao_id or "pendente"
-    return f"tenants/{organizacao_id}/branding/logo/{instance.id}{Path(filename).suffix.lower()}"
+    import uuid
+
+    return f"tenants/{organizacao_id}/branding/logo/{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
 
 
 def validar_capa(arquivo):

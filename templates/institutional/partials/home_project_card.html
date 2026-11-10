@@ -1,0 +1,8 @@
+<article class="home-project-card">
+  <div class="home-project-card-top"><span class="home-project-mark" aria-hidden="true">{{ projeto.inicial }}</span><span class="home-project-state"><span class="home-state-dot home-state-dot--{{ projeto.status }}" aria-hidden="true"></span>{{ projeto.rotulo_status }}</span></div>
+  <p class="home-project-category">{% if vinculado %}{{ projeto.vinculo_institucional.turma.programa.nome }}{% else %}{{ projeto.category|default:"Tema livre" }}{% endif %}</p>
+  <h4><a href="{% url 'plataforma:project_detail' projeto.pk %}">{{ projeto.title }}</a></h4>
+  <p class="home-project-direction">{{ projeto.direction|default:"Uma ideia em construção."|truncatechars:115 }}</p>
+  <div class="home-project-author"><span aria-hidden="true">{{ projeto.owner.get_full_name|default:projeto.owner.username|first|upper }}</span><span>{{ projeto.owner.get_full_name|default:projeto.owner.username }}</span></div>
+  <footer class="home-project-meta"><span><svg class="camp-icon" aria-hidden="true"><use href="#i-users"/></svg>{{ projeto.total_membros }} colaborador{{ projeto.total_membros|pluralize:"es" }}</span><span><svg class="camp-icon" aria-hidden="true"><use href="#i-bulb"/></svg>{{ projeto.total_estrelas }} reconhecimento{{ projeto.total_estrelas|pluralize:"s" }}</span></footer>
+</article>

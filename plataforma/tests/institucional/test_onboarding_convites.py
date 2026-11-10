@@ -1,7 +1,8 @@
 import hashlib
 import secrets
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import TypedDict
 from threading import Barrier
 from unittest.mock import patch
 from urllib.parse import urlencode
@@ -25,6 +26,11 @@ from .base import PortalInstitucionalBase
 User = get_user_model()
 HOST = "camppg.palaciomental.com.br"
 PASSWORD = "Senha-convidado-forte-2026"
+
+
+class InvitationOverrides(TypedDict, total=False):
+    expira_em: datetime
+    status: str
 
 
 class OnboardingConvitesTests(PortalInstitucionalBase):
@@ -97,6 +103,7 @@ class OnboardingConvitesTests(PortalInstitucionalBase):
                 affiliation = MembroOrganizacao.objects.get(usuario=user, organizacao=self.organization)
                 self.assertEqual(affiliation.papel, "membro" if kind == "group" else "professor")
                 if kind == "group":
+                    assert isinstance(invitation, ConviteGrupo)
                     self.assertTrue(MembroGrupo.objects.filter(grupo=invitation.grupo, usuario=user).exists())
                     self.assertTrue(MembroTurma.objects.filter(turma=invitation.grupo.turma, usuario=user).exists())
                 self.assertEqual(self.client.get("/", HTTP_HOST=HOST).status_code, 200)
@@ -132,12 +139,18 @@ class OnboardingConvitesTests(PortalInstitucionalBase):
         self.assertIsNone(invitation.aceito_em)
 
     def test_expired_revoked_or_invalid_token_cannot_register(self):
-        for fields in (
+        invalid_states: tuple[InvitationOverrides, ...] = (
             {"expira_em": timezone.now() - timedelta(seconds=1)},
             {"status": "revogado"},
             {"status": "aceito"},
-        ):
-            invitation, path = self.make_invitation(**fields)
+        )
+        for fields in invalid_states:
+            expiry, status = fields.get("expira_em"), fields.get("status")
+            if expiry is not None:
+                invitation, path = self.make_invitation(expira_em=expiry)
+            else:
+                assert status is not None
+                invitation, path = self.make_invitation(status=status)
             self.assertEqual(self.register(path).status_code, 403)
             self.assertFalse(User.objects.filter(username="novo-convidado").exists())
             invitation.refresh_from_db()

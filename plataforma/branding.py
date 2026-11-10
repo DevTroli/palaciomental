@@ -1,10 +1,12 @@
 """Identidade visual compartilhada por telas e mensagens institucionais."""
 
 from django.templatetags.static import static
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 
 from .navigation import global_home_url
 from .validators import CORES_SEMANTICAS
-from .theme import COLOR_ROLES, HEX_COLOR, readable_color, text_on
+from .theme import COLOR_ROLES, HEX_COLOR, brand_background, contrast, readable_color, text_on
 
 
 def contrasting_text(color):
@@ -31,7 +33,45 @@ def organization_branding(organization):
             if isinstance(value, str) and HEX_COLOR.fullmatch(value):
                 colors[role] = value.upper()
     primary, accent = colors["primary"], colors["accent"]
+    solid = brand_background(primary)
+    selection = solid if contrast(solid, colors["surface"]) >= 3 else text_on(colors["surface"])
+    social_links = []
+    validate_link = URLValidator(schemes=["http", "https"])
+    for name, label, icon in (("instagram_url", "Instagram", "instagram"),
+                              ("facebook_url", "Facebook", "facebook")):
+        url = getattr(identity, name, "")
+        if url:
+            try:
+                validate_link(url)
+            except ValidationError:
+                continue
+            social_links.append({"label": label, "url": url, "icon": icon})
+    official_site = getattr(identity, "site_oficial", "")
+    if official_site:
+        try:
+            validate_link(official_site)
+        except ValidationError:
+            official_site = ""
+    important_links = []
+    for title, url in ((getattr(identity, "link_1_titulo", "") or "Site oficial", official_site),
+                       (getattr(identity, "link_2_titulo", ""), getattr(identity, "link_2_url", "")),
+                       (getattr(identity, "link_3_titulo", ""), getattr(identity, "link_3_url", ""))):
+        if title and url:
+            try:
+                validate_link(url)
+            except ValidationError:
+                continue
+            important_links.append({"title": title, "url": url})
     return {
+        "tenant_footer_description": getattr(identity, "slogan_rodape", "") or "Seu ambiente de projetos e conexões.",
+        "tenant_slogan": getattr(identity, "slogan", "") or "Ideias que conectam pessoas",
+        "tenant_official_site": official_site,
+        "tenant_important_links": important_links,
+        "tenant_contact_email": getattr(identity, "email_contato", ""),
+        "tenant_social_links": social_links,
+        "tenant_solid_color": solid,
+        "tenant_selection_color": selection,
+        "tenant_selection_text_color": text_on(selection),
         "tenant_display_name": getattr(identity, "nome_exibicao", "") or organization.nome,
         "tenant_identidade": identity,
         "tenant_logo_url": identity.logo.url if identity and identity.logo else "",
@@ -49,6 +89,7 @@ def organization_branding(organization):
         "tenant_surface_text_color": text_on(colors["surface"]),
         "tenant_link_color": readable_color(primary, colors["background"]),
         "tenant_surface_link_color": readable_color(primary, colors["surface"]),
+        "tenant_secondary_surface_color": readable_color(colors["secondary"], colors["surface"]),
         "tenant_colors": colors,
     }
 

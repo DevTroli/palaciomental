@@ -1,0 +1,20 @@
+/* Perfil de outro membro dentro do ambiente institucional. */
+.tenant-shell .profile-hero { padding: 24px 0 30px; align-items: center; flex-wrap: wrap; color: var(--tenant-ink); }
+.tenant-shell .profile-hero .avatar { overflow: hidden; background: var(--tenant-primary); color: var(--tenant-primary-text); font-family: inherit; font-size: 30px; font-weight: 700; }
+.tenant-shell .profile-hero .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.tenant-shell .profile-hero .profile-intro { min-width: 0; overflow-wrap: anywhere; }
+.tenant-shell .profile-hero h1 { color: var(--tenant-link); font-family: inherit; font-size: clamp(26px, 3vw, 38px); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.tenant-shell .profile-hero .eyebrow, .tenant-shell .profile-hero a { color: var(--tenant-link); }
+.tenant-shell .profile-hero .muted, .tenant-shell .profile-hero .lead { color: var(--tenant-ink); }
+.tenant-shell .workspace-projects { color: var(--tenant-ink); }
+.tenant-shell .workspace-projects .section-heading h2, .tenant-shell .workspace-projects .section-heading .eyebrow, .tenant-shell .workspace-projects .section-heading .muted { color: var(--tenant-ink); font-family: inherit; }
+.tenant-shell .workspace-projects .project-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.tenant-shell .workspace-projects .project-card, .tenant-shell .workspace-projects .empty-state { min-width: 0; background: var(--tenant-surface); color: var(--tenant-surface-ink); border: 1px solid color-mix(in srgb, var(--tenant-surface-ink) 20%, var(--tenant-surface)); border-top: 3px solid var(--tenant-primary); box-shadow: none; overflow-wrap: anywhere; }
+.tenant-shell .workspace-projects .project-card h3 { font-family: inherit; font-size: 18px; font-weight: 700; line-height: 1.35; }
+.tenant-shell .workspace-projects .project-card a { color: var(--tenant-surface-link); }
+.tenant-shell .workspace-projects .project-card p, .tenant-shell .workspace-projects .project-meta, .tenant-shell .workspace-projects .project-relevance { color: var(--tenant-surface-ink); }
+.tenant-shell .workspace-projects .project-mark, .tenant-shell .workspace-projects .status-pill { background: var(--tenant-selection); color: var(--tenant-selection-text); }
+.tenant-shell .workspace-projects .tag-row a { color: var(--tenant-selection-text); background: var(--tenant-selection); }
+:is(.tenant-shell .workspace-projects .tag-row a){ color: var(--tenant-secondary-text); background: var(--tenant-secondary); }
+.tenant-shell .workspace-projects :focus-visible, .tenant-shell .profile-hero :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+@media(max-width:600px) { :is(.tenant-shell .profile-hero):where(*):where(*){ gap: 16px; }:is(.tenant-shell .profile-hero .avatar):where(*):where(*){ flex-basis: 64px; height: 64px; }.tenant-shell .section-heading { align-items: flex-start; flex-wrap: wrap; } }

@@ -35,7 +35,7 @@ MODE_DENY = "deny"
 VALID_MODES = {MODE_TENANT, MODE_GLOBAL, MODE_SYSTEM, MODE_DENY}
 
 # Tabelas protegidas por RLS nesta primeira etapa (RLS mínima).
-PROTECTED_TABLES = ('"listaEspera_project"',)  # app label legado "listaEspera"
+PROTECTED_TABLES = ('"listaEspera_project"', '"plataforma_eventocalendario"')  # app label legado "listaEspera"
 
 
 def _is_postgres(conn=None):

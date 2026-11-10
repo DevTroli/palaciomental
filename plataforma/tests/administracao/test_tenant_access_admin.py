@@ -80,7 +80,9 @@ class TenantAccessAdminTests(SimpleTestCase):
             result = self.modeladmin.render_change_form(self.request, context, change=True, obj=self.organization())
         self.assertEqual(result["tenant_access_url"], "http://camp.localhost:8000/")
         self.assertNotIn("tenant_access_url", context)
-        self.assertIsNotNone(get_template(self.modeladmin.change_form_template))
+        template = self.modeladmin.change_form_template
+        assert isinstance(template, str)
+        self.assertIsNotNone(get_template(template))
 
     @override_settings(DEBUG=False)
     def test_local_domain_is_not_linked_in_production(self):

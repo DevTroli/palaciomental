@@ -1,3 +1,6 @@
+from typing import cast
+from django.db.models.fields.files import ImageFieldFile
+
 import hashlib
 from io import BytesIO
 import secrets
@@ -85,8 +88,9 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ambiente institucional")
-        self.assertContains(response, "Programas ativos")
+        self.assertContains(response, "Projetos da comunidade")
+        self.assertEqual(response.context["organizacao"], self.organization)
+        self.assertContains(response, "Ranking de projetos")
 
     def test_tenant_home_shows_only_published_current_tenant_content(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
@@ -118,7 +122,7 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         self.client.force_login(self.user)
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Programa CAMPPG")
+        self.assertNotContains(response, "Programa CAMPPG")
         self.assertContains(response, "Projeto CAMPPG publicado")
 
     def test_tenant_shell_has_skip_link_navigation_footer_and_no_global_vitrine_link(self):
@@ -128,13 +132,18 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Pular para o conteúdo principal")
         self.assertContains(response, 'aria-label="Navegação do ambiente"')
-        self.assertContains(response, "Meus projetos neste ambiente")
-        self.assertContains(response, "Meu espaço pessoal")
+        self.assertContains(response, "Meus Projetos")
+        self.assertContains(response, 'href="http://palaciomental.com.br/" aria-label="Ir para a página inicial do Palácio Mental"')
+        self.assertContains(response, "Dê continuidade às suas ideias.")
+        footer = response.content.decode().split('<footer class="camp-footer', 1)[1].split('</footer>', 1)[0]
+        self.assertNotIn("Início do ambiente", footer)
+        self.assertNotIn("Meu espaço pessoal", footer)
+        self.assertIn("Status do sistema", footer)
         self.assertContains(response, "tenant-footer")
         self.assertNotContains(response, "Vitrine global")
         self.assertNotContains(response, "Projeto de outro tenant")
 
-    def test_member_home_limits_turmas_to_their_active_group_scope(self):
+    def test_member_home_keeps_group_content_on_its_dedicated_screen(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
         programa = ProgramaInstitucional.objects.create(
             organizacao=self.organization,
@@ -149,7 +158,7 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         MembroGrupo.objects.create(grupo=own_group, usuario=self.user)
         self.client.force_login(self.user)
         response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(response, "Grupo do participante")
+        self.assertNotContains(response, "Grupo do participante")
         self.assertNotContains(response, "Grupo de outra equipe")
 
     def test_manager_can_enter_institutional_management_portal(self):
@@ -245,10 +254,10 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         self.assertContains(response, "tenant-identity.js")
         self.assertContains(response, 'data-theme-color="primary"')
         self.assertContains(response, 'data-theme-color="surface"')
-        self.assertContains(response, identidade.logo.url)
+        self.assertContains(response, cast(ImageFieldFile, identidade.logo).url)
 
         programs_response = self.client.get(reverse("plataforma:institutional_programs"), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(programs_response, identidade.logo.url)
+        self.assertContains(programs_response, cast(ImageFieldFile, identidade.logo).url)
 
     def test_regular_member_cannot_update_tenant_identity(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)

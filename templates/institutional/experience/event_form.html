@@ -1,0 +1,85 @@
+{% extends "institutional/experience/base.html" %}
+
+{% block title %}{{ titulo_pagina }} · {{ tenant_display_name }}{% endblock %}
+
+{% block content %}
+
+  <section class="camp-hero camp-form-hero" aria-labelledby="evento-form-titulo">
+    <div class="camp-hero-copy">
+      <p class="camp-eyebrow">Calendário do aluno</p>
+      <h1 class="camp-hero-title" id="evento-form-titulo">
+        {{ titulo_pagina }}
+        <span>{% if modo == "editar" %}{{ evento.titulo }}{% else %}Organize sua rotina do {{ tenant_display_name }}.{% endif %}</span>
+      </h1>
+      <p class="camp-hero-subtitle">
+        {% if modo == "editar" %}
+          Ajuste os dados do seu evento. As atividades publicadas pela organização continuam somente leitura.
+        {% else %}
+          Crie atividades e trabalhos pessoais com data, horário e projeto vinculado.
+        {% endif %}
+      </p>
+    </div>
+  </section>
+
+  <div class="camp-form-wrap">
+    <form class="camp-form" method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="camp-form-alert" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="camp-form-grid">
+        {% if form.destinatario %}<div class="camp-field camp-field--full">{{ form.destinatario.label_tag }}{{ form.destinatario }}{{ form.destinatario.errors }}</div>{% endif %}
+        <div class="camp-field camp-field--full">
+          <label for="{{ form.titulo.id_for_label }}">Título do evento</label>
+          {{ form.titulo }}
+          {% for error in form.titulo.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.tipo.id_for_label }}">Tipo</label>
+          {{ form.tipo }}
+          <span class="camp-field-hint">Atividades ficam confirmadas; trabalhos começam pendentes.</span>
+          {% for error in form.tipo.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.projeto.id_for_label }}">Projeto vinculado</label>
+          {{ form.projeto }}
+          <span class="camp-field-hint">Opcional. Apenas projetos em que você participa.</span>
+          {% for error in form.projeto.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.data.id_for_label }}">Data</label>
+          {{ form.data }}
+          {% for error in form.data.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field">
+          <label for="{{ form.horario.id_for_label }}">Horário <span class="camp-field-optional">(opcional)</span></label>
+          {{ form.horario }}
+          {% for error in form.horario.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="camp-field camp-field--full">
+          <label for="{{ form.descricao.id_for_label }}">Descrição</label>
+          <span class="camp-field-hint">Detalhes, links ou combinados importantes para este evento.</span>
+          {{ form.descricao }}
+          {% for error in form.descricao.errors %}<span class="camp-field-error">{{ error }}</span>{% endfor %}
+        </div>
+      </div>
+
+      <div class="camp-form-actions">
+        <a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:calendar' %}">Cancelar</a>
+        <button class="camp-btn camp-btn--primary" type="submit">
+          {% if modo == "editar" %}Salvar evento{% else %}Criar evento{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+
+{% endblock %}

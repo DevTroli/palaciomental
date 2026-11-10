@@ -1,3 +1,6 @@
+from typing import cast
+from django.db.models.fields.files import ImageFieldFile
+
 from tempfile import TemporaryDirectory
 
 from django.core.exceptions import ValidationError
@@ -31,8 +34,9 @@ class CapaHomeTests(PortalInstitucionalBase):
     def test_cover_normalization_unique_key_and_removal(self):
         self.identity.capa = self.logo_file("capa.png", (3200, 1000))
         self.identity.save()
-        self.assertEqual(self.identity.capa.width, 2400)
+        self.assertEqual(cast(ImageFieldFile, self.identity.capa).width, 2400)
         key = self.identity.capa.name
+        assert key is not None
         self.assertIn(f"tenants/{self.organization.pk}/branding/cover/", key)
         self.identity.capa = self.logo_file("nova.png", (1000, 400))
         self.identity.save()
@@ -53,6 +57,18 @@ class CapaHomeTests(PortalInstitucionalBase):
             with self.assertRaises(ValidationError):
                 validar_capa(file)
 
+    def test_cover_removal_is_kept_pending_when_another_field_is_invalid(self):
+        self.identity.capa = self.logo_file("capa.png", (1200, 400))
+        self.identity.save()
+        response = self.client.post("/gestao/identidade/", {
+            "nome_exibicao": "Campus", "capa-clear": "on", "email_contato": "invalido",
+        }, HTTP_HOST=HOST)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-branding-clear="capa"')
+        self.assertContains(response, "Remoção marcada")
+        self.identity.refresh_from_db()
+        self.assertTrue(self.identity.capa)
+
     def test_cover_upload_and_presentation_escaped(self):
         response = self.client.post("/gestao/identidade/", {
             "nome_exibicao": "Meu campus", "apresentacao": "<script>alert(1)</script>",
@@ -66,7 +82,7 @@ class CapaHomeTests(PortalInstitucionalBase):
 
     def test_empty_cover_and_home_sections(self):
         response = self.client.get("/", HTTP_HOST=HOST)
-        for label in ("tenant-cover--empty", "Projetos autônomos", "Projetos vinculados", "Programas ativos", "Turmas elegíveis"):
+        for label in ("tenant-cover--empty", "Projetos autônomos", "Projetos institucionais", "Ranking de projetos", "Acesso rápido"):
             self.assertContains(response, label)
 
     def test_only_tenant_public_projects_in_columns(self):
@@ -75,7 +91,7 @@ class CapaHomeTests(PortalInstitucionalBase):
         Project.objects.create(title="Privado A secreto", owner=self.user, organizacao=self.organization, visibility=Project.VISIBILITY_PRIVATE)
         other = Organizacao.objects.create(slug="outro", nome="Outro", status="ativa")
         Project.objects.create(title="Outro tenant secreto", owner=self.user, organizacao=other, visibility=Project.VISIBILITY_PUBLIC)
-        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", criado_por=self.user)
+        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
         turma = Turma.objects.create(programa=program, nome="Turma", criado_por=self.user)
         VinculoProjetoInstitucional.objects.create(projeto=linked, turma=turma, vinculado_por=self.user)
         response = self.client.get("/", HTTP_HOST=HOST)
@@ -92,7 +108,7 @@ class CapaHomeTests(PortalInstitucionalBase):
         DominioOrganizacao.objects.create(organizacao=other, hostname="outro.palaciomental.com.br", principal=True)
         MembroOrganizacao.objects.create(organizacao=other, usuario=self.user)
         response = self.client.get("/", HTTP_HOST="outro.palaciomental.com.br")
-        self.assertNotContains(response, self.identity.capa.url)
+        self.assertNotContains(response, cast(ImageFieldFile, self.identity.capa).url)
         self.assertNotContains(response, "#ABCDEF")
 
     def test_email_uses_absolute_cover_and_shared_colors(self):
@@ -115,3 +131,14 @@ class CapaHomeTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 403)
         self.identity.refresh_from_db()
         self.assertFalse(self.identity.capa)
+
+    def test_logo_replacement_uses_new_key_for_immutable_cache(self):
+        self.identity.logo = self.logo_file("marca.png")
+        self.identity.save()
+        original = self.identity.logo.name
+        self.identity.logo = self.logo_file("marca.png")
+        self.identity.save()
+        self.assertNotEqual(self.identity.logo.name, original)
+        key = self.identity.logo.name
+        assert key is not None
+        self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", key)

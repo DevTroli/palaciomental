@@ -93,7 +93,7 @@ public class StatusController {
   private Map<String, Object> checkDjango() {
     long start = System.currentTimeMillis();
     try {
-      var response = restTemplate.getForEntity(djangoAppUrl + "/saude", Map.class);
+      var response = restTemplate.getForEntity(djangoAppUrl + "/pronto", Map.class);
       Map<String, Object> result = new LinkedHashMap<>();
       result.put("status", response.getStatusCode().is2xxSuccessful() ? "operacional" : "degradado");
       result.put("response_time_ms", System.currentTimeMillis() - start);

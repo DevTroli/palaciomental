@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 import uuid
 
 from .validators import CORES_SEMANTICAS, ROTULOS_CORES, caminho_logo, normalizar_logo, validar_logo
@@ -54,6 +55,17 @@ class IdentidadeOrganizacao(models.Model):
     tema = models.JSONField("Cores personalizadas", default=dict, blank=True, validators=[validate_theme])
     capa = models.ImageField("Capa", upload_to=caminho_capa, validators=[validar_capa], blank=True)
     apresentacao = models.TextField("Apresentação do ambiente", max_length=600, blank=True)
+    slogan = models.CharField("Slogan institucional", max_length=160, blank=True)
+    site_oficial = models.URLField("Site oficial", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
+    link_1_titulo = models.CharField("Título do primeiro link", max_length=60, blank=True)
+    link_2_titulo = models.CharField("Título do segundo link", max_length=60, blank=True)
+    link_2_url = models.URLField("Endereço do segundo link", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
+    link_3_titulo = models.CharField("Título do terceiro link", max_length=60, blank=True)
+    link_3_url = models.URLField("Endereço do terceiro link", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
+    slogan_rodape = models.CharField("Texto da organização no rodapé", max_length=160, blank=True)
+    email_contato = models.EmailField("E-mail de contato", blank=True)
+    instagram_url = models.URLField("Instagram", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
+    facebook_url = models.URLField("Facebook", max_length=500, blank=True, validators=[URLValidator(schemes=["http", "https"])])
     logo = models.ImageField("Logo", upload_to=caminho_logo, validators=[validar_logo], blank=True)
     cor_primaria = models.CharField("Cor primária", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
     cor_destaque = models.CharField("Cor de destaque", max_length=40, choices=tuple((key, ROTULOS_CORES[key]) for key in CORES_SEMANTICAS), blank=True)
@@ -64,10 +76,13 @@ class IdentidadeOrganizacao(models.Model):
         self._logo_original_name = self.logo.name
 
     def save(self, *args, **kwargs):
-        if self.logo and (not self.logo._committed or self.logo.name != self._logo_original_name):
-            self.logo = normalizar_logo(self.logo.file, self.logo.name)
-        if self.capa and not self.capa._committed:
-            self.capa = normalizar_logo(self.capa.file, self.capa.name, max_dimension=2400)
+        # Django's FileDescriptor wraps assigned ContentFile objects on access.
+        logo = self.logo
+        capa = self.capa
+        if logo and (not getattr(logo, "_committed") or logo.name != self._logo_original_name):
+            self.logo = normalizar_logo(logo.file, logo.name)
+        if capa and not getattr(capa, "_committed"):
+            self.capa = normalizar_logo(capa.file, capa.name, max_dimension=2400)
         result = super().save(*args, **kwargs)
         self._logo_original_name = self.logo.name
         return result
@@ -236,6 +251,7 @@ class MemberProfile(models.Model):
     """Informações públicas e curtas do portfólio de um membro."""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     bio = models.CharField("Biografia", max_length=280, blank=True)
+    avatar = models.FileField("Foto de perfil", upload_to="avatars/", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -662,3 +678,91 @@ class ConviteGrupo(models.Model):
 
     def __str__(self):
         return f"{self.email} — {self.grupo.nome}"
+
+
+class EventoCalendario(models.Model):
+    """Atividade ou compromisso institucional de um participante.
+
+    Reúne dois tipos de item: atividades (encontros, aulas, oficinas) e
+    trabalhos com prazo de entrega. Cada evento pertence a uma organização e
+    a um aluno, podendo estar vinculado a um projeto.
+    """
+
+    TIPO_ATIVIDADE = "atividade"
+    TIPO_TRABALHO = "trabalho"
+    TIPO_CHOICES = (
+        (TIPO_ATIVIDADE, "Atividade"),
+        (TIPO_TRABALHO, "Trabalho"),
+    )
+
+    STATUS_PENDENTE = "pendente"
+    STATUS_ENTREGUE = "entregue"
+    STATUS_CONFIRMADO = "confirmado"
+    STATUS_CHOICES = (
+        (STATUS_PENDENTE, "Pendente"),
+        (STATUS_ENTREGUE, "Entregue"),
+        (STATUS_CONFIRMADO, "Confirmada"),
+    )
+
+    ORIGEM_ALUNO = "aluno"
+    ORIGEM_ORGANIZACAO = "organizacao"
+    ORIGEM_CHOICES = (
+        (ORIGEM_ALUNO, "Criado pelo aluno"),
+        (ORIGEM_ORGANIZACAO, "Organização"),
+    )
+
+    organizacao = models.ForeignKey(
+        "listaEspera.Organizacao",
+        on_delete=models.CASCADE,
+        related_name="eventos_agenda",
+        verbose_name="Organização",
+    )
+    aluno = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="eventos_agenda",
+        verbose_name="Aluno",
+    )
+    projeto = models.ForeignKey(
+        "listaEspera.Project",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="eventos_agenda",
+        verbose_name="Projeto",
+    )
+    titulo = models.CharField("Título", max_length=140)
+    descricao = models.TextField("Descrição", max_length=500, blank=True)
+    tipo = models.CharField("Tipo", max_length=20, choices=TIPO_CHOICES, default=TIPO_ATIVIDADE)
+    origem = models.CharField(
+        "Origem",
+        max_length=20,
+        choices=ORIGEM_CHOICES,
+        default=ORIGEM_ORGANIZACAO,
+    )
+    data = models.DateField("Data")
+    horario = models.TimeField("Horário", null=True, blank=True)
+    status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDENTE)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+
+    class Meta:
+        db_table = "plataforma_eventocalendario"
+        verbose_name = "Evento do calendário"
+        verbose_name_plural = "Eventos do calendário"
+        ordering = ["data", "horario", "titulo"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organizacao", "aluno", "tipo", "titulo", "data"],
+                name="agenda_evento_unico",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.projeto_id and self.organizacao_id:
+            project_org = Project.objects.filter(pk=self.projeto_id).values_list("organizacao_id", flat=True).first()
+            if project_org != self.organizacao_id:
+                raise ValidationError({"projeto": "O projeto precisa pertencer ao mesmo ambiente do evento."})
+
+    def __str__(self):
+        return f"{self.titulo} · {self.data:%d/%m/%Y}"

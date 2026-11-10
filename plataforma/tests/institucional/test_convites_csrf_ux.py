@@ -129,7 +129,7 @@ class ConvitesCSRFTests(PortalInstitucionalBase):
             secure=True, HTTP_HOST=HOST, HTTP_REFERER=f"https://{HOST}/",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="field-error"')
+        self.assertContains(response, 'id="id_password2_error"')
         self.assertFalse(User.objects.filter(username="csrf-convidado").exists())
 
     def test_csrf_log_does_not_contain_token_or_submitted_password(self):
