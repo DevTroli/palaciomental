@@ -1,0 +1,1968 @@
+{
+  "info": {
+    "_postman_id": "ffa217cd-d204-4584-a931-e43e523ffa3e",
+    "name": "Palácio Mental · Saúde pública e homologação",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Checks públicos de saúde em produção e formulários reais Django para homologação; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function blockRequest(label, message) {",
+          "  pm.execution.setNextRequest(null);",
+          "  pm.test(label, () => pm.expect.fail(message));",
+          "  pm.execution.skipRequest();",
+          "}",
+          "function guardIdentity(enabled) {",
+          "  const identityWrite = (pm.info.requestName.startsWith(\"02.2\") && enabled(\"allow_branding\")) ||",
+          "    (pm.info.requestName.startsWith(\"02.3a\") && enabled(\"allow_uploads\"));",
+          "  if (enabled(\"allow_writes\") && identityWrite && !pm.variables.get(\"identity_snapshot\")) {",
+          "    blockRequest(\"Upload exige snapshot prévio\", \"Identidade anterior não foi lida.\");",
+          "    return false;",
+          "  }",
+          "  return true;",
+          "}",
+          "function guardMedia() {",
+          "  if (pm.info.requestName.startsWith(\"02.3c\") && !pm.variables.get(pm.request.url.toString().includes(\"cover\") ? \"media_cover_url\" : \"media_logo_url\")) {",
+          "    pm.execution.skipRequest();",
+          "    return false;",
+          "  }",
+          "  return true;",
+          "}",
+          "function guardWrite(enabled) {",
+          "  if (pm.request.method === \"GET\") return true;",
+          "  if (!enabled(\"allow_writes\")) {",
+          "    pm.execution.skipRequest();",
+          "    return false;",
+          "  }",
+          "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+          "  const host = (target.match(/^https?:\\/\\/([^/]+)/i) || [])[1];",
+          "  const approved = pm.environment.get(\"approved_write_host\");",
+          "  if (!host || !approved || host.toLowerCase() !== approved.toLowerCase()) {",
+          "    blockRequest(\"Host de escrita aprovado\", \"Escrita bloqueada: host não aprovado explicitamente.\");",
+          "    return false;",
+          "  }",
+          "  return true;",
+          "}",
+          "function guardInvitation(enabled) {",
+          "  if (pm.info.requestName.startsWith(\"05.\") && enabled(\"allow_invite_accept\")) {",
+          "    const path = pm.environment.get(\"invite_path\") || \"\";",
+          "    if (!/^\\/convites\\/organizacao\\/[A-Za-z0-9_-]+\\/aceitar\\/$/.test(path)) {",
+          "      blockRequest(\"Caminho de convite válido\", \"Convite opcional exige caminho válido de organização.\");",
+          "      return false;",
+          "    }",
+          "  }",
+          "  return true;",
+          "}",
+          "(function guard() {",
+          "  const enabled = name => pm.environment.get(name) === \"true\";",
+          "  if (pm.info.requestName === \"01.1 · Login institucional e CSRF\") {",
+          "    pm.variables.set(\"auth_ready\", false);",
+          "    pm.variables.set(\"project_id\", \"\");",
+          "    pm.variables.set(\"project_title\", `TESTE-POSTMAN ${Date.now()}`);",
+          "  }",
+          "  if (!guardWrite(enabled)) return;",
+          "  if (!guardIdentity(enabled)) return;",
+          "  if (!guardMedia()) return;",
+          "  guardInvitation(enabled);",
+          "})();"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 · Saúde pública",
+      "description": "Checks GET seguros contra o domínio público de produção. Não exigem login nem alteram dados.",
+      "item": [
+        {
+          "id": "680048e8-b854-4981-af85-c70a5bbdffc8",
+          "name": "00.1 · Saúde da aplicação",
+          "description": "Consulta pública de saúde da aplicação em https://palaciomental.com.br. Somente GET, sem autenticação e sem efeitos colaterais.",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/saude",
+            "description": "Consulta pública de saúde da aplicação em https://palaciomental.com.br. Somente GET, sem autenticação e sem efeitos colaterais.",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json();",
+                  "pm.test(\"Status da aplicação está ok\", () => pm.expect(payload.status).to.eql(\"ok\"));",
+                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application/json/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f9350d39-e4ec-4510-aba5-3e718e7e7ca8",
+          "name": "00.2 · Readiness do banco e migrations",
+          "description": "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/pronto",
+            "description": "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const payload = pm.response.json();",
+                  "pm.test(\"Readiness está ok\", () => pm.expect(payload.status).to.eql(\"ok\"));",
+                  "pm.test(\"Resposta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^application/json/));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 · Sessão e entrada",
+      "description": "Execute a coleção inteira no Runner/Newman, em ordem. A senha fica no environment local e não é exportada neste repositório.",
+      "item": [
+        {
+          "id": "cbcd91dd-5d7b-4727-ad95-b9b0ebee7109",
+          "name": "01.1 · Login institucional e CSRF",
+          "description": "01.1 · Login institucional e CSRF",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/entrar/",
+            "description": "01.1 · Login institucional e CSRF",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "0e6ab757-2dba-4dcc-ae9a-f6ee1fc20459",
+          "name": "01.2 · Autenticar gestor de teste",
+          "description": "01.2 · Autenticar gestor de teste",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/entrar/",
+            "description": "01.2 · Autenticar gestor de teste",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "next",
+                  "value": "/",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "pm.variables.set(\"auth_ready\", pm.response.code === 302);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f2be078b-d705-4381-aa46-cb582b06c9e6",
+          "name": "01.3 · Home autenticada e marca",
+          "description": "01.3 · Home autenticada e marca",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/",
+            "description": "01.3 · Home autenticada e marca",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Home institucional, não vitrine global\", () => pm.expect(pm.response.text()).to.include('id=\"tenant-home-title\"'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e7f23538-6782-41a6-a043-fbf1986680d2",
+          "name": "01.4 · Projetos deste host",
+          "description": "01.4 · Projetos deste host",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/",
+            "description": "01.4 · Projetos deste host",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 · Gestão e identidade",
+      "description": "Requer conta ativa Proprietário/Gestor. GETs não alteram dados. O POST opcional sobrescreve nome/apresentação/cores: use somente tenant descartável.",
+      "item": [
+        {
+          "id": "3ff45740-c95a-4e33-a225-277786ae5454",
+          "name": "02.1 · Identidade e novo CSRF",
+          "description": "02.1 · Identidade e novo CSRF",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "02.1 · Identidade e novo CSRF",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "",
+                  "pm.variables.unset(\"identity_snapshot\");",
+                  "const identity = (function readIdentity(html) {",
+                  "  const decode = value => value.replace(/&(#x[0-9a-f]+|#\\d+|amp|lt|gt|quot|apos);/gi, (entity, key) => {",
+                  "    if (key[0] === \"#\") {",
+                  "      const number = key[1].toLowerCase() === \"x\" ? parseInt(key.slice(2), 16) : parseInt(key.slice(1), 10);",
+                  "      return number <= 0x10ffff ? String.fromCodePoint(number) : entity;",
+                  "    }",
+                  "    return {amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\"}[key.toLowerCase()];",
+                  "  });",
+                  "  const names = [",
+                  "    \"nome_exibicao\", \"cor_primaria\", \"cor_destaque\", \"cor_fundo\",",
+                  "    \"theme_primary\", \"theme_secondary\", \"theme_accent\", \"theme_background\", \"theme_surface\",",
+                  "  ];",
+                  "  const inputs = html.match(/<input\\b[^>]*>/gi) || [];",
+                  "  const result = {};",
+                  "  for (const name of names) {",
+                  "    const input = inputs.find(tag => tag.match(/\\sname=([\"'])(.*?)\\1/i)?.[2] === name);",
+                  "    if (!input) throw new Error(`Campo de identidade ausente: ${name}`);",
+                  "    result[name] = decode(input.match(/\\svalue=([\"'])(.*?)\\1/i)?.[2] || \"\");",
+                  "  }",
+                  "  const textarea = html.match(/<textarea\\b(?=[^>]*\\sname=[\"']apresentacao[\"'])[^>]*>([\\s\\S]*?)<\\/textarea>/i);",
+                  "  if (!textarea) throw new Error(\"Campo de apresentação ausente.\");",
+                  "  result.apresentacao = decode(textarea[1].replace(/^\\r?\\n/, \"\"));",
+                  "  return result;",
+                  "})(pm.response.text());",
+                  "pm.variables.set(\"identity_snapshot\", JSON.stringify(identity));",
+                  "for (const [key, value] of Object.entries(identity)) pm.variables.set(\"identity_\" + key, value);",
+                  "pm.test(\"Snapshot de identidade completo\", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));",
+                  "pm.test(\"Cinco campos de tema\", () => { for (const role of [\"primary\",\"secondary\",\"accent\",\"background\",\"surface\"]) pm.expect(pm.response.text()).to.include('data-theme-color=\"'+role+'\"'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "093002ff-3838-4d71-a9dc-fa0f642ae387",
+          "name": "02.2 · Salvar tema opcional",
+          "description": "02.2 · Salvar tema opcional",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "02.2 · Salvar tema opcional",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nome_exibicao",
+                  "value": "{{branding_name}}",
+                  "type": "text"
+                },
+                {
+                  "key": "apresentacao",
+                  "value": "Ambiente de homologação descartável.",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_primaria",
+                  "value": "{{identity_cor_primaria}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_destaque",
+                  "value": "{{identity_cor_destaque}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_fundo",
+                  "value": "{{identity_cor_fundo}}",
+                  "type": "text"
+                },
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "theme_primary",
+                  "value": "#315A76",
+                  "type": "text"
+                },
+                {
+                  "key": "theme_secondary",
+                  "value": "#6E4AA3",
+                  "type": "text"
+                },
+                {
+                  "key": "theme_accent",
+                  "value": "#5C9F63",
+                  "type": "text"
+                },
+                {
+                  "key": "theme_background",
+                  "value": "#F3ECDF",
+                  "type": "text"
+                },
+                {
+                  "key": "theme_surface",
+                  "value": "#FFFFFF",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_branding\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "db5ccd4e-7854-424e-aaa5-51a829533758",
+          "name": "02.3 · Releitura de identidade",
+          "description": "02.3 · Releitura de identidade",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "02.3 · Releitura de identidade",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "",
+                  "pm.variables.unset(\"identity_snapshot\");",
+                  "const identity = (function readIdentity(html) {",
+                  "  const decode = value => value.replace(/&(#x[0-9a-f]+|#\\d+|amp|lt|gt|quot|apos);/gi, (entity, key) => {",
+                  "    if (key[0] === \"#\") {",
+                  "      const number = key[1].toLowerCase() === \"x\" ? parseInt(key.slice(2), 16) : parseInt(key.slice(1), 10);",
+                  "      return number <= 0x10ffff ? String.fromCodePoint(number) : entity;",
+                  "    }",
+                  "    return {amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\"}[key.toLowerCase()];",
+                  "  });",
+                  "  const names = [",
+                  "    \"nome_exibicao\", \"cor_primaria\", \"cor_destaque\", \"cor_fundo\",",
+                  "    \"theme_primary\", \"theme_secondary\", \"theme_accent\", \"theme_background\", \"theme_surface\",",
+                  "  ];",
+                  "  const inputs = html.match(/<input\\b[^>]*>/gi) || [];",
+                  "  const result = {};",
+                  "  for (const name of names) {",
+                  "    const input = inputs.find(tag => tag.match(/\\sname=([\"'])(.*?)\\1/i)?.[2] === name);",
+                  "    if (!input) throw new Error(`Campo de identidade ausente: ${name}`);",
+                  "    result[name] = decode(input.match(/\\svalue=([\"'])(.*?)\\1/i)?.[2] || \"\");",
+                  "  }",
+                  "  const textarea = html.match(/<textarea\\b(?=[^>]*\\sname=[\"']apresentacao[\"'])[^>]*>([\\s\\S]*?)<\\/textarea>/i);",
+                  "  if (!textarea) throw new Error(\"Campo de apresentação ausente.\");",
+                  "  result.apresentacao = decode(textarea[1].replace(/^\\r?\\n/, \"\"));",
+                  "  return result;",
+                  "})(pm.response.text());",
+                  "pm.variables.set(\"identity_snapshot\", JSON.stringify(identity));",
+                  "for (const [key, value] of Object.entries(identity)) pm.variables.set(\"identity_\" + key, value);",
+                  "pm.test(\"Snapshot de identidade completo\", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));",
+                  "if (pm.environment.get(\"allow_branding\") === \"true\") pm.test(\"Cor salva\", () => pm.expect(pm.response.text()).to.include(\"#315A76\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "09adc5af-619f-42f0-a85e-7de6a1084f45",
+          "name": "02.3a · Upload de logo e capa opcional",
+          "description": "Substitui somente logo/capa no tenant descartável, preservando nome, apresentação, cores legadas e tema lidos no GET anterior. Requer allow_uploads e allow_writes explícitos. Arquivos relativos à raiz do repositório. Não restaura imagens anteriores.",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "Substitui somente logo/capa no tenant descartável, preservando nome, apresentação, cores legadas e tema lidos no GET anterior. Requer allow_uploads e allow_writes explícitos. Arquivos relativos à raiz do repositório. Não restaura imagens anteriores.",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "nome_exibicao",
+                  "value": "{{identity_nome_exibicao}}",
+                  "type": "text"
+                },
+                {
+                  "key": "apresentacao",
+                  "value": "{{identity_apresentacao}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_primaria",
+                  "value": "{{identity_cor_primaria}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_destaque",
+                  "value": "{{identity_cor_destaque}}",
+                  "type": "text"
+                },
+                {
+                  "key": "cor_fundo",
+                  "value": "{{identity_cor_fundo}}",
+                  "type": "text"
+                },
+                {
+                  "key": "logo",
+                  "src": "docs/testing/postman/fixtures/logo.png",
+                  "type": "file"
+                },
+                {
+                  "key": "capa",
+                  "src": "docs/testing/postman/fixtures/cover.png",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_uploads\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "75129cee-b6e4-458f-a2a9-235ee05fb308",
+          "name": "02.3b · URLs e rótulos de mídia",
+          "description": "02.3b · URLs e rótulos de mídia",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "02.3b · URLs e rótulos de mídia",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_uploads\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "const html = pm.response.text();",
+                  "pm.test(\"Upload preservou os demais campos de identidade\", () => pm.expect((function readIdentity(html) {",
+                  "  const decode = value => value.replace(/&(#x[0-9a-f]+|#\\d+|amp|lt|gt|quot|apos);/gi, (entity, key) => {",
+                  "    if (key[0] === \"#\") {",
+                  "      const number = key[1].toLowerCase() === \"x\" ? parseInt(key.slice(2), 16) : parseInt(key.slice(1), 10);",
+                  "      return number <= 0x10ffff ? String.fromCodePoint(number) : entity;",
+                  "    }",
+                  "    return {amp: \"&\", lt: \"<\", gt: \">\", quot: '\"', apos: \"'\"}[key.toLowerCase()];",
+                  "  });",
+                  "  const names = [",
+                  "    \"nome_exibicao\", \"cor_primaria\", \"cor_destaque\", \"cor_fundo\",",
+                  "    \"theme_primary\", \"theme_secondary\", \"theme_accent\", \"theme_background\", \"theme_surface\",",
+                  "  ];",
+                  "  const inputs = html.match(/<input\\b[^>]*>/gi) || [];",
+                  "  const result = {};",
+                  "  for (const name of names) {",
+                  "    const input = inputs.find(tag => tag.match(/\\sname=([\"'])(.*?)\\1/i)?.[2] === name);",
+                  "    if (!input) throw new Error(`Campo de identidade ausente: ${name}`);",
+                  "    result[name] = decode(input.match(/\\svalue=([\"'])(.*?)\\1/i)?.[2] || \"\");",
+                  "  }",
+                  "  const textarea = html.match(/<textarea\\b(?=[^>]*\\sname=[\"']apresentacao[\"'])[^>]*>([\\s\\S]*?)<\\/textarea>/i);",
+                  "  if (!textarea) throw new Error(\"Campo de apresentação ausente.\");",
+                  "  result.apresentacao = decode(textarea[1].replace(/^\\r?\\n/, \"\"));",
+                  "  return result;",
+                  "})(html)).to.deep.equal(JSON.parse(pm.variables.get(\"identity_snapshot\"))));",
+                  "pm.test(\"Logo e capa vinculadas\", () => { pm.expect(html).to.include(\"/branding/logo/\"); pm.expect(html).to.include(\"/branding/cover/\"); pm.expect(html).to.include(\"Ver imagem atual\"); });",
+                  "const logo = html.match(/href=[\"']([^\"']+\\/branding\\/logo\\/[^\"']+)/);",
+                  "const cover = html.match(/id=[\"']cover-preview[\"'][^>]*src=[\"']([^\"']+)/);",
+                  "const absolute = value => /^https?:\\/\\//.test(value) ? value : pm.environment.get(\"tenant_a_base\") + value;",
+                  "if (logo) pm.variables.set(\"media_logo_url\", absolute(logo[1]));",
+                  "if (cover) pm.variables.set(\"media_cover_url\", absolute(cover[1]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "0dafbc7f-ee28-4897-ad5f-24baacbe011c",
+          "name": "02.3c · Buscar imagem logo opcional",
+          "description": "Requer allow_media_fetch e upload anterior na mesma execução. GET da URL pública real, não prova persistência após redeploy. No Gunicorn local sem servidor de mídia, deixe desativado.",
+          "request": {
+            "method": "GET",
+            "url": "{{media_logo_url}}",
+            "description": "Requer allow_media_fetch e upload anterior na mesma execução. GET da URL pública real, não prova persistência após redeploy. No Gunicorn local sem servidor de mídia, deixe desativado.",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_media_fetch\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Resposta é imagem\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^image\\//));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "4a056cc4-258d-4f24-a321-19d7286d5808",
+          "name": "02.3c · Buscar imagem cover opcional",
+          "description": "Requer allow_media_fetch e upload anterior na mesma execução. GET da URL pública real, não prova persistência após redeploy. No Gunicorn local sem servidor de mídia, deixe desativado.",
+          "request": {
+            "method": "GET",
+            "url": "{{media_cover_url}}",
+            "description": "Requer allow_media_fetch e upload anterior na mesma execução. GET da URL pública real, não prova persistência após redeploy. No Gunicorn local sem servidor de mídia, deixe desativado.",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_media_fetch\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Resposta é imagem\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^image\\//));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "294ef73d-b27d-471b-a87a-e4c9e2f1f964",
+          "name": "02.4 · Membros e convites",
+          "description": "02.4 · Membros e convites",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/gestao/membros/",
+            "description": "02.4 · Membros e convites",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "03313998-37fc-471e-ac32-18397c2451a2",
+          "name": "02.5 · Enviar convite opcional",
+          "description": "Requer conta Gestor, allow_email=true, allow_writes=true, host aprovado e destinatário controlado. Proprietário só convida Gestor, portanto não use Proprietário neste envio de Membro. 302 não prova entrega. Consulte a caixa real e os eventos do provedor; o token não é exposto pelo dashboard.",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/gestao/membros/",
+            "description": "Requer conta Gestor, allow_email=true, allow_writes=true, host aprovado e destinatário controlado. Proprietário só convida Gestor, portanto não use Proprietário neste envio de Membro. 302 não prova entrega. Consulte a caixa real e os eventos do provedor; o token não é exposto pelo dashboard.",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "acao",
+                  "value": "convidar",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "{{invite_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "papel",
+                  "value": "membro",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_email\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "29a5d2e0-29a2-405c-af8e-62c773f9d3e2",
+          "name": "02.6 · Programas",
+          "description": "02.6 · Programas",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/gestao/programas/",
+            "description": "02.6 · Programas",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 · Projeto autônomo e contexto progressivo",
+      "description": "Dependências: GET formulário → POST básico → ID do Location → GET contexto → POST contexto → detalhe. Cria um projeto privado novo por execução. Não exclui automaticamente.",
+      "item": [
+        {
+          "id": "1989aa92-d077-48ae-a62e-3ca67aa63e85",
+          "name": "03.1 · Formulário de projeto",
+          "description": "03.1 · Formulário de projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/novo/",
+            "description": "03.1 · Formulário de projeto",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ac64f6cb-a457-480b-af65-d930fbf0626a",
+          "name": "03.2 · Criar projeto privado",
+          "description": "03.2 · Criar projeto privado",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/novo/",
+            "description": "03.2 · Criar projeto privado",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "{{project_title}}",
+                  "type": "text"
+                },
+                {
+                  "key": "direction",
+                  "value": "Validar continuidade do fluxo institucional com dados descartáveis.",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "ideia",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "privado",
+                  "type": "text"
+                },
+                {
+                  "key": "tipo_projeto",
+                  "value": "autonomo",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "const target = pm.response.headers.get(\"Location\") || \"\"; const m = target.match(/\\/projetos\\/(\\d+)\\/contexto\\/$/); pm.test(\"ID e destino de contexto válidos\", () => pm.expect(m).not.to.equal(null)); if (!m) pm.execution.setNextRequest(null); else pm.variables.set(\"project_id\", m[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8d61d5f0-39fb-4d32-a1b6-0df49da8d951",
+          "name": "03.3 · Abrir contexto sem 4xx",
+          "description": "03.3 · Abrir contexto sem 4xx",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/{{project_id}}/contexto/",
+            "description": "03.3 · Abrir contexto sem 4xx",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "aa31efc8-2630-46f3-ac46-2626fe97498f",
+          "name": "03.4 · Salvar contexto",
+          "description": "03.4 · Salvar contexto",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_id}}/contexto/",
+            "description": "03.4 · Salvar contexto",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Homologação",
+                  "type": "text"
+                },
+                {
+                  "key": "tags",
+                  "value": "postman,qa",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "privado",
+                  "type": "text"
+                },
+                {
+                  "key": "links-TOTAL_FORMS",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "links-INITIAL_FORMS",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "links-MIN_NUM_FORMS",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "links-MAX_NUM_FORMS",
+                  "value": "1000",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e32b4e4e-4e47-44e2-aa23-b2daf0145573",
+          "name": "03.5 · Detalhe do próprio projeto",
+          "description": "03.5 · Detalhe do próprio projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/{{project_id}}/",
+            "description": "03.5 · Detalhe do próprio projeto",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "pm.test(\"Projeto correto\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"project_title\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2b661cbf-2034-4ced-acec-5ff2a983ee02",
+          "name": "03.6 · Adicionar comentário",
+          "description": "03.6 · Adicionar comentário",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_id}}/comentarios/",
+            "description": "03.6 · Adicionar comentário",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "Contexto de teste Postman: comentário persistido.",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "070a964e-629d-4ea6-a77a-c0274b1745da",
+          "name": "03.7 · Registrar marco",
+          "description": "03.7 · Registrar marco",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_id}}/marcos/",
+            "description": "03.7 · Registrar marco",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Marco de homologação Postman",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Fluxo preservado.",
+                  "type": "text"
+                },
+                {
+                  "key": "milestone_type",
+                  "value": "avanco",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "39c26bf9-ad9f-435c-ad0c-0068cee7d669",
+          "name": "03.8 · Releitura do histórico",
+          "description": "03.8 · Releitura do histórico",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/{{project_id}}/",
+            "description": "03.8 · Releitura do histórico",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Comentário e marco persistiram\", () => { pm.expect(pm.response.text()).to.include(\"Contexto de teste Postman\"); pm.expect(pm.response.text()).to.include(\"Marco de homologação Postman\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 · Bordas e isolamento HTTP",
+      "description": "Não substitui testes de política SQL. No tenant B, registre se a requisição está autenticada: redirect pode representar ausência de sessão/afiliação, não prova de RLS.",
+      "item": [
+        {
+          "id": "e514bb90-205d-4687-a828-213580667a99",
+          "name": "04.1 · Mesmo ID em tenant B",
+          "description": "04.1 · Mesmo ID em tenant B",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_b_base}}/projetos/{{project_id}}/",
+            "description": "04.1 · Mesmo ID em tenant B",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sem acesso por outro host\", () => pm.expect([302,403,404]).to.include(pm.response.code)); pm.test(\"Título privado não vazou\", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get(\"project_title\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "83a5c1bb-c45d-4c01-a8fb-59a2116df131",
+          "name": "04.2 · Mesmo ID no global",
+          "description": "04.2 · Mesmo ID no global",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/{{project_id}}/",
+            "description": "04.2 · Mesmo ID no global",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Projeto institucional ausente no global\", () => pm.expect([302,403,404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ba035537-9ac0-410f-af71-b52c4c193f8f",
+          "name": "04.3 · CSRF inválido tratado",
+          "description": "04.3 · CSRF inválido tratado",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "04.3 · CSRF inválido tratado",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nome_exibicao",
+                  "value": "NÃO DEVE SALVAR",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF rejeitado\", () => pm.response.to.have.status(403)); pm.test(\"Sem traceback Django\", () => pm.expect(pm.response.text()).not.to.include(\"Traceback\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f57ccd6b-00a8-4296-a1f8-6c8a14abefc2",
+          "name": "04.4 · Recuperar página após bloqueio",
+          "description": "04.4 · Recuperar página após bloqueio",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "04.4 · Recuperar página após bloqueio",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 · Entrada por convite — execução opcional",
+      "description": "Fronteira manual: obtenha um convite fresco em caixa controlada ou fixture local. Informe invite_path apenas no environment privado. Saída do gestor → cadastro de conta inédita → tela de aceite → aceite explícito. Não cria convites fictícios nem tenta adivinhar tokens.",
+      "item": [
+        {
+          "id": "cf39f56f-6da8-4026-a303-8bda884811f2",
+          "name": "05.1 · Sair do gestor",
+          "description": "05.1 · Sair do gestor",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/sair/",
+            "description": "05.1 · Sair do gestor",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "pm.variables.set(\"auth_ready\", false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b706a317-d168-4031-aa66-ab270c58f78d",
+          "name": "05.2 · Abrir convite anônimo",
+          "description": "05.2 · Abrir convite anônimo",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}{{invite_path}}",
+            "description": "05.2 · Abrir convite anônimo",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);",
+                  "pm.test(\"Referrer não vaza token\", () => pm.expect(pm.response.headers.get(\"Referrer-Policy\")).to.eql(\"strict-origin\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "d9610ac7-e8cb-4071-a5df-e32a3d34897d",
+          "name": "05.3 · Cadastro mínimo por convite",
+          "description": "05.3 · Cadastro mínimo por convite",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}{{invite_path}}",
+            "description": "05.3 · Cadastro mínimo por convite",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "action",
+                  "value": "register",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{new_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password1",
+                  "value": "{{new_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password2",
+                  "value": "{{new_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "7c3e2a26-2e75-47f9-a047-c6ad363586c2",
+          "name": "05.4 · Tela de aceite e CSRF renovado",
+          "description": "05.4 · Tela de aceite e CSRF renovado",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}{{invite_path}}",
+            "description": "05.4 · Tela de aceite e CSRF renovado",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "0726e458-9b26-4bd5-a2d6-280a981d8b83",
+          "name": "05.5 · Aceitar explicitamente",
+          "description": "05.5 · Aceitar explicitamente",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}{{invite_path}}",
+            "description": "05.5 · Aceitar explicitamente",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "action",
+                  "value": "accept",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Redireciona após POST válido\", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code === 302) pm.variables.set(\"auth_ready\", true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "6704faf4-2e26-4eda-a2ce-2535ea73ecf9",
+          "name": "05.6 · Entrada após afiliação",
+          "description": "05.6 · Entrada após afiliação",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/",
+            "description": "05.6 · Entrada após afiliação",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "131850b0-bec0-4aaa-a85a-a076753cb2b1",
+          "name": "05.7 · Não reutilizar convite aceito",
+          "description": "05.7 · Não reutilizar convite aceito",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}{{invite_path}}",
+            "description": "05.7 · Não reutilizar convite aceito",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Convite consumido rejeitado\", () => pm.expect([400,403,404,410]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "20aa67f2-33d8-424a-a821-48e358f11dd2",
+          "name": "05.8 · Membro não altera identidade por POST direto",
+          "description": "Use convite novo de papel membro. Para convite de Gestor, esta asserção não se aplica: não execute esta pasta com papel diferente.",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/gestao/identidade/",
+            "description": "Use convite novo de papel membro. Para convite de Gestor, esta asserção não se aplica: não execute esta pasta com papel diferente.",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf}}",
+                  "type": "text"
+                },
+                {
+                  "key": "nome_exibicao",
+                  "value": "NÃO DEVE SALVAR",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_invite_accept\") !== \"true\") pm.execution.skipRequest();",
+                  "if (pm.variables.get(\"auth_ready\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Membro sem permissão de gestão\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
