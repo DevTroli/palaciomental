@@ -28,6 +28,117 @@ from .base import PortalInstitucionalBase
 
 
 class ConvitesEVinculosTests(PortalInstitucionalBase):
+    def test_member_directory_filters_and_paginates_within_organization(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel="proprietario")
+        for index in range(13):
+            user = User.objects.create_user(username=f"aluno-{index:02d}")
+            MembroOrganizacao.objects.create(organizacao=self.organization, usuario=user, papel="membro")
+        self.client.force_login(self.user)
+        path = reverse("plataforma:institutional_members")
+        host = {"HTTP_HOST": "camppg.palaciomental.com.br"}
+        first = self.client.get(path, {"papel": "membro"}, **host)
+        self.assertEqual(first.context["membros"].paginator.count, 13)
+        self.assertEqual(len(first.context["membros"]), 12)
+        self.assertContains(first, "Página 1 de 2")
+        self.assertContains(first, 'id="diretorio-membros"')
+        self.assertContains(first, "tenant-members.js")
+        self.assertContains(first, 'aria-label="Filtrar pessoas por papel ao final da lista"')
+        second = self.client.get(path, {"papel": "membro", "pagina": 2}, **host)
+        self.assertEqual(len(second.context["membros"]), 1)
+        self.assertContains(second, "papel=membro")
+        owners = self.client.get(path, {"papel": "proprietario"}, **host)
+        self.assertEqual(owners.context["membros"].paginator.count, 1)
+
+    def test_owner_can_invite_all_roles_and_manager_cannot_change_roles(self):
+        from plataforma.services import papeis_convidaveis
+        self.assertEqual(set(papeis_convidaveis("proprietario")), {"proprietario", "gestor", "professor", "membro"})
+        self.assertEqual(set(papeis_convidaveis("gestor")), {"professor", "membro"})
+        self.assertEqual(papeis_convidaveis("professor"), ())
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel="proprietario")
+        manager = User.objects.create_user(username="manager", email="manager@example.com")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel="gestor")
+        member = User.objects.create_user(username="student", email="student@example.com")
+        affiliation = MembroOrganizacao.objects.create(organizacao=self.organization, usuario=member, papel="membro")
+        path = reverse("plataforma:institutional_members")
+        self.client.force_login(manager)
+        response = self.client.post(path, {"acao": "papel", "membro_id": affiliation.pk, "papel": "professor"}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 403)
+        affiliation.refresh_from_db()
+        self.assertEqual(affiliation.papel, "membro")
+        self.client.force_login(self.user)
+        response = self.client.post(path, {"acao": "papel", "membro_id": affiliation.pk, "papel": "proprietario"}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 302)
+        affiliation.refresh_from_db()
+        self.assertEqual(affiliation.papel, "proprietario")
+
+    def test_owner_invites_all_roles_and_manager_cannot_invite_peers(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel="proprietario")
+        self.client.force_login(self.user)
+        for role in ("proprietario", "gestor", "professor", "membro"):
+            with self.subTest(role=role):
+                response = self.client.post(reverse("plataforma:institutional_members"),
+                    {"acao": "convidar", "email": role + "@example.com", "papel": role},
+                    HTTP_HOST="camppg.palaciomental.com.br")
+                self.assertEqual(response.status_code, 302)
+                self.assertTrue(ConviteOrganizacao.objects.filter(email=role + "@example.com", papel=role).exists())
+        manager = User.objects.create_user(username="manager2", email="manager2@example.com")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel="gestor")
+        self.client.force_login(manager)
+        response = self.client.post(reverse("plataforma:institutional_members"),
+            {"acao": "convidar", "email": "peer@example.com", "papel": "gestor"},
+            HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ConviteOrganizacao.objects.filter(email="peer@example.com").exists())
+
+    def test_teacher_cannot_invite_to_other_class_or_invite_existing_manager(self):
+        teacher = self.user
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=teacher, papel="professor")
+        manager = User.objects.create_user(username="higher", email="higher@example.com")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel="gestor")
+        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", slug="professor-programa", criado_por=teacher)
+        own = self.make_group(program, "Própria", professor=teacher)
+        other = self.make_group(program, "Outra")
+        self.client.force_login(teacher)
+        host = {"HTTP_HOST": "camppg.palaciomental.com.br"}
+        response = self.client.post(reverse("plataforma:institutional_group_members", args=[own.pk]), {"email": manager.email}, **host)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ConviteGrupo.objects.filter(grupo=own, email=manager.email).exists())
+        response = self.client.post(reverse("plataforma:institutional_group_members", args=[other.pk]), {"email": "aluno@example.com"}, **host)
+        self.assertIn(response.status_code, (403, 404))
+        self.assertFalse(ConviteGrupo.objects.filter(grupo=other).exists())
+
+    def test_organization_invite_redirects_by_role(self):
+        for role in ("membro", "professor", "gestor", "proprietario"):
+            with self.subTest(role=role):
+                user = User.objects.create_user(username="invite-" + role, email=role + "@example.com")
+                token = secrets.token_urlsafe(32)
+                ConviteOrganizacao.objects.create(organizacao=self.organization, convidado_por=self.user,
+                    email=user.email, papel=role, hash_token=hashlib.sha256(token.encode()).hexdigest(),
+                    expira_em=timezone.now() + timedelta(days=7))
+                self.client.force_login(user)
+                response = self.client.post(reverse("plataforma:institutional_organization_invite_accept", args=[token]),
+                    {"action": "accept"}, HTTP_HOST="camppg.palaciomental.com.br")
+                expected = "plataforma:institutional_management" if role in ("gestor", "proprietario") else "core:index"
+                self.assertRedirects(response, reverse(expected), fetch_redirect_response=False)
+
+    def test_old_organization_invite_cannot_reactivate_or_change_role(self):
+        user = User.objects.create_user(username="suspenso", email="suspenso@example.com")
+        affiliation = MembroOrganizacao.objects.create(organizacao=self.organization, usuario=user,
+            papel="professor", status=MembroOrganizacao.STATUS_SUSPENSA)
+        token = secrets.token_urlsafe(32)
+        invite = ConviteOrganizacao.objects.create(organizacao=self.organization, convidado_por=self.user,
+            email=user.email, papel="membro", hash_token=hashlib.sha256(token.encode()).hexdigest(),
+            expira_em=timezone.now() + timedelta(days=7))
+        self.client.force_login(user)
+        response = self.client.post(reverse("plataforma:institutional_organization_invite_accept", args=[token]),
+            {"action": "accept"}, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 403)
+        affiliation.refresh_from_db()
+        invite.refresh_from_db()
+        self.assertEqual(affiliation.status, MembroOrganizacao.STATUS_SUSPENSA)
+        self.assertEqual(affiliation.papel, "professor")
+        self.assertEqual(invite.status, ConviteOrganizacao.STATUS_PENDENTE)
+
     def test_group_invitation_acceptance_creates_affiliation_and_membership(self):
         manager = self.user
         MembroOrganizacao.objects.create(
@@ -66,7 +177,7 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
             {"action": "accept"},
             HTTP_HOST="camppg.palaciomental.com.br",
         )
-        self.assertRedirects(response, reverse("plataforma:institutional_program_detail", kwargs={"programa_id": programa.pk}), fetch_redirect_response=False)
+        self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
         self.assertTrue(MembroOrganizacao.objects.filter(organizacao=self.organization, usuario=invited, papel=MembroOrganizacao.PAPEL_MEMBRO).exists())
         self.assertTrue(MembroGrupo.objects.filter(grupo=grupo, usuario=invited, status=MembroGrupo.STATUS_ATIVO).exists())
         invite.refresh_from_db()
@@ -210,7 +321,7 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
             {"action": "accept"},
             HTTP_HOST="camppg.palaciomental.com.br",
         )
-        self.assertRedirects(response, reverse("plataforma:projects"), fetch_redirect_response=False)
+        self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
         affiliation = MembroOrganizacao.objects.get(organizacao=self.organization, usuario=invited)
         self.assertEqual(affiliation.papel, MembroOrganizacao.PAPEL_PROFESSOR)
         convite.refresh_from_db()
