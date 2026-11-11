@@ -241,3 +241,36 @@
 .tenant-shell .lamp-button.is-active { border-color:transparent; background:var(--project-primary); color:var(--project-primary-ink); }
 .tenant-shell .danger-button { border-color:var(--project-border-strong); color:var(--project-link); background:transparent; }
 .tenant-shell .danger-button:hover { border-color:var(--project-primary); background:var(--project-primary); color:var(--project-primary-ink); }
+
+/* Metadados discretos: cor de marca aparece como sinal, não como bloco de texto amarelo. */
+.tenant-shell .project-title-line .eyebrow { display:block; width:max-content; max-width:100%; padding:0; border:0; background:transparent; color:var(--project-link); font-size:11px; letter-spacing:.1em; }
+.tenant-shell .project-hero .tag-row span { display:inline-flex; align-items:center; min-height:26px; padding:4px 9px; border:1px solid var(--project-border); border-radius:999px; background:var(--project-subtle); color:var(--project-link); font-size:11px; font-weight:700; }
+.tenant-shell .project-hero .tag-row span:hover { border-color:var(--project-link); background:var(--project-primary-subtle); }
+
+/* Relevância no padrão de upvote: controle curto, contador visível e texto reduzido. */
+.tenant-shell .project-relevance { padding:18px; }
+.tenant-shell .relevance-vote-row { display:flex; align-items:center; gap:8px; margin-top:11px; }
+.tenant-shell .relevance-count { min-width:1.5ch; color:var(--project-surface-ink); font-size:24px; line-height:1; }
+.tenant-shell .relevance-vote-label { color:var(--project-muted); font-size:12px; }
+.tenant-shell .relevance-vote-row form { display:contents; }
+.tenant-shell .relevance-vote-button { display:inline-grid; place-items:center; width:38px; height:38px; margin-left:auto; border:1px solid var(--project-border-strong); border-radius:10px; background:var(--project-surface); color:var(--project-link); font-size:23px; line-height:1; text-decoration:none; cursor:pointer; }
+.tenant-shell .relevance-vote-button:hover { border-color:var(--project-link); background:var(--project-primary-subtle); }
+.tenant-shell .relevance-vote-button.is-active { border-color:var(--project-primary); background:var(--project-primary); color:var(--project-primary-ink); }
+.tenant-shell .relevance-vote-button:focus-visible { outline:3px solid var(--project-link); outline-offset:3px; }
+
+/* Vitrine: estados e categorias não usam mais as cores fixas do shell. */
+.tenant-shell .explore-project-card .camp-badge,
+.tenant-shell .explore-person-card .camp-tag { border:1px solid var(--project-border); background:var(--project-subtle); color:var(--project-link); }
+.tenant-shell .explore-project-card .camp-badge--ativo,
+.tenant-shell .explore-project-card .camp-badge--ideia,
+.tenant-shell .explore-project-card .camp-badge--concluido { background:var(--project-primary-subtle); color:var(--project-link); }
+.tenant-shell .explore-person-card .camp-tag { display:inline-flex; min-height:24px; align-items:center; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+.tenant-shell .project-hero .back-link { color:var(--project-link); }
+.tenant-shell .project-hero .back-link:hover { color:var(--project-surface-ink); }
+
+/* A lâmpada continua sendo a metáfora do PM; o texto longo fica somente para leitores de tela. */
+.tenant-shell .relevance-vote-row > .lamp-icon { flex:none; margin:0; font-size:24px; line-height:1; filter:grayscale(1); opacity:.52; }
+.tenant-shell .relevance-vote-row > .lamp-icon.lamp-on { filter:none; opacity:1; }
+.tenant-shell .relevance-vote-button { width:38px; height:38px; min-height:38px; margin:0 0 0 auto; padding:0; border-radius:10px; font-size:18px; line-height:1; }
+.tenant-shell .relevance-vote-button:not(.is-active) { filter:grayscale(.25); }
+.tenant-shell .relevance-vote-button.is-active { filter:none; }
