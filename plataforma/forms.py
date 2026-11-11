@@ -301,7 +301,22 @@ class TurmaForm(forms.ModelForm):
         model = Turma
         fields = ("nome", "descricao", "professor_responsavel", "politica_participacao", "status")
         widgets = {
-            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o ciclo ou unidade de orientação desta turma?"}),
+            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Coorte de Produto 2026"}),
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Explique em uma frase o foco, período ou resultado esperado desta turma."}),
+            "professor_responsavel": forms.Select(),
+        }
+
+        labels = {
+            "nome": "Nome da turma",
+            "descricao": "Contexto da turma",
+            "professor_responsavel": "Professor responsável (opcional)",
+            "politica_participacao": "Como as pessoas entram",
+            "status": "Estado da turma",
+        }
+        help_texts = {
+            "descricao": "Uma boa descrição ajuda afiliados a entenderem rapidamente se esta é a turma certa.",
+            "politica_participacao": "Você poderá alterar esta regra depois, conforme o ciclo da turma evoluir.",
+            "status": "Turmas encerradas ficam visíveis, mas não aceitam novas participações.",
         }
 
     def __init__(self, *args, organizacao=None, **kwargs):
@@ -325,7 +340,20 @@ class GrupoForm(forms.ModelForm):
         model = Grupo
         fields = ("nome", "descricao", "aberto_para_entrada", "status")
         widgets = {
-            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o objetivo deste grupo?"}),
+            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Equipe de pesquisa"}),
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual projeto ou objetivo este grupo vai desenvolver?"}),
+        }
+
+        labels = {
+            "nome": "Nome do grupo",
+            "descricao": "Objetivo do grupo",
+            "aberto_para_entrada": "Aceitar pedidos de entrada",
+            "status": "Estado do grupo",
+        }
+        help_texts = {
+            "descricao": "Este texto aparece no preview para quem ainda está conhecendo o grupo.",
+            "aberto_para_entrada": "Quando ativo, integrantes da turma poderão solicitar participação.",
+            "status": "Grupos encerrados continuam no histórico, mas não aceitam novas pessoas.",
         }
 
     def clean_nome(self):
@@ -352,13 +380,25 @@ class SolicitacaoGrupoForm(forms.ModelForm):
 
 
 class ConviteGrupoForm(forms.ModelForm):
+    email = forms.CharField(max_length=254, label="Usuário ou e-mail da pessoa")
+
     class Meta:
         model = ConviteGrupo
         fields = ("email",)
-        labels = {"email": "E-mail da pessoa"}
+        labels = {"email": "Usuário ou e-mail da pessoa"}
+        help_texts = {"email": "Use @usuario como opção principal. O e-mail continua disponível como alternativa."}
+
+        widgets = {"email": forms.TextInput(attrs={"placeholder": "@usuario ou pessoa@exemplo.com", "autocomplete": "off"})}
 
     def clean_email(self):
-        return self.cleaned_data["email"].strip().lower()
+        valor = self.cleaned_data["email"].strip()
+        if valor.startswith("@"):
+            username = valor[1:].strip()
+            usuario = User.objects.filter(username__iexact=username).first()
+            if usuario is None:
+                raise forms.ValidationError("Não encontramos este @usuário no ambiente.")
+            return usuario.email.strip().lower()
+        return valor.lower()
 
 
 class ConviteOrganizacaoForm(forms.ModelForm):

@@ -97,6 +97,14 @@ def _accept(invitation, user, kind):
             raise PermissionDenied("Sua afiliação está suspensa. Procure a gestão.")
         if affiliation.papel != MembroOrganizacao.PAPEL_MEMBRO:
             raise PermissionDenied("A participação em grupos é reservada a alunos.")
+        occupied = MembroGrupo.objects.filter(
+            usuario=user,
+            grupo__turma=invitation.grupo.turma,
+            grupo__status="ativo",
+            status=MembroGrupo.STATUS_ATIVO,
+        ).exclude(grupo=invitation.grupo).exists()
+        if occupied:
+            raise PermissionDenied("Você já participa de outro grupo nesta turma. Saia dele antes de aceitar este convite.")
         class_member, _ = MembroTurma.objects.get_or_create(
             turma=invitation.grupo.turma, usuario=user,
         )
