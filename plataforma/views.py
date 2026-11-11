@@ -184,9 +184,9 @@ def projects(request):
                 *[When(pk=project_id, then=position) for position, project_id in enumerate(ranking_ids)],
                 default=len(ranking_ids),
             )
-            queryset = queryset.order_by(ranking_order, "-relevance", "-updated_at")
+            queryset = queryset.order_by(ranking_order, "-relevance", "-updated_at", "-pk")
         else:
-            queryset = queryset.order_by("-relevance", "-updated_at")
+            queryset = queryset.order_by("-relevance", "-updated_at", "-pk")
     categories = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
     organizacao = getattr(request, "organizacao", None)
     context = {

@@ -203,16 +203,16 @@ def complete_ranking_ids(period: str = "all", tenant_id: Optional[int | str] = N
     if cutoff is not None:
         votes = votes.filter(created_at__gte=timezone.now() - cutoff)
     expected = {
-        str(row["pk"]): row["relevance"]
+        str(row["pk"]): (row["relevance"], row["updated_at"])
         for row in Project.objects.filter(
             organizacao_id=tenant_id,
             visibility=Project.VISIBILITY_PUBLIC,
         ).annotate(
             relevance=Count("votes", distinct=True, filter=Q(votes__in=votes)),
-        ).values("pk", "relevance")
+        ).values("pk", "relevance", "updated_at")
     }
     cached = _safe(
-        lambda client: client.zrange(
+        lambda client: client.zrevrange(
             ranking_key(period, tenant_id), 0, -1, withscores=True
         )
     )
@@ -221,9 +221,14 @@ def complete_ranking_ids(period: str = "all", tenant_id: Optional[int | str] = N
     actual = {str(member): float(score) for member, score in cached if str(member).isdigit()}
     if set(actual) != set(expected):
         return []
-    if any(actual[project_id] != float(score) for project_id, score in expected.items()):
+    if any(actual[project_id] != float(score) for project_id, (score, _updated_at) in expected.items()):
         return []
-    return [int(member) for member, _score in cached if str(member).isdigit()]
+    # Redis desempata pelo texto do ID; mantenha a mesma ordem do SQL no empate.
+    return [int(project_id) for project_id in sorted(
+        expected,
+        key=lambda project_id: (expected[project_id][0], expected[project_id][1], int(project_id)),
+        reverse=True,
+    )]
 
 
 def ranked_projects(queryset, *, tenant_id=None, period="all"):
@@ -235,11 +240,11 @@ def ranked_projects(queryset, *, tenant_id=None, period="all"):
     if cutoff is not None:
         # Janelas móveis precisam envelhecer mesmo sem novos eventos de voto.
         return queryset.annotate(period_score=Count("votes", distinct=True,
-            filter=Q(votes__created_at__gte=timezone.now()-cutoff))).order_by("-period_score", "-updated_at")
+            filter=Q(votes__created_at__gte=timezone.now()-cutoff))).order_by("-period_score", "-updated_at", "-pk")
     if "relevance" not in queryset.query.annotations:
         queryset = queryset.annotate(relevance=Count("votes", distinct=True))
     ids = complete_ranking_ids(tenant_id=tenant_id)
     if ids:
         ordering = Case(*[When(pk=pk, then=index) for index, pk in enumerate(ids)], default=len(ids))
-        return queryset.order_by(ordering, "-relevance", "-updated_at")
-    return queryset.order_by("-relevance", "-updated_at")
+        return queryset.order_by(ordering, "-relevance", "-updated_at", "-pk")
+    return queryset.order_by("-relevance", "-updated_at", "-pk")
