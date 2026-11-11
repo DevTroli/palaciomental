@@ -1,7 +1,7 @@
 {% extends layout_template|default:"base.html" %}
 {% load static %}
 {% block extra_global_css %}<link rel="stylesheet" href="{% static 'css/plataforma.css' %}">{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-project.css' %}?v=20261111-1"><link rel="stylesheet" href="{% static 'css/project-experience.css' %}?v=20261111-1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-project.css' %}?v=20261111-1"><link rel="stylesheet" href="{% static 'css/project-experience.css' %}?v=20261111-2">{% endblock %}
 {% block title %}{{ project.title }} — Palácio Mental{% endblock %}
 {% block extra_head %}<meta name="description" content="{{ project.direction|truncatechars:155 }}"><meta property="og:type" content="website"><meta property="og:url" content="{{ share_url }}"><meta property="og:title" content="{{ project.title }} — Palácio Mental"><meta property="og:description" content="{{ project.direction|truncatechars:155 }}"><meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/mind_palace_logo.png' %}"><meta name="twitter:card" content="summary_large_image">{% endblock %}
 {% block breadcrumb_label %}{% if organizacao %}{{ organizacao.nome }} · Projeto institucional{% else %}Meu Espaço · Projeto pessoal{% endif %}{% endblock %}

@@ -1,5 +1,7 @@
 {% extends "institutional/experience/base.html" %}
+{% load static %}
 {% block title %}{{ heading }} · {{ tenant_display_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/project-experience.css' %}?v=20261111-2">{% endblock %}
 {% block content %}
 <section class="camp-form-page" aria-labelledby="project-form-title">
   <div class="camp-form-intro"><p class="camp-eyebrow">{{ tenant_display_name }} · Meus projetos</p><h1 id="project-form-title">{{ heading }}</h1>{% if form_phase == 'context' %}<p>O projeto já existe. Adicione apenas o contexto que estiver pronto agora. O restante pode esperar.</p>{% else %}<p>Comece pequeno: título, rumo, estado e visibilidade. Você poderá enriquecer o projeto na próxima etapa.</p>{% endif %}</div>
