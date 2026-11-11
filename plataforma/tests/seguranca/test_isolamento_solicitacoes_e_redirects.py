@@ -44,10 +44,12 @@ class DecisaoDeSolicitacaoEntreTenantsTests(TestCase):
         self.gestor_b = User.objects.create_user(username="gestor-b", email="gestor-b@example.com", password="Senha-forte-123")
         self.professor_b = User.objects.create_user(username="professor-b", email="professor-b@example.com", password="Senha-forte-123")
         self.solicitante = User.objects.create_user(username="solicitante-b", email="solicitante-b@example.com", password="Senha-forte-123")
+        self.solicitante_grupo = User.objects.create_user(username="solicitante-grupo-b", email="solicitante-grupo-b@example.com", password="Senha-forte-123")
         MembroOrganizacao.objects.create(organizacao=self.org_a, usuario=self.gestor_a, papel=MembroOrganizacao.PAPEL_GESTOR)
         MembroOrganizacao.objects.create(organizacao=self.org_b, usuario=self.gestor_b, papel=MembroOrganizacao.PAPEL_GESTOR)
         MembroOrganizacao.objects.create(organizacao=self.org_b, usuario=self.professor_b, papel=MembroOrganizacao.PAPEL_PROFESSOR)
         MembroOrganizacao.objects.create(organizacao=self.org_b, usuario=self.solicitante, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        MembroOrganizacao.objects.create(organizacao=self.org_b, usuario=self.solicitante_grupo, papel=MembroOrganizacao.PAPEL_MEMBRO)
 
         programa = ProgramaInstitucional.objects.create(
             organizacao=self.org_b,
@@ -63,12 +65,13 @@ class DecisaoDeSolicitacaoEntreTenantsTests(TestCase):
             professor_responsavel=self.professor_b,
             politica_participacao=Turma.POLITICA_APROVACAO,
         )
+        MembroTurma.objects.create(turma=self.turma_b, usuario=self.solicitante_grupo)
         self.grupo_b = Grupo.objects.create(turma=self.turma_b, nome="Grupo B", criado_por=self.gestor_b)
         self.solicitacao_turma = SolicitacaoTurma.objects.create(
             turma=self.turma_b, usuario=self.solicitante, mensagem="Quero participar."
         )
         self.solicitacao_grupo = SolicitacaoGrupo.objects.create(
-            grupo=self.grupo_b, usuario=self.solicitante, mensagem="Quero participar."
+            grupo=self.grupo_b, usuario=self.solicitante_grupo, mensagem="Quero participar."
         )
 
     def url_turma(self):
@@ -85,7 +88,7 @@ class DecisaoDeSolicitacaoEntreTenantsTests(TestCase):
     def assert_grupo_intacto(self):
         self.solicitacao_grupo.refresh_from_db()
         self.assertEqual(self.solicitacao_grupo.status, SolicitacaoGrupo.STATUS_PENDENTE)
-        self.assertFalse(MembroGrupo.objects.filter(grupo=self.grupo_b, usuario=self.solicitante).exists())
+        self.assertFalse(MembroGrupo.objects.filter(grupo=self.grupo_b, usuario=self.solicitante_grupo).exists())
 
     def test_pm01_gestor_de_outro_tenant_nao_decide_solicitacao_de_turma(self):
         self.client.force_login(self.gestor_a)
@@ -125,7 +128,7 @@ class DecisaoDeSolicitacaoEntreTenantsTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.solicitacao_grupo.refresh_from_db()
         self.assertEqual(self.solicitacao_grupo.status, SolicitacaoGrupo.STATUS_APROVADA)
-        self.assertTrue(MembroGrupo.objects.filter(grupo=self.grupo_b, usuario=self.solicitante).exists())
+        self.assertTrue(MembroGrupo.objects.filter(grupo=self.grupo_b, usuario=self.solicitante_grupo).exists())
 
 
 @override_settings(

@@ -8,6 +8,7 @@
   <link rel="icon" href="{% static 'img/favicon.svg' %}"><link rel="stylesheet" href="{% static 'css/core.css' %}">
 </head>
 <body>
+  {% include "partials/accessiyes.html" %}
   <header class="core-header"><div class="core-container core-nav">
     <a class="core-brand" href="{% url 'core:index' %}" aria-label="Palácio Mental — início do Palácio Mental"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""></a>
     <nav class="core-menu" aria-label="Navegação principal"><a href="{% url 'plataforma:projects' %}">Vitrine</a><a href="#how">Como funciona</a></nav>

@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="{% static 'css/tenant-auth.css' %}?v=20261110-1">
 </head>
 <body class="tenant-auth">
+  {% include "partials/accessiyes.html" %}
   <a class="auth-skip" href="#main-content">Pular para o conteúdo principal</a>
   <header class="auth-header"><a class="auth-brand" href="{% url 'core:index' %}">{% if tenant_logo_url %}<span class="auth-brand-image"><img src="{{ tenant_logo_url }}" alt=""></span>{% else %}<span class="auth-brand-initial" aria-hidden="true">{{ tenant_display_name|first|upper }}</span>{% endif %}<span>{{ tenant_display_name }}</span></a><a class="auth-global-link" href="{{ global_home_url }}"><span aria-hidden="true">↗</span> Palácio Mental</a></header>
   <main class="auth-layout" id="main-content">
