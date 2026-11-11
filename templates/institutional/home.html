@@ -25,7 +25,7 @@
         <nav class="home-shortcuts" aria-label="Acesso rápido">
         <a href="{% url 'plataforma:project_create' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-plus"/></svg></span><span>Novo projeto</span></a>
         <a href="{% url 'plataforma:calendar' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-calendar"/></svg></span><span>Agenda de atividades</span></a>
-        <a href="{% url 'plataforma:classes_and_teams' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg></span><span>Turmas e grupos</span></a>
+        <a href="{% url 'plataforma:institutional_programs' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-teams"/></svg></span><span>Programas e turmas</span></a>
         <a href="{% url 'plataforma:projects' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-compass"/></svg></span><span>Explorar</span></a>
         <a href="{% url 'plataforma:guidance' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-book"/></svg></span><span>Orientações</span></a>
         {% if pode_gerenciar %}<a href="{% url 'plataforma:institutional_management' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-shield"/></svg></span><span>Gestão</span></a>{% else %}<a href="{% url 'plataforma:institutional_profile' %}"><span class="home-shortcut-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-user"/></svg></span><span>Meu espaço</span></a>{% endif %}

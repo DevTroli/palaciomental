@@ -1,9 +1,4 @@
-{% extends "institutional/experience/base.html" %}
-{% load static %}
-{% block content %}
-<div class="tenant-experience-content">
-  <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas</a><span>/</span><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}">{{ programa.nome }}</a><span>/</span><span>Nova turma</span></nav>
-  <section class="tenant-hero"><p class="tenant-eyebrow">Programa → Turma</p><h1>Criar turma</h1><p>Defina o ciclo ou unidade orientada. Os grupos serão criados depois, dentro desta turma.</p></section>
-  <form method="post" class="tenant-form">{% csrf_token %}{{ form.as_p }}<div class="tenant-form-actions"><a class="tenant-button tenant-button--secondary" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Cancelar</a><button class="tenant-button" type="submit">Salvar turma</button></div></form>
-</div>
-{% endblock %}
+{% extends "institutional/experience/base.html" %}{% load static %}
+{% block title %}Criar turma · {{ organizacao.nome }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">{% endblock %}
+{% block content %}<div class="tenant-page-frame programs-page"><nav class="program-breadcrumb"><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}">← {{ programa.nome }}</a></nav><header class="programs-header"><div><p class="programs-eyebrow">{{ programa.nome }}</p><h1>Criar turma</h1><p>Organize uma turma e defina como os alunos poderão participar.</p></div></header><div class="program-form-panel"><form method="post" class="programs-form">{% csrf_token %}{{ form.as_p }}<div class="program-actions"><button class="camp-btn camp-btn--primary">Criar turma</button><a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Cancelar</a></div></form></div></div>{% endblock %}

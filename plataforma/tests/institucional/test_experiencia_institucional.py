@@ -59,12 +59,12 @@ class ExperienceM6Tests(PortalInstitucionalBase):
 
     def test_classes_and_teams_page_is_available_only_in_an_affiliated_tenant(self):
         path = "/turmas-e-equipes/"
-        self.assertContains(self.client.get(path, HTTP_HOST=HOST), "Este espaço está em preparação")
+        self.assertContains(self.client.get(path, HTTP_HOST=HOST, follow=True), "Programas e turmas")
         self.assertEqual(self.client.get(path, HTTP_HOST="palaciomental.com.br").status_code, 404)
         self.assertEqual(self.client.get(path, HTTP_HOST="outra.palaciomental.com.br").status_code, 403)
         self.assertEqual(self.client.post(path, HTTP_HOST=HOST).status_code, 405)
         home = self.client.get("/", HTTP_HOST=HOST)
-        self.assertContains(home, f'href="{path}"', count=2)
+        self.assertContains(home, 'href="/programas/"')
 
     def test_legacy_routes_never_authenticate_and_are_removed_in_both_debug_modes(self):
         self.client.logout()
