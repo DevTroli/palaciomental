@@ -421,6 +421,26 @@ def _is_active_group_member(request, group):
         and group.membros.filter(usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists())
 
 
+def _usuario_tem_grupo_ativo_na_turma(usuario, turma, *, excluir_grupo=None):
+    """Uma pessoa só pode estar em um grupo ativo dentro da mesma turma."""
+    if usuario is None:
+        return False
+    grupos = MembroGrupo.objects.filter(
+        usuario=usuario,
+        grupo__turma=turma,
+        status=MembroGrupo.STATUS_ATIVO,
+        grupo__status=Grupo.STATUS_ATIVO,
+    )
+    if excluir_grupo is not None:
+        grupos = grupos.exclude(grupo=excluir_grupo)
+    return grupos.exists()
+
+
+def _notificar(usuario, kind, message, url):
+    if usuario and usuario.pk:
+        Notification.objects.create(recipient=usuario, kind=kind, message=message[:280], url=url)
+
+
 def _is_active_group_representative(request, group):
     return _is_active_group_member(request, group) and group.membros.filter(usuario=request.user, representante=True, status=MembroGrupo.STATUS_ATIVO).exists()
 
@@ -444,7 +464,10 @@ def _can_view_group(request, group):
         return True
     if afiliacao.papel == MembroOrganizacao.PAPEL_PROFESSOR and group.turma.professor_responsavel_id == request.user.pk:
         return True
-    return afiliacao.papel == MembroOrganizacao.PAPEL_MEMBRO and group.membros.filter(usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists()
+    return afiliacao.papel == MembroOrganizacao.PAPEL_MEMBRO and (
+        group.membros.filter(usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists()
+        or MembroTurma.objects.filter(turma=group.turma, usuario=request.user, status=MembroTurma.STATUS_ATIVO).exists()
+    )
 
 
 def _can_manage_class(request, turma):
@@ -565,7 +588,7 @@ def institutional_program_detail(request, programa_id):
             grupo.e_membro = grupo.pk in grupos_membro
             grupo.suspenso = grupo.pk in grupos_suspensos
             grupo.pedido_pendente = grupo.pk in pedidos_grupo
-            grupo.pode_ver = grupo.e_membro or turma in gerenciaveis
+            grupo.pode_ver = grupo.e_membro or turma in gerenciaveis or turma.e_membro
             grupo.pode_excluir = grupo.criado_por_id == request.user.pk
     solicitacoes = SolicitacaoTurma.objects.filter(turma__in=gerenciaveis, status=SolicitacaoTurma.STATUS_PENDENTE).select_related("usuario", "turma")
     return render(
@@ -604,6 +627,13 @@ def institutional_class_participate(request, turma_id):
             status=SolicitacaoTurma.STATUS_PENDENTE,
             defaults={"mensagem": form.cleaned_data["mensagem"]},
         )
+        gestores = MembroOrganizacao.objects.filter(
+            organizacao=organizacao,
+            papel__in=[MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR],
+            status=MembroOrganizacao.STATUS_ATIVA,
+        ).select_related("usuario")
+        for gestor in gestores:
+            _notificar(gestor.usuario, "class_join_request", f"@{request.user.username} pediu para entrar em {turma.nome}.", request.build_absolute_uri(reverse("plataforma:institutional_program_detail", args=[turma.programa_id])))
         messages.success(request, "Sua solicitação foi enviada para aprovação.")
     else:
         return render(request, "institutional/class_request.html", {"organizacao": organizacao, "turma": turma, "form": form})
@@ -639,6 +669,7 @@ def institutional_class_request_decide(request, request_id):
     solicitacao.decidido_por = request.user
     solicitacao.decidido_em = timezone.now()
     solicitacao.save(update_fields=["status", "decidido_por", "decidido_em"])
+    _notificar(solicitacao.usuario, "class_request_decision", f"Seu pedido para entrar em {solicitacao.turma.nome} foi {'aprovado' if solicitacao.status == SolicitacaoTurma.STATUS_APROVADA else 'recusado'}.", request.build_absolute_uri(reverse("plataforma:institutional_program_detail", args=[solicitacao.turma.programa_id])))
     messages.success(request, "Solicitação atualizada.")
     return redirect("plataforma:institutional_program_detail", programa_id=solicitacao.turma.programa_id)
 
@@ -780,6 +811,9 @@ def institutional_group_create_for_class(request, turma_id):
         return JsonResponse({"detail": "Você não pode criar grupos nesta turma."}, status=403)
     form = GrupoForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        if _usuario_tem_grupo_ativo_na_turma(request.user, turma):
+            form.add_error(None, "Você já participa de um grupo nesta turma. Saia dele antes de criar outro.")
+            return render(request, "institutional/group_form.html", {"organizacao": organizacao, "programa": turma.programa, "turma": turma, "form": form, "nav_ativo": "turmas_e_equipes"})
         grupo = form.save(commit=False)
         grupo.turma = turma
         grupo.criado_por = request.user
@@ -823,6 +857,7 @@ def institutional_group_members(request, group_id):
     if not _can_view_group(request, grupo):
         raise Http404
     pode_gerenciar = _can_invite_to_group(request, grupo)
+    eh_membro = MembroGrupo.objects.filter(grupo=grupo, usuario=request.user, status=MembroGrupo.STATUS_ATIVO).exists()
     form = ConviteGrupoForm(request.POST or None)
     if request.method == "POST":
         if not pode_gerenciar:
@@ -838,6 +873,8 @@ def institutional_group_members(request, group_id):
                 form.add_error("email", "Você pode convidar apenas alunos ativos desta turma.")
             elif MembroGrupo.objects.filter(grupo=grupo, usuario__email__iexact=email, status=MembroGrupo.STATUS_ATIVO).exists():
                 form.add_error("email", "Esta pessoa já participa do grupo.")
+            elif _usuario_tem_grupo_ativo_na_turma(existing_affiliation.usuario if existing_affiliation else None, grupo.turma, excluir_grupo=grupo):
+                form.add_error("email", "Esta pessoa já participa de outro grupo nesta turma.")
             else:
                 raw_token = secrets.token_urlsafe(32)
                 convite = form.save(commit=False)
@@ -846,17 +883,21 @@ def institutional_group_members(request, group_id):
                 convite.hash_token = hashlib.sha256(raw_token.encode()).hexdigest()
                 convite.expira_em = timezone.now() + timedelta(days=7)
                 convite.save()
+                destinatario = User.objects.filter(email__iexact=email).first()
+                if destinatario:
+                    _notificar(destinatario, "group_invitation", f"Você foi convidado para participar de {grupo.nome}.", request.build_absolute_uri(reverse("plataforma:institutional_group_members", args=[grupo.pk])))
                 transaction.on_commit(
                     lambda: deliver_invitation(request, _send_group_invitation_email, convite, raw_token)
                 )
                 return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
     membros = grupo.membros.select_related("usuario").filter(status=MembroGrupo.STATUS_ATIVO)
     convites = grupo.convites.filter(status=ConviteGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
+    projeto_vinculado = grupo.projetos_institucionais.select_related("projeto", "orientador").first()
     pode_decidir = _can_decide_group(request, grupo)
     solicitacoes = grupo.solicitacoes_entrada.filter(status=SolicitacaoGrupo.STATUS_PENDENTE).select_related("usuario") if pode_decidir else []
     pode_editar = _is_active_group_representative(request, grupo)
     pode_excluir = grupo.criado_por_id == request.user.pk
-    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros, "convites": convites, "solicitacoes": solicitacoes, "form": form, "pode_gerenciar": pode_gerenciar, "pode_decidir": pode_decidir, "pode_editar": pode_editar, "pode_excluir": pode_excluir, "nav_ativo": "turmas_e_equipes"})
+    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros if eh_membro or pode_decidir else [], "convites": convites, "solicitacoes": solicitacoes, "form": form, "pode_gerenciar": pode_gerenciar, "pode_decidir": pode_decidir, "pode_editar": pode_editar, "pode_excluir": pode_excluir, "eh_membro": eh_membro, "projeto_vinculado": projeto_vinculado, "nav_ativo": "turmas_e_equipes"})
 
 
 @login_required
@@ -875,9 +916,13 @@ def institutional_group_request_join(request, group_id):
         return JsonResponse({"detail": "Sua participação neste grupo está suspensa."}, status=403)
     if not MembroTurma.objects.filter(turma=grupo.turma, usuario=request.user, status=MembroTurma.STATUS_ATIVO).exists():
         return JsonResponse({"detail": "Você precisa participar da turma antes de solicitar entrada no grupo."}, status=403)
+    if _usuario_tem_grupo_ativo_na_turma(request.user, grupo.turma, excluir_grupo=grupo):
+        return JsonResponse({"detail": "Você já participa de outro grupo nesta turma. Saia dele antes de solicitar entrada."}, status=403)
     form = SolicitacaoGrupoForm(request.POST or None)
     if form.is_valid():
         SolicitacaoGrupo.objects.update_or_create(grupo=grupo, usuario=request.user, status=SolicitacaoGrupo.STATUS_PENDENTE, defaults={"mensagem": form.cleaned_data["mensagem"]})
+        for membro in grupo.membros.filter(representante=True, status=MembroGrupo.STATUS_ATIVO).select_related("usuario"):
+            _notificar(membro.usuario, "group_join_request", f"@{request.user.username} pediu para entrar em {grupo.nome}.", request.build_absolute_uri(reverse("plataforma:institutional_group_members", args=[grupo.pk])))
         messages.success(request, "Sua solicitação para o grupo foi enviada.")
         return redirect("plataforma:institutional_program_detail", programa_id=grupo.turma.programa_id)
     return JsonResponse({"detail": "Solicitação inválida."}, status=400)
@@ -908,6 +953,8 @@ def institutional_group_request_decide(request, request_id):
             return JsonResponse({"detail": "O aluno precisa estar ativo nesta turma."}, status=403)
         if MembroGrupo.objects.filter(grupo=grupo, usuario=solicitacao.usuario, status=MembroGrupo.STATUS_SUSPENSO).exists():
             return JsonResponse({"detail": "A participação neste grupo está suspensa."}, status=403)
+        if _usuario_tem_grupo_ativo_na_turma(solicitacao.usuario, grupo.turma, excluir_grupo=grupo):
+            return JsonResponse({"detail": "Esta pessoa já participa de outro grupo nesta turma."}, status=409)
         MembroGrupo.objects.get_or_create(grupo=grupo, usuario=solicitacao.usuario)
         solicitacao.status = SolicitacaoGrupo.STATUS_APROVADA
     else:
@@ -915,7 +962,24 @@ def institutional_group_request_decide(request, request_id):
     solicitacao.decidido_por = request.user
     solicitacao.decidido_em = timezone.now()
     solicitacao.save(update_fields=["status", "decidido_por", "decidido_em"])
+    _notificar(solicitacao.usuario, "group_request_decision", f"Seu pedido para entrar em {grupo.nome} foi {'aprovado' if solicitacao.status == SolicitacaoGrupo.STATUS_APROVADA else 'recusado'}.", request.build_absolute_uri(reverse("plataforma:institutional_group_members", args=[grupo.pk])))
     return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_group_leave(request, group_id):
+    organizacao = getattr(request, "organizacao", None)
+    grupo = get_object_or_404(Grupo, pk=group_id, turma__programa__organizacao=organizacao)
+    membro = MembroGrupo.objects.filter(grupo=grupo, usuario=request.user, status=MembroGrupo.STATUS_ATIVO).first()
+    if not membro:
+        return JsonResponse({"detail": "Você não participa deste grupo."}, status=404)
+    if membro.representante and grupo.membros.filter(status=MembroGrupo.STATUS_ATIVO).exclude(pk=membro.pk).exists():
+        return JsonResponse({"detail": "Transfira a representação para outra pessoa antes de sair."}, status=409)
+    membro.status = MembroGrupo.STATUS_SUSPENSO
+    membro.save(update_fields=["status"])
+    messages.success(request, f"Você saiu de {grupo.nome}.")
+    return redirect("plataforma:institutional_program_detail", programa_id=grupo.turma.programa_id)
 
 
 @login_required

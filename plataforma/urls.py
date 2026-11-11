@@ -47,6 +47,7 @@ urlpatterns = [
     path("gestao/grupos/<uuid:group_id>/participar/", v.institutional_group_request_join, name="legacy_group_join"),
     path("gestao/solicitacoes/grupos/<uuid:request_id>/decidir/", v.institutional_group_request_decide, name="institutional_group_request_decide"),
     path("grupos/<uuid:group_id>/membros/", v.institutional_group_members, name="institutional_group_members"),
+    path("grupos/<uuid:group_id>/sair/", v.institutional_group_leave, name="institutional_group_leave"),
     path("gestao/grupos/<uuid:group_id>/membros/", v.institutional_group_members, name="legacy_group_members"),
     path("gestao/convites/grupos/<uuid:invite_id>/revogar/", v.institutional_invite_revoke, name="institutional_invite_revoke"),
     path("gestao/convites/organizacao/<uuid:invite_id>/revogar/", v.institutional_organization_invite_revoke, name="institutional_organization_invite_revoke"),
