@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
+from unittest.mock import patch
 
 from plataforma.models import MembroOrganizacao, Project, ProjectVote
 from .base import PortalInstitucionalBase
@@ -41,3 +42,24 @@ class DestaqueRankingTests(PortalInstitucionalBase):
         self.assertContains(response, "Orientações e avisos")
         self.assertContains(response, "A área de avisos está em desenvolvimento.")
         self.assertContains(self.client.get("/", HTTP_HOST=HOST), reverse("plataforma:guidance"))
+
+    def test_home_and_project_badges_follow_redis_ranking(self):
+        from core.rankings import update_project_projection
+        from core.test_rankings import FakeRedis
+
+        voters = [get_user_model().objects.create_user(username=f"redis-home-voto{i}") for i in range(5)]
+        projects = []
+        for i in range(5):
+            project = Project.objects.create(owner=self.user, organizacao=self.organization, title=f"Ranking {i}", visibility=Project.VISIBILITY_PUBLIC)
+            projects.append(project)
+            for voter in voters[:i + 1]:
+                ProjectVote.objects.create(project=project, user=voter)
+        cache = FakeRedis()
+        with patch("core.rankings._redis_client", return_value=cache):
+            for project in projects:
+                update_project_projection(project.pk)
+            home = self.client.get("/", HTTP_HOST=HOST)
+            self.assertEqual([project.pk for project in home.context["ranking_projetos"]], [project.pk for project in reversed(projects)])
+            for position, project in enumerate(reversed(projects), 1):
+                detail = self.client.get(reverse("plataforma:project_detail", args=[project.pk]), HTTP_HOST=HOST)
+                self.assertEqual(detail.context["ranking_posicao"], position)

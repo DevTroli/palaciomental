@@ -95,6 +95,8 @@ def _accept(invitation, user, kind):
     else:
         if affiliation.status != MembroOrganizacao.STATUS_ATIVA:
             raise PermissionDenied("Sua afiliação está suspensa. Procure a gestão.")
+        if affiliation.papel != MembroOrganizacao.PAPEL_MEMBRO:
+            raise PermissionDenied("A participação em grupos é reservada a alunos.")
         class_member, _ = MembroTurma.objects.get_or_create(
             turma=invitation.grupo.turma, usuario=user,
         )

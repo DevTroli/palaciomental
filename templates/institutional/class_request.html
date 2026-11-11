@@ -1,9 +1,4 @@
-{% extends "institutional/experience/base.html" %}
-{% load static %}
-{% block content %}
-<div class="tenant-experience-content">
-  <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_program_detail' turma.programa.pk %}">{{ turma.programa.nome }}</a><span>/</span><span>{{ turma.nome }}</span></nav>
-  <section class="tenant-hero"><p class="tenant-eyebrow">Participação</p><h1>Solicitar entrada</h1><p>Explique brevemente seu interesse para a pessoa responsável pela turma.</p></section>
-  <form class="tenant-card" method="post">{% csrf_token %}{{ form.as_p }}<button class="tenant-button" type="submit">Enviar solicitação</button></form>
-</div>
-{% endblock %}
+{% extends "institutional/experience/base.html" %}{% load static %}
+{% block title %}Solicitar participação · {{ organizacao.nome }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">{% endblock %}
+{% block content %}<div class="tenant-page-frame programs-page"><nav class="program-breadcrumb"><a href="{% url 'plataforma:institutional_program_detail' turma.programa.pk %}">← {{ turma.programa.nome }}</a></nav><header class="programs-header"><div><p class="programs-eyebrow">{{ turma.nome }}</p><h1>Solicitar participação</h1><p>Conte à pessoa responsável por que você gostaria de participar desta turma.</p></div></header><div class="program-form-panel"><form method="post" class="programs-form">{% csrf_token %}{{ form.as_p }}<button class="camp-btn camp-btn--primary">Enviar solicitação</button></form></div></div>{% endblock %}

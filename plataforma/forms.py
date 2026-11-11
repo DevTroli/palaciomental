@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Q
 
-from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
 
 User = get_user_model()
 
@@ -186,7 +186,10 @@ class ProjectBasicsForm(forms.ModelForm):
             if afiliacao and afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
                 turmas = turmas.filter(Q(membros__usuario=owner, membros__status=MembroTurma.STATUS_ATIVO) | Q(professor_responsavel=owner)).distinct()
             self.fields["turma"].queryset = turmas.select_related("programa", "professor_responsavel")
-            self.fields["grupo"].queryset = Grupo.objects.filter(turma__in=turmas, status=Grupo.STATUS_ATIVO).select_related("turma")
+            grupos = Grupo.objects.filter(turma__in=turmas, status=Grupo.STATUS_ATIVO)
+            if afiliacao and afiliacao.papel == MembroOrganizacao.PAPEL_MEMBRO:
+                grupos = grupos.filter(membros__usuario=owner, membros__status=MembroGrupo.STATUS_ATIVO)
+            self.fields["grupo"].queryset = grupos.select_related("turma").distinct()
             self.fields["orientador"].queryset = User.objects.filter(
                 turmas_orientadas__programa__organizacao=organizacao,
                 afiliacoes_organizacionais__organizacao=organizacao,

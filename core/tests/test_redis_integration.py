@@ -54,3 +54,13 @@ class RedisRankingIntegrationTests(TestCase):
         with self.captureOnCommitCallbacks(execute=True):
             self.institutional.delete()
         self.assertIsNone(self.client_redis.zscore(ranking_key("all", self.org.pk), str(project_id)))
+
+    def test_complete_projection_orders_more_votes_first(self):
+        popular = Project.objects.create(owner=self.owner, organizacao=self.org, title="Mais reconhecido", visibility="publico")
+        voters = [get_user_model().objects.create_user(username=f"redis-voter-{i}") for i in range(3)]
+        ProjectVote.objects.create(project=self.institutional, user=voters[0])
+        for voter in voters:
+            ProjectVote.objects.create(project=popular, user=voter)
+        update_project_projection(self.institutional.pk)
+        update_project_projection(popular.pk)
+        self.assertEqual(list(ranked_projects(Project.objects.all(), tenant_id=self.org.pk)), [popular, self.institutional])

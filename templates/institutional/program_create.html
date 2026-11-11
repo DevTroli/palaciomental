@@ -1,0 +1,4 @@
+{% extends "institutional/experience/base.html" %}{% load static %}
+{% block title %}Criar programa · {{ organizacao.nome }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">{% endblock %}
+{% block content %}<div class="tenant-page-frame programs-page"><nav class="program-breadcrumb"><a href="{% url 'plataforma:institutional_programs' %}">← Voltar aos programas</a></nav><header class="programs-header"><div><p class="programs-eyebrow">Gestão</p><h1>Criar programa</h1><p>Reúna turmas que compartilham um objetivo. Você poderá publicar quando estiver pronto.</p></div></header><div class="program-form-panel"><form method="post" class="programs-form">{% csrf_token %}{{ form.as_p }}<div class="program-actions"><button class="camp-btn camp-btn--primary">Criar programa</button><a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_programs' %}">Cancelar</a></div></form></div></div>{% endblock %}
