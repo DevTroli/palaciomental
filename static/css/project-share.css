@@ -1,0 +1,6 @@
+/* O estado hidden deve prevalecer sobre o display dos estilos de projeto. */
+.tenant-shell .project-share-panel[hidden] { display: none; }
+.tenant-shell .share-panel.project-share-panel:not([hidden]) { margin: 0 auto 20px; }
+@media (max-width: 600px) {
+  .tenant-shell .project-share-panel .share-copy { flex: 0 1 auto; }
+}

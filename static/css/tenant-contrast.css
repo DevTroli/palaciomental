@@ -1,0 +1,14 @@
+/* Destaque textual usa a cor derivada para o fundo, nunca a marca bruta. */
+.tenant-shell { --tenant-label-foreground: var(--tenant-accent-foreground); }
+.tenant-shell :is(.tenant-card, .form-card, .project-card, .project-hero,
+.project-section, .project-side-card, .project-next-step, .context-block,
+.info-card, .camp-panel, .camp-history, .camp-home-panel, .camp-profile-left,
+.camp-settings-card, .camp-inbox-panel, .camp-manage-panel, .camp-calendar-card,
+.camp-calendar-panel, .camp-form) {
+  --tenant-label-foreground: var(--tenant-surface-accent-foreground);
+}
+.tenant-shell .camp-eyebrow,
+.tenant-shell .eyebrow,
+.tenant-shell .tenant-eyebrow { color: var(--tenant-label-foreground); }
+/* O hero usa tenant-solid, calculado para texto branco, nao o fundo da pagina. */
+.tenant-shell .camp-hero { --tenant-label-foreground: #fff; }
