@@ -6,7 +6,7 @@ from django.core.validators import URLValidator
 
 from .navigation import global_home_url
 from .validators import CORES_SEMANTICAS
-from .theme import COLOR_ROLES, HEX_COLOR, brand_background, contrast, readable_color, text_on
+from .theme import COLOR_ROLES, HEX_COLOR, accent_text_tokens, brand_background, contrast, readable_color, text_on
 
 
 def contrasting_text(color):
@@ -90,6 +90,7 @@ def organization_branding(organization):
         "tenant_link_color": readable_color(primary, colors["background"]),
         "tenant_surface_link_color": readable_color(primary, colors["surface"]),
         "tenant_secondary_surface_color": readable_color(colors["secondary"], colors["surface"]),
+        **accent_text_tokens(accent, colors["background"], colors["surface"]),
         "tenant_colors": colors,
     }
 

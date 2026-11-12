@@ -41,3 +41,13 @@ def brand_background(color):
         candidate = "#" + "".join(f"{channel * factor // 255:02X}" for channel in channels)
         if contrast(candidate, "#FFFFFF") >= 4.7:
             return candidate
+
+
+def accent_text_tokens(accent, background, surface):
+    """Deriva texto de destaque sem alterar a marca; fundos dark seguem tenant-shell.css."""
+    return {
+        "tenant_accent_foreground_color": readable_color(accent, background),
+        "tenant_surface_accent_foreground_color": readable_color(accent, surface),
+        "tenant_dark_accent_foreground_color": readable_color(accent, "#101820"),
+        "tenant_dark_surface_accent_foreground_color": readable_color(accent, "#1B2836"),
+    }
