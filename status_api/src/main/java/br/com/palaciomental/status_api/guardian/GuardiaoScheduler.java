@@ -25,7 +25,7 @@ public class GuardiaoScheduler implements AutoCloseable {
     repository = new LinkCheckRepository(jdbc);
   }
 
-  @Scheduled(fixedDelayString = "${guardiao.poll-delay-ms:10000}")
+  @Scheduled(fixedDelayString = "${guardiao.poll-delay-ms:1000}")
   public void process() throws InterruptedException {
     Instant now = Instant.now();
     var claims = repository.claimDue(UUID.randomUUID(), now, now.plus(Duration.ofMinutes(2)), 1);

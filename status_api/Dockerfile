@@ -3,6 +3,10 @@ WORKDIR /app
 COPY . .
 RUN ./mvnw clean package -DskipTests
 
+FROM build AS migrate
+ENTRYPOINT ["./mvnw"]
+CMD ["--batch-mode", "flyway:migrate", "flyway:validate"]
+
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
