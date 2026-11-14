@@ -56,11 +56,13 @@ class Command(BaseCommand):
             port = parsed.port
         except ValueError as exc:
             raise CommandError("A URL da API é inválida; informe uma URL HTTPS válida.") from exc
-        if (parsed.scheme != "https" or not parsed.hostname or parsed.username
+        local_http = (settings.DEBUG and getattr(settings, "GUARDIAO_LOCAL_HTTP", False)
+                      and parsed.scheme == "http" and parsed.hostname == "status-api" and port == 8080)
+        if ((parsed.scheme != "https" and not local_http) or not parsed.hostname or parsed.username
                 or parsed.password or parsed.query or parsed.fragment or port == 0
                 or parsed.path.rstrip("/") not in (("", "/internal/guardiao/links") if override else ("", "/v1/status"))):
             raise CommandError("A URL da API deve usar HTTPS, sem parâmetros ou credenciais, e apontar para /v1/status.")
-        return f"https://{parsed.netloc}/internal/guardiao/links", token
+        return f"{parsed.scheme}://{parsed.netloc}/internal/guardiao/links", token
 
     def _sincronizar(self):
         endpoint, token = self._configuracao()
@@ -84,7 +86,7 @@ class Command(BaseCommand):
                     "Authorization": f"Bearer {token}", "Content-Type": "application/json",
                 })
                 try:
-                    with opener.open(request, timeout=10) as response:  # nosec B310: HTTPS configurado pelo operador
+                    with opener.open(request, timeout=10) as response:  # nosec B310: HTTPS ou destino fixo de desenvolvimento
                         if response.status != expected:
                             raise CommandError("O Guardião não aceitou a operação.")
                 except (HTTPError, URLError, TimeoutError, OSError) as exc:

@@ -12,6 +12,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -20,9 +22,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public final class GuardiaoAuthFilter extends OncePerRequestFilter {
   private static final int MAX_BODY_BYTES = 65536;
   private final ServiceToken token;
+  private final boolean localHttp;
 
-  public GuardiaoAuthFilter(@Value("${guardiao.service-token:}") String secret) {
+  public GuardiaoAuthFilter(@Value("${guardiao.service-token:}") String secret, Environment environment) {
     token = new ServiceToken(secret);
+    localHttp = environment.acceptsProfiles(Profiles.of("guardiao-local & !production & !prod"));
   }
 
   @Override
@@ -35,7 +39,7 @@ public final class GuardiaoAuthFilter extends OncePerRequestFilter {
       FilterChain chain) throws ServletException, IOException {
     if (!token.matches(request.getHeader("Authorization"))) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-    } else if (!request.isSecure()) {
+    } else if (!request.isSecure() && !localHttp) {
       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
     } else if (request.getContentLengthLong() > MAX_BODY_BYTES) {
       response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);

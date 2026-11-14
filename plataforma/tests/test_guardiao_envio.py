@@ -109,6 +109,27 @@ class EnvioGuardiaoTests(TestCase):
             call_command("enviar_links_guardiao")
         build_opener.assert_not_called()
 
+    @override_settings(DEBUG=True, GUARDIAO_LOCAL_HTTP=True, GUARDIAO_API_URL="",
+                       STATUS_API_URL="http://status-api:8080/v1/status")
+    @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
+    def test_http_local_explicito_permite_worker(self, build_opener):
+        build_opener.return_value.open.return_value.__enter__.return_value.status = 202
+        call_command("enviar_links_guardiao", stdout=StringIO())
+        self.assertEqual(build_opener.return_value.open.call_args.args[0].full_url,
+                         "http://status-api:8080/internal/guardiao/links")
+
+    @override_settings(DEBUG=False, GUARDIAO_LOCAL_HTTP=True, GUARDIAO_API_URL="",
+                       STATUS_API_URL="http://status-api:8080/v1/status")
+    def test_http_local_nao_funciona_sem_debug(self):
+        with self.assertRaises(CommandError):
+            call_command("enviar_links_guardiao")
+
+    @override_settings(DEBUG=True, GUARDIAO_LOCAL_HTTP=True, GUARDIAO_API_URL="",
+                       STATUS_API_URL="http://outro-host:8080/v1/status")
+    def test_http_local_nao_permite_outro_host(self):
+        with self.assertRaises(CommandError):
+            call_command("enviar_links_guardiao")
+
 
 @skipUnless(connection.vendor == "postgresql", "Requer locks do PostgreSQL")
 @override_settings(GUARDIAO_API_URL="https://guardiao.example/internal/guardiao/links",
