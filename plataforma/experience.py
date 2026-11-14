@@ -247,10 +247,8 @@ def _contexto_base(request):
 @login_required
 @require_safe
 def classes_and_teams(request):
-    """Apresenta o espaço institucional reservado a turmas e equipes."""
-    context = _contexto_base(request)
-    context["nav_ativo"] = "turmas_e_equipes"
-    return render(request, "institutional/experience/classes_and_teams.html", context)
+    """Mantém o endereço antigo apontando para os programas reais."""
+    return redirect("plataforma:institutional_programs")
 
 
 @tenant_required

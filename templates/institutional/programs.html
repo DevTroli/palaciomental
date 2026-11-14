@@ -1,14 +1,10 @@
-{% extends "institutional/experience/base.html" %}
-{% load static %}
-{% block content %}
-<div class="tenant-experience-content">
-  <nav class="tenant-breadcrumbs" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_management' %}">{{ organizacao.nome }}</a><span>/</span><span>Programas</span></nav>
-  <section class="tenant-hero"><p class="tenant-eyebrow">Estrutura institucional</p><h1>Programas que dão contexto ao trabalho.</h1><p>Um programa pode reunir turmas ou grupos. Projetos autônomos continuam possíveis fora dessa estrutura.</p></section>
-  <div class="tenant-flow-grid">
-    {% if pode_gerenciar %}
-    <article class="tenant-card tenant-card--active"><p class="tenant-eyebrow">Começar simples</p><h2>Novo programa</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="tenant-button" type="submit">Criar programa</button></form></article>
-    {% endif %}
-    {% for programa in programas %}<article class="tenant-card"><p class="tenant-eyebrow">{{ programa.get_status_display }}</p><h2>{{ programa.nome }}</h2><p>{{ programa.descricao|default:"Este programa ainda não tem uma descrição." }}</p><span class="tenant-status">{{ programa.turmas.count }} turma(s)</span><a class="tenant-button" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Abrir programa</a></article>{% empty %}<article class="tenant-card"><p class="tenant-eyebrow">Nenhum programa</p><h2>O ambiente começa aqui</h2><p>Crie um programa apenas quando fizer sentido para o trabalho institucional. Projetos autônomos não precisam dele.</p></article>{% endfor %}
-  </div>
-</div>
-{% endblock %}
+{% extends "institutional/experience/base.html" %}{% load static %}
+{% block title %}Programas e turmas · {{ organizacao.nome }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">{% endblock %}
+{% block content %}<div class="tenant-page-frame programs-page">
+  <header class="programs-header"><div><p class="programs-eyebrow">Comunidade · {{ organizacao.nome }}</p><h1>Programas e turmas</h1><p>Encontre um programa, participe de uma turma e desenvolva projetos com seu grupo.</p></div>{% if pode_gerenciar %}<a class="camp-btn camp-btn--primary" href="{% url 'plataforma:institutional_program_create' %}">Criar programa</a>{% endif %}</header>
+  <section aria-labelledby="programas-titulo"><div class="programs-heading"><div><h2 id="programas-titulo">Programas da organização</h2><p>Escolha um programa para conhecer suas turmas.</p></div><span class="programs-count">{{ programas|length }} programa{{ programas|length|pluralize }}</span></div>
+    <div class="programs-grid">{% for programa in programas %}<article class="program-card"><div class="program-card-top"><span class="program-icon"><svg class="camp-icon" aria-hidden="true"><use href="#i-book"/></svg></span><span class="program-status">{{ programa.get_status_display }}</span></div><h3><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}">{{ programa.nome }}</a></h3><p>{{ programa.descricao|default:"Conheça as atividades e turmas deste programa."|truncatechars:180 }}</p><div class="program-card-footer"><span>{{ programa.total_turmas }} turma{{ programa.total_turmas|pluralize }}</span><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Ver programa <span aria-hidden="true">→</span></a></div></article>{% empty %}<div class="programs-empty"><h3>Nenhum programa disponível</h3><p>{% if pode_gerenciar %}Crie um programa para organizar as turmas da instituição.{% else %}Quando a organização publicar um programa, ele aparecerá aqui.{% endif %}</p></div>{% endfor %}</div>
+  </section>
+
+</div>{% endblock %}

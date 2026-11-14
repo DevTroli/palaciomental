@@ -101,7 +101,7 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         self.client.force_login(teacher)
         host = {"HTTP_HOST": "camppg.palaciomental.com.br"}
         response = self.client.post(reverse("plataforma:institutional_group_members", args=[own.pk]), {"email": manager.email}, **host)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         self.assertFalse(ConviteGrupo.objects.filter(grupo=own, email=manager.email).exists())
         response = self.client.post(reverse("plataforma:institutional_group_members", args=[other.pk]), {"email": "aluno@example.com"}, **host)
         self.assertIn(response.status_code, (403, 404))
@@ -214,7 +214,7 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         response = self.client.get(reverse("plataforma:institutional_management"), HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 403)
 
-    def test_professor_can_invite_only_when_assigned_to_group(self):
+    def test_professor_cannot_invite_to_group_even_when_assigned(self):
         professor = User.objects.create_user(username="professor", email="professor@example.com", password="Senha-forte-123")
         target = User.objects.create_user(username="aluno", email="aluno@example.com", password="Senha-forte-123")
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=professor, papel=MembroOrganizacao.PAPEL_PROFESSOR)
@@ -222,8 +222,8 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         grupo = self.make_group(programa, "Grupo orientado", criado_por=professor, professor=professor)
         self.client.force_login(professor)
         response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": target.email, "papel": "membro"}, HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(ConviteGrupo.objects.filter(grupo=grupo, email=target.email).exists())
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(ConviteGrupo.objects.filter(grupo=grupo, email=target.email).exists())
 
     def test_last_owner_cannot_be_suspended_or_demoted(self):
         owner = self.user
@@ -239,9 +239,14 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_group_invite_sends_html_and_text_email_after_commit(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de e-mail", slug="programa-email", criado_por=self.user)
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de e-mail", slug="programa-email", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
         grupo = self.make_group(programa, "Grupo de convite")
+        destinatario = User.objects.create_user(username="destinatario-grupo", email="email@example.com")
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=destinatario, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        MembroTurma.objects.create(turma=grupo.turma, usuario=self.user)
+        MembroTurma.objects.create(turma=grupo.turma, usuario=destinatario)
+        MembroGrupo.objects.create(grupo=grupo, usuario=self.user, representante=True)
         self.client.force_login(self.user)
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": "email@example.com", "papel": "membro"}, HTTP_HOST="camppg.palaciomental.com.br")
