@@ -278,7 +278,7 @@ class ProjectLinkForm(forms.ModelForm):
     def clean_label(self):
         return self.cleaned_data["label"].strip()
 
-ProjectLinkFormSet = inlineformset_factory(Project, ProjectLink, form=ProjectLinkForm, extra=1, can_delete=True, max_num=12, validate_max=True)
+ProjectLinkFormSet = inlineformset_factory(Project, ProjectLink, form=ProjectLinkForm, extra=1, can_delete=True, max_num=6, validate_max=True)
 
 
 class ProgramaInstitucionalForm(forms.ModelForm):
