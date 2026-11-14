@@ -11,6 +11,20 @@ from django.test import SimpleTestCase, override_settings
 @override_settings(GUARDIAO_API_URL="https://guardiao.example/internal/guardiao/links",
                    GUARDIAO_SERVICE_TOKEN="segredo-teste")
 class EnvioGuardiaoTests(SimpleTestCase):
+    @patch("plataforma.management.commands.enviar_links_guardiao.time.sleep", side_effect=[None, KeyboardInterrupt])
+    @patch("plataforma.management.commands.enviar_links_guardiao.close_old_connections")
+    @patch("plataforma.management.commands.enviar_links_guardiao.Command._sincronizar", side_effect=[CommandError("falha"), None])
+    def test_continuo_retenta_apos_falha_de_comunicacao(self, sync, close_connections, sleep):
+        with self.assertRaises(KeyboardInterrupt):
+            call_command("enviar_links_guardiao", continuo=True, intervalo=5, stderr=StringIO())
+        self.assertEqual(sync.call_count, 2)
+        self.assertEqual(close_connections.call_count, 4)
+        self.assertEqual(sleep.call_count, 2)
+
+    def test_intervalo_muito_curto_e_rejeitado(self):
+        with self.assertRaises(CommandError):
+            call_command("enviar_links_guardiao", continuo=True, intervalo=4)
+
     @patch("plataforma.management.commands.enviar_links_guardiao.system_context")
     @patch("plataforma.management.commands.enviar_links_guardiao.ProjectLink")
     @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
@@ -58,7 +72,14 @@ class EnvioGuardiaoTests(SimpleTestCase):
         response = opener.open.return_value.__enter__.return_value
         response.status = 201
         response.read.return_value = b'{"id":"29b676ee-2137-48b0-b455-a140cf0641dd"}'
-        opener.open.side_effect = [opener.open.return_value, URLError("indisponível")]
+        abort_response = type("Response", (), {
+            "status": 204,
+            "read": lambda self, n: b"",
+            "__enter__": lambda self: self,
+            "__exit__": lambda self, *args: None,
+        })()
+        opener.open.side_effect = [opener.open.return_value, URLError("indisponível"), abort_response]
         with self.assertRaises(CommandError):
             call_command("enviar_links_guardiao")
-        self.assertEqual(opener.open.call_count, 2)
+        self.assertEqual(opener.open.call_count, 3)
+        self.assertTrue(opener.open.call_args.args[0].full_url.endswith("/snapshot/abort"))

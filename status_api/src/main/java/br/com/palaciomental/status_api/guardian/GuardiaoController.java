@@ -53,6 +53,17 @@ public final class GuardiaoController {
     }
   }
 
+  @PostMapping("/internal/guardiao/snapshot/abort")
+  public ResponseEntity<Void> abortSnapshot(@RequestHeader("X-Guardiao-Snapshot") String snapshot) {
+    try {
+      UUID id = UUID.fromString(snapshot);
+      repository.abortSnapshot(id);
+      return ResponseEntity.noContent().build();
+    } catch (IllegalArgumentException ex) {
+      return ResponseEntity.badRequest().build();
+    }
+  }
+
   @PostMapping("/internal/guardiao/links")
   public ResponseEntity<Void> submit(@RequestHeader("X-Guardiao-Snapshot") String snapshot,
       @RequestBody Request body) {

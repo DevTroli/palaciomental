@@ -77,6 +77,11 @@ public final class LinkCheckRepository {
     jdbc.update("DELETE FROM guardiao.sync_snapshot WHERE singleton = TRUE AND snapshot_id = ?", id);
   }
 
+  /** Abandona o retrato sem apagar referências ausentes. */
+  public void abortSnapshot(UUID id) {
+    jdbc.update("DELETE FROM guardiao.sync_snapshot WHERE singleton = TRUE AND snapshot_id = ?", id);
+  }
+
   public record Claimed(long linkId, URI url, long revision, UUID leaseId) {
     @Override public String toString() { return "Claimed[linkId=" + linkId + ", url=<redacted>]"; }
   }

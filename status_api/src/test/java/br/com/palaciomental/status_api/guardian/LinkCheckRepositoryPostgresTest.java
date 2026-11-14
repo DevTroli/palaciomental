@@ -43,6 +43,35 @@ class LinkCheckRepositoryPostgresTest {
   }
 
   @Test
+  void cancelarRetratoLiberaNovoEnvioSemExcluirLinks() {
+    repository.enqueue(new LinkBatch(List.of(new LinkBatch.Link(123456794, URI.create("https://example.com/")))));
+    UUID snapshot = UUID.randomUUID();
+    assertThat(repository.startSnapshot(snapshot)).isTrue();
+    repository.abortSnapshot(UUID.randomUUID());
+    assertThat(repository.startSnapshot(UUID.randomUUID())).isFalse();
+    repository.abortSnapshot(snapshot);
+    assertThat(repository.startSnapshot(UUID.randomUUID())).isTrue();
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM guardiao.link_check WHERE link_id = ?", Integer.class, 123456794)).isEqualTo(1);
+  }
+
+  @Test
+  void novoLinkEntraNaFilaEProximoCicloAguarda48Horas() {
+    var batch = new LinkBatch(List.of(new LinkBatch.Link(123456793, URI.create("https://example.com/novo"))));
+    UUID snapshot = UUID.randomUUID();
+    assertThat(repository.startSnapshot(snapshot)).isTrue();
+    repository.enqueueSnapshot(batch, snapshot);
+    Instant now = Instant.now().plusSeconds(1);
+    var claim = repository.claimDue(UUID.randomUUID(), now, now.plusSeconds(60), 1).getFirst();
+    assertThat(claim.linkId()).isEqualTo(123456793);
+    Instant checked = now.plusSeconds(2);
+    assertThat(repository.completeClaim(claim, LinkStatus.ACESSIVEL, checked, checked.plus(Duration.ofHours(48)))).isTrue();
+    assertThat(repository.claimDue(UUID.randomUUID(), checked.plus(Duration.ofHours(47)),
+        checked.plus(Duration.ofHours(47)).plusSeconds(60), 1)).isEmpty();
+    assertThat(repository.claimDue(UUID.randomUUID(), checked.plus(Duration.ofHours(48)),
+        checked.plus(Duration.ofHours(48)).plusSeconds(60), 1)).hasSize(1);
+  }
+
+  @Test
   void lotePreservaEstadoERejeitaCicloDuplicadoOuUrlAntiga() {
     var original = new LinkBatch(List.of(new LinkBatch.Link(123456789, URI.create("https://example.com/a"))));
     repository.enqueue(original);
