@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
@@ -328,6 +328,19 @@ class ProjectLink(models.Model):
 
     def __str__(self):
         return f"{self.label} — {self.project.title}"
+
+    def save(self, *args, **kwargs):
+        # A alteração e sua entrada na fila devem confirmar ou reverter juntas.
+        using = kwargs.get("using") or self._state.db
+        with transaction.atomic(using=using):
+            return super().save(*args, **kwargs)
+
+
+class GuardiaoLinkPendente(models.Model):
+    """Marca um link que precisa ser sincronizado, inclusive após exclusão."""
+
+    link_id = models.BigIntegerField(primary_key=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
 
 
 class ProjectMember(models.Model):

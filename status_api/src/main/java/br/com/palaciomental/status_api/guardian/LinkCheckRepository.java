@@ -32,54 +32,8 @@ public final class LinkCheckRepository {
         });
   }
 
-  /** O chamador deve manter a transação que bloqueia o retrato ativo. */
-  public void enqueueSnapshot(LinkBatch batch, UUID snapshot) {
-    jdbc.batchUpdate("""
-        INSERT INTO guardiao.link_check (link_id, url, snapshot_id) VALUES (?, ?, ?)
-        ON CONFLICT (link_id) DO UPDATE SET
-          url = EXCLUDED.url, snapshot_id = EXCLUDED.snapshot_id,
-          status = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN NULL ELSE guardiao.link_check.status END,
-          checked_at = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN NULL ELSE guardiao.link_check.checked_at END,
-          failed_cycles = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN 0 ELSE guardiao.link_check.failed_cycles END,
-          last_cycle_id = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN NULL ELSE guardiao.link_check.last_cycle_id END,
-          lease_id = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN NULL ELSE guardiao.link_check.lease_id END,
-          lease_until = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN NULL ELSE guardiao.link_check.lease_until END,
-          url_revision = guardiao.link_check.url_revision + CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN 1 ELSE 0 END,
-          next_check_at = CASE WHEN guardiao.link_check.url IS DISTINCT FROM EXCLUDED.url THEN CURRENT_TIMESTAMP ELSE guardiao.link_check.next_check_at END,
-          updated_at = CURRENT_TIMESTAMP
-        """, batch.links(), LinkBatch.MAX_LINKS, (statement, link) -> {
-          statement.setLong(1, link.linkId());
-          statement.setString(2, link.url().toASCIIString());
-          statement.setObject(3, snapshot);
-        });
-  }
-
-  public boolean startSnapshot(UUID id) {
-    return jdbc.update("""
-        INSERT INTO guardiao.sync_snapshot(singleton, snapshot_id, expires_at)
-        VALUES (TRUE, ?, CURRENT_TIMESTAMP + INTERVAL '1 hour')
-        ON CONFLICT (singleton) DO UPDATE SET snapshot_id = EXCLUDED.snapshot_id,
-          expires_at = EXCLUDED.expires_at
-        WHERE guardiao.sync_snapshot.expires_at <= CURRENT_TIMESTAMP
-        """, id) == 1;
-  }
-
-  /** Deve ser chamado dentro da mesma transação que envia o lote ou termina o retrato. */
-  public boolean lockSnapshot(UUID id) {
-    return !jdbc.query("""
-        SELECT snapshot_id FROM guardiao.sync_snapshot
-        WHERE singleton = TRUE AND snapshot_id = ? AND expires_at > CURRENT_TIMESTAMP FOR UPDATE
-        """, (row, n) -> row.getObject(1, UUID.class), id).isEmpty();
-  }
-
-  public void finishSnapshot(UUID id) {
-    jdbc.update("DELETE FROM guardiao.link_check WHERE snapshot_id IS DISTINCT FROM ?", id);
-    jdbc.update("DELETE FROM guardiao.sync_snapshot WHERE singleton = TRUE AND snapshot_id = ?", id);
-  }
-
-  /** Abandona o retrato sem apagar referências ausentes. */
-  public void abortSnapshot(UUID id) {
-    jdbc.update("DELETE FROM guardiao.sync_snapshot WHERE singleton = TRUE AND snapshot_id = ?", id);
+  public void delete(long linkId) {
+    jdbc.update("DELETE FROM guardiao.link_check WHERE link_id = ?", linkId);
   }
 
   public record Claimed(long linkId, URI url, long revision, UUID leaseId) {

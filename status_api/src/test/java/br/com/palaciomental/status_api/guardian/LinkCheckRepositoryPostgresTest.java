@@ -43,23 +43,9 @@ class LinkCheckRepositoryPostgresTest {
   }
 
   @Test
-  void cancelarRetratoLiberaNovoEnvioSemExcluirLinks() {
-    repository.enqueue(new LinkBatch(List.of(new LinkBatch.Link(123456794, URI.create("https://example.com/")))));
-    UUID snapshot = UUID.randomUUID();
-    assertThat(repository.startSnapshot(snapshot)).isTrue();
-    repository.abortSnapshot(UUID.randomUUID());
-    assertThat(repository.startSnapshot(UUID.randomUUID())).isFalse();
-    repository.abortSnapshot(snapshot);
-    assertThat(repository.startSnapshot(UUID.randomUUID())).isTrue();
-    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM guardiao.link_check WHERE link_id = ?", Integer.class, 123456794)).isEqualTo(1);
-  }
-
-  @Test
   void novoLinkEntraNaFilaEProximoCicloAguarda48Horas() {
     var batch = new LinkBatch(List.of(new LinkBatch.Link(123456793, URI.create("https://example.com/novo"))));
-    UUID snapshot = UUID.randomUUID();
-    assertThat(repository.startSnapshot(snapshot)).isTrue();
-    repository.enqueueSnapshot(batch, snapshot);
+    repository.enqueue(batch);
     Instant now = Instant.now().plusSeconds(1);
     var claim = repository.claimDue(UUID.randomUUID(), now, now.plusSeconds(60), 1).getFirst();
     assertThat(claim.linkId()).isEqualTo(123456793);
@@ -103,19 +89,12 @@ class LinkCheckRepositoryPostgresTest {
   }
 
   @Test
-  void sincronizacaoSoRemoveReferenciasAusentesAposConclusao() {
+  void exclusaoRepetidaNaoAfetaOutrosLinks() {
     repository.enqueue(new LinkBatch(List.of(
         new LinkBatch.Link(123456791, URI.create("https://example.com/a")),
         new LinkBatch.Link(123456792, URI.create("https://example.com/b")))));
-    UUID snapshot = UUID.randomUUID();
-    assertThat(repository.startSnapshot(snapshot)).isTrue();
-    assertThat(repository.startSnapshot(UUID.randomUUID())).isFalse();
-    assertThat(repository.lockSnapshot(snapshot)).isTrue();
-    repository.enqueueSnapshot(new LinkBatch(List.of(
-        new LinkBatch.Link(123456791, URI.create("https://example.com/a")))), snapshot);
-    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM guardiao.link_check WHERE link_id IN (?, ?)",
-        Integer.class, 123456791, 123456792)).isEqualTo(2);
-    repository.finishSnapshot(snapshot);
+    repository.delete(123456791);
+    repository.delete(123456791);
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM guardiao.link_check WHERE link_id IN (?, ?)",
         Integer.class, 123456791, 123456792)).isEqualTo(1);
   }

@@ -1,17 +1,16 @@
-"""Envia ao Guardião apenas o identificador e a URL das referências atuais."""
+"""Sincroniza alterações persistentes dos links com o Guardião."""
 
 import json
 import time
-from uuid import UUID
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.db import close_old_connections
+from django.db import close_old_connections, transaction
 
-from plataforma.models import ProjectLink
+from plataforma.models import GuardiaoLinkPendente, ProjectLink
 from plataforma.rls import system_context
 
 
@@ -21,17 +20,18 @@ class _NoRedirect(HTTPRedirectHandler):
 
 
 class Command(BaseCommand):
-    help = "Envia os links existentes ao serviço Guardião em lotes de até 100."
+    help = "Envia alterações pendentes de links ao Guardião."
 
     def add_arguments(self, parser):
         parser.add_argument("--continuo", action="store_true", help="Mantém a sincronização ativa em um processo separado.")
-        parser.add_argument("--intervalo", type=int, default=30, help="Segundos entre sincronizações (mínimo: 5).")
+        parser.add_argument("--intervalo", type=int, default=30, help="Segundos entre verificações da fila (mínimo: 5).")
 
     def handle(self, *args, **options):
         if options["intervalo"] < 5:
             raise CommandError("O intervalo deve ser de pelo menos 5 segundos.")
         if not options["continuo"]:
-            return self._sincronizar()
+            self._sincronizar()
+            return
         while True:
             try:
                 close_old_connections()
@@ -51,44 +51,30 @@ class Command(BaseCommand):
                 or parsed.path != "/internal/guardiao/links"):
             raise CommandError("Configure GUARDIAO_API_URL HTTPS e GUARDIAO_SERVICE_TOKEN.")
         opener = build_opener(_NoRedirect())
-        root = f"https://{parsed.netloc}/internal/guardiao"
-
-        def post(url, expected, data=b"", snapshot=None):
-            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            if snapshot:
-                headers["X-Guardiao-Snapshot"] = snapshot
-            request = Request(url, data=data, method="POST", headers=headers)
-            try:
-                with opener.open(request, timeout=10) as response:  # nosec B310: HTTPS configurado pelo operador
-                    if response.status != expected:
-                        raise CommandError("O Guardião não aceitou a operação.")
-                    return response.read(1025)
-            except (HTTPError, URLError, TimeoutError, OSError) as exc:
-                raise CommandError("Não foi possível comunicar com o Guardião.") from exc
-
-        try:
-            response = json.loads(post(f"{root}/snapshot", 201))
-            snapshot = str(UUID(response["id"]))
-        except (ValueError, TypeError, KeyError) as exc:
-            raise CommandError("Resposta inválida ao iniciar sincronização do Guardião.") from exc
         total = 0
-        last_id = 0
-        try:
-            while True:
-                with system_context():
-                    rows = list(ProjectLink.objects.filter(pk__gt=last_id).order_by("pk")
-                                .values_list("pk", "url")[:100])
-                if not rows:
+        # O lock serializa alterações do mesmo link, inclusive entre workers. A transação
+        # só confirma a remoção da fila depois da resposta; uma repetição é idempotente.
+        for _ in range(100):
+            with transaction.atomic(), system_context():
+                pending = GuardiaoLinkPendente.objects.select_for_update().order_by("link_id").first()
+                if pending is None:
                     break
-                payload = json.dumps({"links": [{"link_id": pk, "url": url} for pk, url in rows]}).encode()
-                post(endpoint, 202, payload, snapshot)
-                total += len(rows)
-                last_id = rows[-1][0]
-            post(f"{root}/snapshot/finish", 204, snapshot=snapshot)
-        except Exception:
-            try:
-                post(f"{root}/snapshot/abort", 204, snapshot=snapshot)
-            except CommandError:
-                self.stderr.write("Não foi possível liberar a sincronização; aguarde sua expiração.")
-            raise
-        self.stdout.write(self.style.SUCCESS(f"{total} link(s) enviado(s) ao Guardião."))
+                link = ProjectLink.objects.filter(pk=pending.link_id).values("pk", "url").first()
+                if link:
+                    url, expected = endpoint, 202
+                    payload = {"links": [{"link_id": link["pk"], "url": link["url"]}]}
+                else:
+                    url, expected = endpoint + "/delete", 204
+                    payload = {"link_id": pending.link_id}
+                request = Request(url, data=json.dumps(payload).encode(), method="POST", headers={
+                    "Authorization": f"Bearer {token}", "Content-Type": "application/json",
+                })
+                try:
+                    with opener.open(request, timeout=10) as response:  # nosec B310: HTTPS configurado pelo operador
+                        if response.status != expected:
+                            raise CommandError("O Guardião não aceitou a operação.")
+                except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                    raise CommandError("Não foi possível comunicar com o Guardião.") from exc
+                pending.delete()
+                total += 1
+        self.stdout.write(self.style.SUCCESS(f"{total} alteração(ões) sincronizada(s) com o Guardião."))
