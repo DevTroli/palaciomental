@@ -2,7 +2,6 @@ package br.com.palaciomental.status_api.guardian;
 
 import java.net.URI;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Interface interna autenticada; operações podem ser repetidas com segurança. */
 @RestController
-@ConditionalOnProperty(name = "guardiao.enabled", havingValue = "true")
 public final class GuardiaoController {
   private final LinkCheckRepository repository;
   private final TransactionTemplate transaction;

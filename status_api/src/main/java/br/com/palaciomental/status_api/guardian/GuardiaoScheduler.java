@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -14,7 +13,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 /** Busca um único trabalho por vez; outras instâncias usam concessões independentes. */
 @Configuration
 @EnableScheduling
-@ConditionalOnProperty(name = "guardiao.enabled", havingValue = "true")
 public class GuardiaoScheduler implements AutoCloseable {
   private final LinkCheckRepository repository;
   private final BoundedDnsResolver resolver = new BoundedDnsResolver(Duration.ofSeconds(3));

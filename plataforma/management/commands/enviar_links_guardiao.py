@@ -44,21 +44,22 @@ class Command(BaseCommand):
             time.sleep(options["intervalo"])
 
     def _configuracao(self):
-        endpoint = (getattr(settings, "GUARDIAO_API_URL", "") or "").strip()
+        override = (getattr(settings, "GUARDIAO_API_URL", "") or "").strip()
+        endpoint = override or (getattr(settings, "STATUS_API_URL", "") or "").strip()
         token = (getattr(settings, "GUARDIAO_SERVICE_TOKEN", "") or "").strip()
         if not endpoint:
-            raise CommandError("Defina GUARDIAO_API_URL com a URL HTTPS da API do Guardião.")
+            raise CommandError("Defina STATUS_API_URL com a URL HTTPS da API de status.")
         if not token:
             raise CommandError("Defina GUARDIAO_SERVICE_TOKEN com o mesmo token configurado na API do Guardião.")
         try:
             parsed = urlsplit(endpoint)
             port = parsed.port
         except ValueError as exc:
-            raise CommandError("GUARDIAO_API_URL é inválida; informe a URL HTTPS da API.") from exc
+            raise CommandError("A URL da API é inválida; informe uma URL HTTPS válida.") from exc
         if (parsed.scheme != "https" or not parsed.hostname or parsed.username
                 or parsed.password or parsed.query or parsed.fragment or port == 0
-                or parsed.path.rstrip("/") not in ("", "/internal/guardiao/links")):
-            raise CommandError("GUARDIAO_API_URL deve ser a URL HTTPS da API, sem parâmetros ou credenciais.")
+                or parsed.path.rstrip("/") not in (("", "/internal/guardiao/links") if override else ("", "/v1/status"))):
+            raise CommandError("A URL da API deve usar HTTPS, sem parâmetros ou credenciais, e apontar para /v1/status.")
         return f"https://{parsed.netloc}/internal/guardiao/links", token
 
     def _sincronizar(self):

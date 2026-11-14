@@ -12,13 +12,11 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /** Bloqueia chamadas antes que o MVC leia o corpo ou acesse o banco. */
 @Component
-@ConditionalOnProperty(name = "guardiao.enabled", havingValue = "true")
 public final class GuardiaoAuthFilter extends OncePerRequestFilter {
   private static final int MAX_BODY_BYTES = 65536;
   private final ServiceToken token;

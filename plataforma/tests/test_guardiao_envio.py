@@ -76,9 +76,9 @@ class EnvioGuardiaoTests(TestCase):
             call_command("enviar_links_guardiao")
         build_opener.assert_not_called()
 
-    @override_settings(GUARDIAO_API_URL="", GUARDIAO_SERVICE_TOKEN="")
+    @override_settings(GUARDIAO_API_URL="", STATUS_API_URL="", GUARDIAO_SERVICE_TOKEN="")
     def test_informa_url_ausente_antes_de_entrar_no_modo_continuo(self):
-        with self.assertRaisesMessage(CommandError, "Defina GUARDIAO_API_URL"):
+        with self.assertRaisesMessage(CommandError, "Defina STATUS_API_URL"):
             call_command("enviar_links_guardiao", continuo=True)
 
     @override_settings(GUARDIAO_API_URL="https://guardiao.example/", GUARDIAO_SERVICE_TOKEN="")
@@ -93,6 +93,21 @@ class EnvioGuardiaoTests(TestCase):
         call_command("enviar_links_guardiao", stdout=StringIO())
         self.assertEqual(build_opener.return_value.open.call_args.args[0].full_url,
                          "https://guardiao.example/internal/guardiao/links")
+
+    @override_settings(GUARDIAO_API_URL="", STATUS_API_URL="https://status.example:8443/v1/status")
+    @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
+    def test_aproveita_url_de_status(self, build_opener):
+        build_opener.return_value.open.return_value.__enter__.return_value.status = 202
+        call_command("enviar_links_guardiao", stdout=StringIO())
+        self.assertEqual(build_opener.return_value.open.call_args.args[0].full_url,
+                         "https://status.example:8443/internal/guardiao/links")
+
+    @override_settings(GUARDIAO_API_URL="", STATUS_API_URL="http://status.example/v1/status")
+    @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
+    def test_url_de_status_http_nao_recebe_token(self, build_opener):
+        with self.assertRaises(CommandError):
+            call_command("enviar_links_guardiao")
+        build_opener.assert_not_called()
 
 
 @skipUnless(connection.vendor == "postgresql", "Requer locks do PostgreSQL")
