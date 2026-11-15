@@ -279,7 +279,8 @@
 .project-link { text-decoration: none; }
 .project-link:hover > span:not(.link-icon) > strong { text-decoration: underline; }
 .project-link > span:not(.link-icon) { min-width: 0; overflow-wrap: anywhere; }
-.project-link .link-status { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin-top:7px; font-size:12px; line-height:1.4; }
-.project-link .link-status strong { font-size:12px; font-weight:700; }
-.project-link .link-status span { font-size:12px; opacity:.8; }
-.project-link .link-status--attention strong { text-decoration:underline; text-underline-offset:3px; }
+.project-link .link-status { display:flex; flex-wrap:wrap; align-items:center; gap:5px 9px; margin-top:8px; line-height:1.4; }
+.project-link .link-status strong { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border:1px solid currentColor; border-radius:999px; font-size:11px; font-weight:600; }
+.project-link .link-status strong::before { content:""; width:5px; height:5px; flex:none; border-radius:50%; background:currentColor; }
+.project-link .link-status span { font-size:11px; opacity:.85; }
+.project-link .link-status--attention strong { font-weight:700; }

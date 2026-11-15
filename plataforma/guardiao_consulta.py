@@ -1,6 +1,7 @@
 """Consulta somente IDs previamente autorizados pelo Django."""
 
 import json
+import logging
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, build_opener
 
@@ -9,6 +10,8 @@ from django.utils.dateparse import parse_datetime
 
 from .management.commands.enviar_links_guardiao import Command, _NoRedirect
 from .models import GuardiaoLinkPendente, ProjectLink
+
+logger = logging.getLogger(__name__)
 
 ROTULOS = {
     "ACESSIVEL": "Disponível",
@@ -51,7 +54,11 @@ def consultar_links(links):
         # Uma edição pode ter sido enfileirada enquanto o serviço respondia.
         pending.update(GuardiaoLinkPendente.objects.filter(pk__in=ids).values_list("pk", flat=True))
         return {pk: value for pk, value in results.items() if pk not in pending}
-    except (CommandError, HTTPError, URLError, OSError, TimeoutError, ValueError, TypeError, KeyError, AttributeError):
+    except HTTPError as exc:
+        logger.warning("Consulta ao Guardião falhou com HTTP %s.", exc.code)
+        return None
+    except (CommandError, URLError, OSError, TimeoutError, ValueError, TypeError, KeyError, AttributeError) as exc:
+        logger.warning("Consulta ao Guardião indisponível (%s).", type(exc).__name__)
         return None
 
 

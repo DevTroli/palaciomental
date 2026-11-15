@@ -1,6 +1,6 @@
 import json
 from unittest.mock import patch
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
@@ -50,6 +50,14 @@ class ConsultaGuardiaoTests(TestCase):
         opener.return_value.open.side_effect = URLError("indisponível")
         self.assertIsNone(consultar_links([self.link]))
         self.assertTrue(marcar_links([self.link])[0].guardiao_indisponivel)
+
+    @patch("plataforma.guardiao_consulta.build_opener")
+    def test_api_antiga_registra_http_sem_dados_sensiveis(self, opener):
+        opener.return_value.open.side_effect = HTTPError("https://segredo.example", 404, "erro", {}, None)
+        with self.assertLogs("plataforma.guardiao_consulta", level="WARNING") as logs:
+            self.assertIsNone(consultar_links([self.link]))
+        self.assertIn("HTTP 404", logs.output[0])
+        self.assertNotIn("segredo", logs.output[0])
 
     @patch("plataforma.guardiao_consulta.consultar_links")
     def test_contagem_so_inclui_links_do_autor_no_ambiente(self, consult):
