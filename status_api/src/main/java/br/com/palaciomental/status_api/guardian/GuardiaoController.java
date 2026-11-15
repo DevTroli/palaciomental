@@ -15,16 +15,35 @@ import org.springframework.web.bind.annotation.RestController;
 public final class GuardiaoController {
   private final LinkCheckRepository repository;
   private final TransactionTemplate transaction;
+  private final ThreatService threats;
 
-  public GuardiaoController(JdbcTemplate jdbc, TransactionTemplate transaction) {
+  public GuardiaoController(JdbcTemplate jdbc, TransactionTemplate transaction, ThreatService threats) {
     repository = new LinkCheckRepository(jdbc);
     this.transaction = transaction;
+    this.threats = threats;
   }
 
   public record Item(long link_id, String url) {}
   public record Request(List<Item> links) {}
   public record DeleteRequest(long link_id) {}
   public record ResultRequest(List<Long> link_ids) {}
+  public record ThreatRequest(List<String> urls) {}
+  public record ThreatResult(String state, String checkedAt, String expiresAt) {
+    static ThreatResult from(ThreatAssessment result) {
+      return new ThreatResult(result.state().name(),
+          result.checkedAt() == null ? null : result.checkedAt().toString(),
+          result.expiresAt() == null ? null : result.expiresAt().toString());
+    }
+  }
+
+  @PostMapping("/internal/guardiao/links/threats")
+  public ResponseEntity<List<ThreatResult>> threats(@RequestBody ThreatRequest body) {
+    if (body == null || body.urls() == null || body.urls().size() > 6
+        || body.urls().stream().anyMatch(url -> url == null || url.length() > 500)) {
+      return ResponseEntity.badRequest().build();
+    }
+    return ResponseEntity.ok(body.urls().stream().map(threats::check).map(ThreatResult::from).toList());
+  }
 
   @PostMapping("/internal/guardiao/links")
   public ResponseEntity<Void> submit(@RequestBody Request body) {
