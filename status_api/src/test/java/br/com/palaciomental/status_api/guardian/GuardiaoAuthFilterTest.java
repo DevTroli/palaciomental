@@ -11,6 +11,20 @@ import org.springframework.mock.env.MockEnvironment;
 
 class GuardiaoAuthFilterTest {
   @Test
+  void inboxAlertsRequireServiceAuthentication() throws Exception {
+    var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
+    var request = new MockHttpServletRequest("GET", "/v1/guardiao/alertas/inbox");
+    request.setSecure(true);
+    var response = new MockHttpServletResponse();
+    filter.doFilter(request, response, (req, res) -> { throw new AssertionError("Token ausente"); });
+    assertEquals(401, response.getStatus());
+    request.addHeader("Authorization", "Bearer test-secret");
+    var called = new AtomicBoolean();
+    filter.doFilter(request, new MockHttpServletResponse(), (req, res) -> called.set(true));
+    assertTrue(called.get());
+  }
+
+  @Test
   void statusTecnicoTambemExigeToken() throws Exception {
     var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
     var request = new MockHttpServletRequest("GET", "/v1/status");

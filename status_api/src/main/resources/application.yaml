@@ -20,6 +20,12 @@ monitor:
   global-url: ${STATUS_MONITOR_GLOBAL_URL:}
   tenant-login-url: ${STATUS_MONITOR_TENANT_LOGIN_URL:}
 
+alerts:
+  discord-webhook: ${STATUS_ALERT_DISCORD_WEBHOOK:}
+  resend-key: ${RESEND_API_KEY:}
+  email-from: ${DEFAULT_FROM_EMAIL:}
+  email-to: ${STATUS_ALERT_EMAIL_TO:}
+
 springdoc:
   api-docs:
     enabled: ${SWAGGER_ENABLED:false}

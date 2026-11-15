@@ -29,7 +29,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options["intervalo"] < 5:
             raise CommandError("O intervalo deve ser de pelo menos 5 segundos.")
-        self._configuracao()
+        endpoint, token = self._configuracao()
         if not options["continuo"]:
             self._sincronizar()
             return
@@ -39,6 +39,13 @@ class Command(BaseCommand):
                 self._sincronizar()
             except CommandError as exc:
                 self.stderr.write(f"Sincronização do Guardião falhou: {exc}")
+            except Exception:
+                self.stderr.write("Sincronização do Guardião falhou; nova tentativa no próximo ciclo.")
+            try:
+                from plataforma.guardiao_alertas import sincronizar_alertas
+                sincronizar_alertas(endpoint, token, build_opener(_NoRedirect()))
+            except Exception:
+                self.stderr.write("Sincronização de avisos do Guardião falhou; nova tentativa no próximo ciclo.")
             finally:
                 close_old_connections()
             time.sleep(options["intervalo"])

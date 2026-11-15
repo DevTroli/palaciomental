@@ -214,6 +214,8 @@ def _notificacoes_tenant(request, *, nao_lidas=False):
     urls = Q(pk__in=[])
     for domain in domains:
         urls |= Q(url__startswith=f"https://{domain}/") | Q(url__startswith=f"http://{domain}/")
+    urls |= Q(kind="status_incident_global", scope_organization__isnull=True)
+    urls |= Q(kind="status_incident_tenant", scope_organization=request.organizacao)
     queryset = Notification.objects.filter(recipient=request.user).filter(urls)
     return queryset.filter(read_at__isnull=True) if nao_lidas else queryset
 

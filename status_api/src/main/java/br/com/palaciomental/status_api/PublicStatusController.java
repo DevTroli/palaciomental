@@ -52,7 +52,9 @@ public class PublicStatusController {
         String state = latest == null || latest.at().isBefore(now.minusSeconds(600)) ? "sem_coleta" : latest.ok() ? "funcionando" : "falha";
         journeys.add(Map.of("nome", NAMES.get(id), "estado", state, "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", days));
       }
-      var incidents = jdbc.query("SELECT journey, started_at, recovered_at FROM guardiao.service_incidents WHERE started_at >= ? OR recovered_at IS NULL OR recovered_at >= ? ORDER BY started_at DESC LIMIT 100",
+      var incidents = jdbc.query("SELECT i.journey, i.started_at, i.recovered_at FROM guardiao.service_incidents i "
+              + "WHERE EXISTS (SELECT 1 FROM guardiao.incident_alert_events e WHERE e.incident_id = i.id AND e.event_type = 'public') "
+              + "AND (i.started_at >= ? OR i.recovered_at IS NULL OR i.recovered_at >= ?) ORDER BY i.started_at DESC LIMIT 100",
           (rs, row) -> Map.of("jornada", NAMES.getOrDefault(rs.getString(1), "Serviço"), "inicio", rs.getTimestamp(2).toInstant().toString(),
               "fim", rs.getTimestamp(3) == null ? "" : rs.getTimestamp(3).toInstant().toString()), java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
       return response(Map.of("disponivel", true, "jornadas", journeys, "incidentes", incidents));

@@ -24,7 +24,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm, TurmaReferenciaForm
-from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, Organizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 from .navigation import global_home_url as _global_home_url, project_notification_url
@@ -1434,8 +1434,13 @@ def inbox(request):
     if getattr(request, "organizacao", None):
         from .experience import inbox as institutional_inbox
         return institutional_inbox(request)
-    notifications = request.user.notifications.all()
-    request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
+    notifications = request.user.notifications.filter(
+        ~Q(kind="status_incident_tenant")
+        | Q(kind="status_incident_tenant", scope_organization__afiliacoes__usuario=request.user,
+            scope_organization__afiliacoes__status=MembroOrganizacao.STATUS_ATIVA,
+            scope_organization__status=Organizacao.STATUS_ATIVA)
+    ).distinct()
+    notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     from .guardiao_consulta import contar_atencao
     return render(request, "notifications/inbox.html", {"notifications": notifications, "links_atencao": contar_atencao(request.user, None)})
 

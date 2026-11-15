@@ -465,11 +465,14 @@ class Notification(models.Model):
     url = models.CharField(max_length=300, blank=True)
     read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    scope_organization = models.ForeignKey(Organizacao, null=True, blank=True, on_delete=models.CASCADE, related_name="notifications")
+    source_key = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         verbose_name = "Notificação"
         verbose_name_plural = "Notificações"
         ordering = ["-created_at"]
+        constraints = [models.UniqueConstraint(fields=["recipient", "source_key"], condition=models.Q(source_key__isnull=False), name="notification_recipient_source_unique")]
 
 
 class ProgramaInstitucional(models.Model):

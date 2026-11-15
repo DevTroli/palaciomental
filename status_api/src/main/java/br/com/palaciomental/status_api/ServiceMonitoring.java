@@ -20,6 +20,7 @@ public class ServiceMonitoring {
   private final TransactionTemplate transactions;
   private final boolean enabled;
   private final List<Journey> journeys;
+  private final String tenantHost;
 
   public ServiceMonitoring(JdbcTemplate jdbc, TransactionTemplate transactions, Environment environment,
       @Value("${monitor.enabled:false}") boolean enabled,
@@ -28,6 +29,7 @@ public class ServiceMonitoring {
     this.jdbc = jdbc;
     this.transactions = transactions;
     this.enabled = enabled && environment.acceptsProfiles(Profiles.of("production | prod"));
+    this.tenantHost = valid(tenant) ? URI.create(tenant).getHost().toLowerCase(java.util.Locale.ROOT) : null;
     String base = global.replaceAll("/+$", "");
     journeys = List.of(new Journey("inicio", base, "data-status-probe=\"inicio\""),
         new Journey("vitrine", base + "/projetos/", "data-status-probe=\"vitrine\""),
@@ -79,14 +81,41 @@ public class ServiceMonitoring {
     jdbc.update("INSERT INTO guardiao.service_checks (journey, checked_at, successful) VALUES (?, ?, ?)", journey, java.sql.Timestamp.from(now), successful);
     if (!previous.isEmpty() && consecutive(previous.getFirst().successful(), previous.getFirst().at(), successful, now)) {
       if (!successful) {
-        jdbc.update("INSERT INTO guardiao.service_incidents (journey, started_at) VALUES (?, ?) ON CONFLICT (journey) WHERE recovered_at IS NULL DO NOTHING",
-            journey, java.sql.Timestamp.from(previous.getFirst().at()));
+        var opened = jdbc.query("INSERT INTO guardiao.service_incidents (journey, started_at, tenant_host) VALUES (?, ?, ?) ON CONFLICT (journey) WHERE recovered_at IS NULL DO NOTHING RETURNING id",
+            (rs, row) -> rs.getLong(1), journey, java.sql.Timestamp.from(previous.getFirst().at()),
+            journey.equals("organizacao") ? tenantHost : null);
+        opened.forEach(id -> IncidentAlertEvents.enqueue(jdbc, id, "opened", now));
       } else {
-        jdbc.update("UPDATE guardiao.service_incidents SET recovered_at = ? WHERE journey = ? AND recovered_at IS NULL",
-            java.sql.Timestamp.from(now), journey);
+        var recovered = jdbc.query("UPDATE guardiao.service_incidents SET recovered_at = ? WHERE journey = ? AND recovered_at IS NULL RETURNING id",
+            (rs, row) -> rs.getLong(1), java.sql.Timestamp.from(now), journey);
+        recovered.forEach(id -> IncidentAlertEvents.enqueue(jdbc, id, "recovered", now));
       }
     }
+    if (!successful) queueEscalations(journey, now);
     jdbc.update("DELETE FROM guardiao.service_checks WHERE checked_at < ?", java.sql.Timestamp.from(now.minus(Duration.ofDays(31))));
+  }
+
+  void queueEscalations(String journey, Instant now) {
+    var incidents = jdbc.query("SELECT id FROM guardiao.service_incidents WHERE journey = ? AND recovered_at IS NULL",
+        (rs, row) -> rs.getLong(1), journey);
+    if (incidents.isEmpty()) return;
+    var checks = jdbc.query("SELECT successful, checked_at FROM guardiao.service_checks WHERE journey = ? ORDER BY checked_at DESC LIMIT 20",
+        (rs, row) -> new Previous(rs.getBoolean(1), rs.getTimestamp(2).toInstant()), journey);
+    Instant start = now;
+    Instant newer = now;
+    for (Previous check : checks) {
+      if (check.successful() || Duration.between(check.at(), newer).compareTo(Duration.ofMinutes(10)) >= 0) break;
+      start = check.at();
+      newer = check.at();
+    }
+    Duration failure = Duration.between(start, now);
+    if (failure.compareTo(Duration.ofMinutes(15)) >= 0) {
+      IncidentAlertEvents.enqueue(jdbc, incidents.getFirst(), "public", now);
+    }
+    if (failure.compareTo(Duration.ofHours(1)) > 0) {
+      IncidentAlertEvents.enqueue(jdbc, incidents.getFirst(), "severe", now);
+      IncidentAlertEvents.enqueue(jdbc, incidents.getFirst(), "extended", now);
+    }
   }
 
   private record Previous(boolean successful, Instant at) {}
