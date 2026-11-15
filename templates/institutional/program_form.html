@@ -1,0 +1,33 @@
+{% extends "institutional/experience/base.html" %}{% load static %}
+{% block title %}{% if programa %}Editar{% else %}Criar{% endif %} programa · {{ organizacao.nome }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">
+{% include "institutional/partials/editor_styles.html" %}
+{% endblock %}
+{% block content %}
+<div class="tenant-page-frame programs-page form-page institutional-editor-page">
+  <nav class="program-breadcrumb" aria-label="Você está aqui"><a href="{% if programa %}{% url 'plataforma:institutional_program_detail' programa.pk %}{% else %}{% url 'plataforma:institutional_programs' %}{% endif %}">← {% if programa %}Voltar ao programa{% else %}Voltar aos programas{% endif %}</a></nav>
+  <header class="programs-header"><div><p class="programs-eyebrow">Gestão · Programas</p><h1>{% if programa %}Editar programa{% else %}Criar programa{% endif %}</h1><p>{% if programa %}Atualize o propósito e a visibilidade deste programa.{% else %}Reúna turmas que compartilham um objetivo.{% endif %}</p></div></header>
+  <section class="institutional-editor-layout" aria-label="Dados do programa">
+    <aside class="form-guide">
+      <strong>Sobre o programa</strong>
+      <p>Um nome claro e uma descrição breve ajudam as pessoas a entender o propósito.</p>
+      <dl class="editor-guide-list"><div><dt>Identidade</dt><dd>Nome e descrição</dd></div><div><dt>Visibilidade</dt><dd>Rascunho, publicado ou arquivado</dd></div></dl>
+    </aside>
+    <div class="program-form-panel">
+      <form method="post" class="programs-form">{% csrf_token %}
+        {% if form.non_field_errors %}<div role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+          <div class="field-block{% if field.errors %} has-error{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}<small id="{{ field.id_for_label }}_help">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div role="alert">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        <div class="program-actions"><button class="camp-btn camp-btn--primary" type="submit">{% if programa %}Salvar alterações{% else %}Criar programa{% endif %}</button><a class="camp-btn camp-btn--ghost" href="{% if programa %}{% url 'plataforma:institutional_program_detail' programa.pk %}{% else %}{% url 'plataforma:institutional_programs' %}{% endif %}">Cancelar</a></div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

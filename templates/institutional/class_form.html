@@ -1,4 +1,33 @@
 {% extends "institutional/experience/base.html" %}{% load static %}
-{% block title %}Criar turma · {{ organizacao.nome }}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">{% endblock %}
-{% block content %}<div class="tenant-page-frame programs-page form-page"><nav class="program-breadcrumb"><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}">← {{ programa.nome }}</a></nav><header class="programs-header"><div><p class="programs-eyebrow">Programa → Turma</p><h1>Criar turma</h1><p>Defina o ciclo e como as pessoas participarão. Os grupos serão organizados dentro desta turma.</p></div></header><section class="form-layout"><div class="form-guide"><strong>Antes de salvar</strong><p>Use um nome que identifique o ciclo e explique o objetivo em uma frase.</p><div class="form-step is-active"><span>1</span><div><strong>Identidade</strong><small>Nome e contexto</small></div></div><div class="form-step"><span>2</span><div><strong>Participação</strong><small>Acesso e orientação</small></div></div></div><div class="program-form-panel"><form method="post" class="programs-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="field-block{% if field.errors %} has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% endif %}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endfor %}<div class="program-actions"><button class="camp-btn camp-btn--primary">Criar turma</button><a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_program_detail' programa.pk %}">Cancelar</a></div></form></div></section></div>{% endblock %}
+{% block title %}{% if turma %}Editar{% else %}Criar{% endif %} turma · {{ organizacao.nome }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">
+{% include "institutional/partials/editor_styles.html" %}
+{% endblock %}
+{% block content %}
+<div class="tenant-page-frame programs-page form-page institutional-editor-page">
+  <nav class="program-breadcrumb" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_program_detail' programa.pk %}{% if turma %}#turma-{{ turma.pk }}{% endif %}">← Voltar ao programa</a></nav>
+  <header class="programs-header"><div><p class="programs-eyebrow">{{ programa.nome }} · Turma</p><h1>{% if turma %}Editar turma{% else %}Criar turma{% endif %}</h1><p>{% if turma %}Atualize as informações e a participação desta turma.{% else %}Defina o ciclo e como as pessoas participarão.{% endif %}</p></div></header>
+  <section class="institutional-editor-layout" aria-label="Dados da turma">
+    <aside class="form-guide">
+      <strong>Informações da turma</strong>
+      <p>Use um nome claro e resuma o objetivo para quem vai participar.</p>
+      <dl class="editor-guide-list"><div><dt>Identidade</dt><dd>Nome e contexto</dd></div><div><dt>Participação</dt><dd>Orientação e acesso</dd></div></dl>
+    </aside>
+    <div class="program-form-panel">
+      <form method="post" class="programs-form">{% csrf_token %}
+        {% if form.non_field_errors %}<div role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+          <div class="field-block{% if field.errors %} has-error{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}<small id="{{ field.id_for_label }}_help">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div role="alert">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        <div class="program-actions"><button class="camp-btn camp-btn--primary" type="submit">{% if turma %}Salvar alterações{% else %}Criar turma{% endif %}</button><a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_program_detail' programa.pk %}{% if turma %}#turma-{{ turma.pk }}{% endif %}">Cancelar</a></div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}
