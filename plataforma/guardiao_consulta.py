@@ -2,10 +2,12 @@
 
 import json
 import logging
+from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, build_opener
 
 from django.core.management.base import CommandError
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from .management.commands.enviar_links_guardiao import Command, _NoRedirect
@@ -20,6 +22,57 @@ ROTULOS = {
     "QUEBRADO": "Link quebrado",
     "SEM_RESPOSTA": "Sem resposta",
 }
+
+
+def consultar_ameacas_detalhes(urls):
+    """Consulta a API interna; falhas nunca equivalem a links seguros."""
+    fallback = [{"state": "UNVERIFIED", "checked_at": None, "expires_at": None}] * len(urls)
+    if not urls:
+        return []
+    try:
+        endpoint, token = Command()._configuracao()
+        request = Request(endpoint + "/threats", method="POST", data=json.dumps({"urls": urls}).encode(),
+                          headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+        with build_opener(_NoRedirect()).open(request, timeout=10) as response:  # nosec B310: configuração validada
+            results = json.loads(response.read(4097))
+        if not isinstance(results, list) or len(results) != len(urls):
+            return fallback
+        now = timezone.now()
+        validated = []
+        for item in results:
+            if not isinstance(item, dict) or item.get("state") not in {"THREAT", "NO_MATCH", "UNVERIFIED"}:
+                return fallback
+            state = item["state"]
+            checked = parse_datetime(item.get("checkedAt") or "")
+            expires = parse_datetime(item.get("expiresAt") or "")
+            if (state != "UNVERIFIED" and (not checked or not expires or timezone.is_naive(checked)
+                    or timezone.is_naive(expires) or checked > now or expires <= now
+                    or (state == "THREAT" and now - checked >= timedelta(minutes=30)))):
+                state, checked, expires = "UNVERIFIED", None, None
+            validated.append({"state": state, "checked_at": checked, "expires_at": expires})
+        return validated
+    except (CommandError, HTTPError, URLError, OSError, TimeoutError, ValueError, TypeError, AttributeError):
+        return fallback
+
+
+def consultar_ameacas(urls):
+    return [result["state"] for result in consultar_ameacas_detalhes(urls)]
+
+
+def verificar_ameacas_formulario(formset):
+    """Valida somente links novos ou com endereço alterado; não expõe URLs no log."""
+    forms = [form for form in formset.forms
+             if form.cleaned_data and not form.cleaned_data.get("DELETE")
+             and form.cleaned_data.get("url") and (not form.instance.pk or "url" in form.changed_data)]
+    if not forms:
+        return False
+    resultados = consultar_ameacas([form.cleaned_data["url"] for form in forms])
+    if len(resultados) != len(forms) or any(item not in {"THREAT", "NO_MATCH", "UNVERIFIED"} for item in resultados):
+        resultados = ["UNVERIFIED"] * len(forms)
+    for form, resultado in zip(forms, resultados):
+        if resultado == "THREAT":
+            form.add_error("url", "Este link pode representar uma ameaça e não pode ser salvo. Aviso do Google Safe Browsing; a verificação pode falhar.")
+    return "UNVERIFIED" in resultados
 
 
 def consultar_links(links):
@@ -72,9 +125,18 @@ def consultar_links(links):
 
 def marcar_links(links):
     results = consultar_links(links)
+    now = timezone.now()
     for link in links:
         link.guardiao = (results or {}).get(link.pk)
         link.guardiao_indisponivel = results is None
+        link.ameaca_ativa = bool(link.ameaca_estado == "THREAT" and link.ameaca_verificada_em
+                                 and link.ameaca_expira_em and link.ameaca_verificada_em <= now
+                                 and link.ameaca_expira_em > now
+                                 and now - link.ameaca_verificada_em < timedelta(minutes=30))
+        link.seguranca_nao_verificada = not link.ameaca_ativa and not (
+            link.ameaca_estado == "NO_MATCH" and link.ameaca_verificada_em
+            and link.ameaca_verificada_em <= now and link.ameaca_expira_em and link.ameaca_expira_em > now
+        )
     return links
 
 

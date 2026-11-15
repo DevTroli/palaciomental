@@ -93,4 +93,6 @@ class Command(BaseCommand):
                     raise CommandError("Não foi possível comunicar com o Guardião.") from exc
                 pending.delete()
                 total += 1
+        from plataforma.guardiao_ameacas import verificar_links_salvos
+        verificar_links_salvos()
         self.stdout.write(self.style.SUCCESS(f"{total} alteração(ões) sincronizada(s) com o Guardião."))

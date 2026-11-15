@@ -320,6 +320,11 @@ class ProjectLink(models.Model):
     label = models.CharField("Nome do link", max_length=80)
     url = models.URLField("URL", max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
+    ameaca_estado = models.CharField(max_length=16, default="UNVERIFIED")
+    ameaca_verificada_em = models.DateTimeField(null=True, blank=True)
+    ameaca_expira_em = models.DateTimeField(null=True, blank=True)
+    ameaca_proxima_verificacao = models.DateTimeField(null=True, blank=True, db_index=True)
+    ameaca_notificada = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Link de projeto"
@@ -333,7 +338,14 @@ class ProjectLink(models.Model):
         # A alteração e sua entrada na fila devem confirmar ou reverter juntas.
         using = kwargs.get("using") or self._state.db
         with transaction.atomic(using=using):
-            return super().save(*args, **kwargs)
+            previous = type(self).objects.using(using).filter(pk=self.pk).values_list("url", flat=True).first() if self.pk else None
+            result = super().save(*args, **kwargs)
+            if previous is not None and previous != self.url:
+                type(self).objects.using(using).filter(pk=self.pk).update(
+                    ameaca_estado="UNVERIFIED", ameaca_verificada_em=None, ameaca_expira_em=None,
+                    ameaca_proxima_verificacao=None, ameaca_notificada=False,
+                )
+            return result
 
 
 class GuardiaoLinkPendente(models.Model):

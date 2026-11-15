@@ -1115,9 +1115,15 @@ def project_context(request, pk):
     form = ProjectContextForm(request.POST or None, instance=project)
     formset = ProjectLinkFormSet(request.POST or None, instance=project, prefix="links")
     if request.method == "POST" and form.is_valid() and formset.is_valid():
+        from .guardiao_consulta import verificar_ameacas_formulario
+        nao_verificados = verificar_ameacas_formulario(formset)
+        if any(link_form.errors for link_form in formset.forms):
+            return render(request, "institutional/experience/project_form.html" if getattr(request, "organizacao", None) else "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project, "organizacao": getattr(request, "organizacao", None)})
         before = {"category": project.category, "tags": project.tags, "visibility": project.visibility, "seeking_collaborators": project.seeking_collaborators, "links": project.links.count()}
         project = form.save()
         formset.save()
+        if nao_verificados:
+            messages.warning(request, "Os links foram salvos, mas a verificação de ameaças não está disponível.")
         changes = [label for key, label in [("category", "categoria"), ("tags", "tags"), ("visibility", "visibilidade"), ("seeking_collaborators", "colaboração")] if before[key] != getattr(project, key)]
         if formset.has_changed():
             changes.append("links")
