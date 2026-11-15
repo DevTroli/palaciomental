@@ -24,6 +24,7 @@ public final class GuardiaoController {
   public record Item(long link_id, String url) {}
   public record Request(List<Item> links) {}
   public record DeleteRequest(long link_id) {}
+  public record ResultRequest(List<Long> link_ids) {}
 
   @PostMapping("/internal/guardiao/links")
   public ResponseEntity<Void> submit(@RequestBody Request body) {
@@ -53,5 +54,14 @@ public final class GuardiaoController {
     if (body == null || body.link_id() <= 0) return ResponseEntity.badRequest().build();
     repository.delete(body.link_id());
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/internal/guardiao/links/results")
+  public ResponseEntity<List<LinkCheckRepository.LinkResult>> results(@RequestBody ResultRequest body) {
+    if (body == null || body.link_ids() == null || body.link_ids().size() > LinkBatch.MAX_LINKS
+        || body.link_ids().stream().anyMatch(id -> id == null || id <= 0)) {
+      return ResponseEntity.badRequest().build();
+    }
+    return ResponseEntity.ok(repository.results(body.link_ids()));
   }
 }

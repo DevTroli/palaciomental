@@ -36,6 +36,16 @@ public final class LinkCheckRepository {
     jdbc.update("DELETE FROM guardiao.link_check WHERE link_id = ?", linkId);
   }
 
+  public List<LinkResult> results(List<Long> ids) {
+    if (ids.isEmpty()) return List.of();
+    String placeholders = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+    return jdbc.query("SELECT link_id, status, checked_at, failed_cycles FROM guardiao.link_check WHERE link_id IN ("
+        + placeholders + ")", (row, n) -> new LinkResult(row.getLong(1), row.getString(2),
+        row.getTimestamp(3) == null ? null : row.getTimestamp(3).toInstant(), row.getInt(4)), ids.toArray());
+  }
+
+  public record LinkResult(long link_id, String status, Instant checked_at, int failed_cycles) {}
+
   public record Claimed(long linkId, URI url, long revision, UUID leaseId) {
     @Override public String toString() { return "Claimed[linkId=" + linkId + ", url=<redacted>]"; }
   }

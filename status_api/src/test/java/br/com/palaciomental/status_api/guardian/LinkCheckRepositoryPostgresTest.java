@@ -43,6 +43,22 @@ class LinkCheckRepositoryPostgresTest {
   }
 
   @Test
+  void consultaRetornaSomenteOsIdsSolicitados() {
+    repository.enqueue(new LinkBatch(List.of(
+        new LinkBatch.Link(123456795, URI.create("https://example.com/a")),
+        new LinkBatch.Link(123456796, URI.create("https://example.com/b")))));
+    Instant now = Instant.now();
+    repository.completeCycle(123456795, 1, UUID.randomUUID(), LinkStatus.ACESSIVEL,
+        now, now.plus(Duration.ofHours(48)));
+    var results = repository.results(List.of(123456795L));
+    assertThat(results).hasSize(1);
+    assertThat(results.getFirst().link_id()).isEqualTo(123456795);
+    assertThat(results.getFirst().status()).isEqualTo("ACESSIVEL");
+    assertThat(results.getFirst().checked_at()).isNotNull();
+    assertThat(repository.results(List.of())).isEmpty();
+  }
+
+  @Test
   void novoLinkEntraNaFilaEProximoCicloAguarda48Horas() {
     var batch = new LinkBatch(List.of(new LinkBatch.Link(123456793, URI.create("https://example.com/novo"))));
     repository.enqueue(batch);
