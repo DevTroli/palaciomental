@@ -1082,7 +1082,9 @@ def project_detail(request, pk):
         from core.rankings import ranked_projects
         ranked = ranked_projects(Project.objects.filter(organizacao=request.organizacao, votes__isnull=False).distinct(), tenant_id=request.organizacao.pk)
         ranking_posicao = next((index for index, item in enumerate(ranked[:5], 1) if item.pk == project.pk), None)
-    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
+    from .guardiao_consulta import marcar_links
+    links = marcar_links(list(project.links.all()))
+    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": links, "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
     organizacao = getattr(request, "organizacao", None)
@@ -1320,7 +1322,8 @@ def inbox(request):
         return institutional_inbox(request)
     notifications = request.user.notifications.all()
     request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
-    return render(request, "notifications/inbox.html", {"notifications": notifications})
+    from .guardiao_consulta import contar_atencao
+    return render(request, "notifications/inbox.html", {"notifications": notifications, "links_atencao": contar_atencao(request.user, None)})
 
 
 def saude(request):

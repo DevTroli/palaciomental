@@ -633,6 +633,8 @@ def inbox(request):
     notifications = _notificacoes_tenant(request)
     notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     context["notifications"] = notifications[:50]
+    from .guardiao_consulta import contar_atencao
+    context["links_atencao"] = contar_atencao(request.user, request.organizacao)
     return render(request, "institutional/experience/inbox.html", context)
 
 

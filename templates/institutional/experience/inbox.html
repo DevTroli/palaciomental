@@ -21,6 +21,7 @@
   </section>
 
   <div class="camp-inbox-page">
+    {% if links_atencao == None %}<section class="camp-inbox-panel"><p>Estado dos links temporariamente indisponível.</p></section>{% elif links_atencao %}<section class="camp-inbox-panel"><h2>Links que precisam de atenção</h2><p>{{ links_atencao }} link{{ links_atencao|pluralize }} dos seus projetos precisa{{ links_atencao|pluralize:"m" }} de atenção.</p><a class="camp-inline-link" href="{% url 'plataforma:institutional_profile' %}#meus-projetos">Ver meus projetos</a></section>{% endif %}
     {% for notification in notifications %}<article class="camp-inbox-panel"><p>{{ notification.message }}</p><small>{{ notification.created_at|date:"d/m/Y H:i" }}</small>{% if notification.url %}<a href="{{ notification.url }}">Ver projeto</a>{% endif %}</article>{% endfor %}
 
     {% if pedidos %}
