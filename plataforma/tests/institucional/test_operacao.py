@@ -21,13 +21,13 @@ class ReadinessTests(TestCase):
             executor.return_value.migration_plan.return_value = [object()]
             response = self.client.get("/pronto")
         self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.json()["reason"], "migrations_pending")
+        self.assertEqual(response.json(), {"status": "not_ready"})
 
     def test_banco_indisponivel_retorna_503_sem_consultar_tenant(self):
         with patch("plataforma.health.connection.cursor", side_effect=OperationalError("offline")):
             response = self.client.get("/pronto")
         self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.json()["reason"], "database_unavailable")
+        self.assertEqual(response.json(), {"status": "not_ready"})
 
     def test_rebuild_parcial_nao_substitui_ranking(self):
         with patch("plataforma.management.commands.rebuild_rankings.rebuild_rankings") as rebuild:

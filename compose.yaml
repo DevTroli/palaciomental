@@ -80,6 +80,7 @@ services:
       - .env
     environment:
       SPRING_PROFILES_ACTIVE: guardiao-local
+      SWAGGER_ENABLED: "true"
     networks:
       default:
         aliases:
@@ -92,8 +93,6 @@ services:
       start_period: 10s
     depends_on:
       database:
-        condition: service_healthy
-      django:
         condition: service_healthy
       guardiao_migrate:
         condition: service_completed_successfully

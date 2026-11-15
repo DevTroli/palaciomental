@@ -37,7 +37,7 @@ class RodapePersonalizadoTests(PortalInstitucionalBase):
         response = self.client.get("/", HTTP_HOST=HOST)
         for expected in ("Aprender para transformar", "contato@example.org", "mailto:contato%40example.org",
                          "https://instagram.com/camppg", "https://facebook.com/camppg",
-                         "Status do sistema", "Dê continuidade às suas ideias."):
+                         "Dê continuidade às suas ideias."):
             self.assertContains(response, expected)
         self.assertContains(response, 'aria-label="Facebook de CAMPPG"')
 

@@ -114,7 +114,7 @@ class AmeacasLinksSalvosTests(TestCase):
 
 class ConsultaAmeacasTests(TestCase):
     @patch("plataforma.guardiao_consulta.build_opener")
-    @patch("plataforma.guardiao_consulta.Command._configuracao", return_value=("https://api.example/internal/guardiao/links", "token"))
+    @patch("plataforma.guardiao_consulta.Command._configuracao", return_value=("https://api.example/v1/guardiao/links", "token"))
     def test_rejeita_alerta_expirado_e_falha_sem_inventar_seguranca(self, config, opener):
         import json
         from datetime import timedelta

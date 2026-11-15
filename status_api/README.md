@@ -1,6 +1,6 @@
 # API de status
 
-Serviço Spring Boot/Java 21 que verifica PostgreSQL e Django. Execute com `docker compose up --build -d` na raiz; a API responde em `http://localhost:8080/v1/status`.
+Serviço Spring Boot/Java 21 que executa o Guardião de links e mantém um diagnóstico técnico protegido. Execute com `docker compose up --build -d` na raiz; a documentação local abre em `http://localhost:8080/docs`.
 
 ## Configuração
 
@@ -11,10 +11,20 @@ Defina `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` e `POSTG
 ## Endpoints
 
 - `GET /v1/ping`: responde `pong` quando o processo está ativo.
-- `GET /v1/status`: verifica banco e `GET /pronto` do Django, incluindo migrations pendentes. Retorna estado geral, dependências e tempos de resposta.
-- `/`: documentação interativa Swagger.
+- `GET /v1/status`: diagnóstico técnico autenticado com `GUARDIAO_SERVICE_TOKEN` e HTTPS; verifica banco e `GET /pronto` do Django. Não é uma página pública.
+- `/docs`: Swagger com guia das operações e autenticação Bearer. Disponível apenas quando `SWAGGER_ENABLED=true`; o Compose local habilita essa opção. Em produção, mantenha desativada.
 
-O Compose aguarda a saúde do banco e do Django antes de iniciar este serviço. As credenciais ficam no ambiente, sem valores de senha no repositório.
+O Actuator foi removido porque não é usado pelo serviço. O endpoint público `/v1/ping` informa somente que o processo Spring está ativo.
+
+## Monitoramento das jornadas
+
+A raiz `/` apresenta a página pública de status. A coleta fica desativada por padrão. Para ativá-la em produção, use o perfil Spring `production` ou `prod`, configure `STATUS_MONITOR_ENABLED=true`, `STATUS_MONITOR_GLOBAL_URL` com a origem HTTPS global e `STATUS_MONITOR_TENANT_LOGIN_URL` com a URL HTTPS de entrada de uma organização de teste. Essas páginas devem conter os marcadores `data-status-probe` correspondentes à versão atual do Django. Aplique as migrations Flyway antes do deploy.
+
+O monitor acessa a página inicial, a vitrine pública de projetos, a entrada e o cadastro globais e a entrada da organização de teste por GET a cada cinco minutos, sem entrar em contas ou alterar dados. São necessários HTTP 200 e o marcador esperado. A verificação da vitrine confirma somente o carregamento da página pública. Duas falhas consecutivas abrem um incidente; duas verificações bem-sucedidas o encerram. A página informa quando não há coleta recente e mostra a cobertura dos últimos 30 dias. Se o banco estiver indisponível, informa que os dados estão indisponíveis. Datas do histórico usam UTC; horários são exibidos no fuso do navegador.
+
+No Railway, prepare o release antes de ativar a coleta: configure o mesmo `GUARDIAO_SERVICE_TOKEN` na API e no Django, aplique as migrations e informe o perfil e as URLs de monitoramento descritos acima. O proxy público do Railway termina o TLS antes de encaminhar a requisição. Para o Spring reconhecer o HTTPS nas rotas protegidas, configure `server.forward-headers-strategy=native` e a expressão de `server.tomcat.remoteip.internal-proxies` somente após identificar os proxies confiáveis e impedir acesso direto que permita forjar cabeçalhos. O padrão da aplicação não confia nesses cabeçalhos. Após o deploy, valide chamadas autenticadas e não autenticadas pelo domínio público, além de verificar que requisições diretas não podem simular HTTPS. Consulte a documentação oficial do [proxy Railway](https://docs.railway.com/networking/public-networking/specs-and-limits) e de [proxies no Spring Boot](https://docs.spring.io/spring-boot/how-to/webserver.html).
+
+O Compose aguarda o banco e as migrations antes de iniciar este serviço. A API pode iniciar enquanto o Django está indisponível.
 
 ## Guardião de links (em desenvolvimento)
 
@@ -28,7 +38,7 @@ O plugin cria e mantém o histórico somente no schema `guardiao`; seus arquivos
 
 Para disponibilizar o Flyway no release, a imagem Spring possui o estágio `migrate`: gere-o com `docker build --target migrate -t guardiao-migrate ./status_api` e execute-o uma vez com as três variáveis `GUARDIAO_MIGRATION_*` configuradas. O processo termina após migrar e validar; uma falha deve interromper o release. A imagem final padrão é apenas de execução. A role da API precisa acessar as tabelas e sequências do schema `guardiao`; configure os privilégios para as tabelas existentes e para as criadas pela role de migração. Não conceda à API privilégios de alteração de schema.
 
-O Guardião inicia junto com a API. Antes de iniciar o Spring, aplique as migrations Flyway e configure `GUARDIAO_SERVICE_TOKEN` com um segredo forte; sem token a API não inicia. No Django, aplique as migrations e configure o mesmo token. O worker deriva a origem HTTPS de `STATUS_API_URL` (por exemplo, `https://api.exemplo.com/v1/status`). Se for necessário usar outro host, `GUARDIAO_API_URL` é uma opção: informe a URL base HTTPS ou o endereço completo `/internal/guardiao/links`. Execute `python manage.py enviar_links_guardiao --continuo` em processo separado e supervisionado. A migration Django coloca os links existentes na fila; inclusão, alteração e exclusão posteriores atualizam a fila na mesma transação dos links. O worker envia até 100 alterações por ciclo, uma por requisição, e remove cada entrada somente após confirmação. Se a comunicação falhar, a entrada permanece para nova tentativa. Uma repetição é segura.
+O Guardião inicia junto com a API. Antes de iniciar o Spring, aplique as migrations Flyway e configure `GUARDIAO_SERVICE_TOKEN` com um segredo forte; sem token a API não inicia. No Django, aplique as migrations e configure o mesmo token. O worker deriva a origem HTTPS de `STATUS_API_URL` (por exemplo, `https://api.exemplo.com/v1/status`). Se for necessário usar outro host, `GUARDIAO_API_URL` é uma opção: informe a URL base HTTPS ou o endereço completo `/v1/guardiao/links`. Execute `python manage.py enviar_links_guardiao --continuo` em processo separado e supervisionado. A migration Django coloca os links existentes na fila; inclusão, alteração e exclusão posteriores atualizam a fila na mesma transação dos links. O worker envia até 100 alterações por ciclo, uma por requisição, e remove cada entrada somente após confirmação. Se a comunicação falhar, a entrada permanece para nova tentativa. Uma repetição é segura.
 
 Na primeira implantação da fila, pause gravações de links enquanto aplica a migration e atualiza o Django, para que nenhuma alteração passe sem ser enfileirada. Atualize a API antes de iniciar o novo worker: o protocolo anterior de retratos não é compatível com o novo. As migrations Flyway anteriores permanecem imutáveis; suas estruturas de retrato não são mais usadas. Se um ambiente já tiver usado o protocolo anterior, avalie referências antigas no schema do Guardião antes de ativar a nova versão: o preenchimento inicial envia os links existentes, mas não remove automaticamente IDs que já não existem no Django.
 

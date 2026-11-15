@@ -60,9 +60,9 @@ class Command(BaseCommand):
                       and parsed.scheme == "http" and parsed.hostname == "status-api" and port == 8080)
         if ((parsed.scheme != "https" and not local_http) or not parsed.hostname or parsed.username
                 or parsed.password or parsed.query or parsed.fragment or port == 0
-                or parsed.path.rstrip("/") not in (("", "/internal/guardiao/links") if override else ("", "/v1/status"))):
-            raise CommandError("A URL da API deve usar HTTPS, sem parâmetros ou credenciais, e apontar para /v1/status.")
-        return f"{parsed.scheme}://{parsed.netloc}/internal/guardiao/links", token
+                or parsed.path.rstrip("/") not in (("", "/v1/guardiao/links") if override else ("", "/v1/status"))):
+            raise CommandError("A URL da API deve usar HTTPS, sem parâmetros ou credenciais, e apontar para /v1/status ou /v1/guardiao/links.")
+        return f"{parsed.scheme}://{parsed.netloc}/v1/guardiao/links", token
 
     def _sincronizar(self):
         endpoint, token = self._configuracao()
@@ -78,11 +78,12 @@ class Command(BaseCommand):
                 link = ProjectLink.objects.filter(pk=pending.link_id).values("pk", "url").first()
                 if link:
                     url, expected = endpoint, 202
+                    method = "POST"
                     payload = {"links": [{"link_id": link["pk"], "url": link["url"]}]}
                 else:
-                    url, expected = endpoint + "/delete", 204
-                    payload = {"link_id": pending.link_id}
-                request = Request(url, data=json.dumps(payload).encode(), method="POST", headers={
+                    url, expected = f"{endpoint}/{pending.link_id}", 204
+                    method, payload = "DELETE", None
+                request = Request(url, data=json.dumps(payload).encode() if payload else None, method=method, headers={
                     "Authorization": f"Bearer {token}", "Content-Type": "application/json",
                 })
                 try:

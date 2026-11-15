@@ -14,7 +14,7 @@ from django.test import TestCase, TransactionTestCase, override_settings
 from plataforma.models import GuardiaoLinkPendente, Project, ProjectLink
 
 
-@override_settings(GUARDIAO_API_URL="https://guardiao.example/internal/guardiao/links",
+@override_settings(GUARDIAO_API_URL="https://guardiao.example/v1/guardiao/links",
                    GUARDIAO_SERVICE_TOKEN="segredo-teste")
 class EnvioGuardiaoTests(TestCase):
     def setUp(self):
@@ -42,8 +42,9 @@ class EnvioGuardiaoTests(TestCase):
         response.status = 204
         call_command("enviar_links_guardiao", stdout=StringIO())
         request = build_opener.return_value.open.call_args.args[0]
-        self.assertTrue(request.full_url.endswith("/links/delete"))
-        self.assertEqual(json.loads(request.data), {"link_id": link_id})
+        self.assertTrue(request.full_url.endswith(f"/links/{link_id}"))
+        self.assertEqual(request.get_method(), "DELETE")
+        self.assertIsNone(request.data)
         self.assertFalse(GuardiaoLinkPendente.objects.exists())
 
     @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
@@ -69,7 +70,7 @@ class EnvioGuardiaoTests(TestCase):
         self.project.delete()
         self.assertTrue(GuardiaoLinkPendente.objects.filter(pk=link_id).exists())
 
-    @override_settings(GUARDIAO_API_URL="http://guardiao.example/internal/guardiao/links")
+    @override_settings(GUARDIAO_API_URL="http://guardiao.example/v1/guardiao/links")
     @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
     def test_nao_envia_token_sem_https(self, build_opener):
         with self.assertRaises(CommandError):
@@ -92,7 +93,7 @@ class EnvioGuardiaoTests(TestCase):
         build_opener.return_value.open.return_value.__enter__.return_value.status = 202
         call_command("enviar_links_guardiao", stdout=StringIO())
         self.assertEqual(build_opener.return_value.open.call_args.args[0].full_url,
-                         "https://guardiao.example/internal/guardiao/links")
+                         "https://guardiao.example/v1/guardiao/links")
 
     @override_settings(GUARDIAO_API_URL="", STATUS_API_URL="https://status.example:8443/v1/status")
     @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
@@ -100,7 +101,7 @@ class EnvioGuardiaoTests(TestCase):
         build_opener.return_value.open.return_value.__enter__.return_value.status = 202
         call_command("enviar_links_guardiao", stdout=StringIO())
         self.assertEqual(build_opener.return_value.open.call_args.args[0].full_url,
-                         "https://status.example:8443/internal/guardiao/links")
+                         "https://status.example:8443/v1/guardiao/links")
 
     @override_settings(GUARDIAO_API_URL="", STATUS_API_URL="http://status.example/v1/status")
     @patch("plataforma.management.commands.enviar_links_guardiao.build_opener")
@@ -116,7 +117,7 @@ class EnvioGuardiaoTests(TestCase):
         build_opener.return_value.open.return_value.__enter__.return_value.status = 202
         call_command("enviar_links_guardiao", stdout=StringIO())
         self.assertEqual(build_opener.return_value.open.call_args.args[0].full_url,
-                         "http://status-api:8080/internal/guardiao/links")
+                         "http://status-api:8080/v1/guardiao/links")
 
     @override_settings(DEBUG=False, GUARDIAO_LOCAL_HTTP=True, GUARDIAO_API_URL="",
                        STATUS_API_URL="http://status-api:8080/v1/status")
@@ -132,7 +133,7 @@ class EnvioGuardiaoTests(TestCase):
 
 
 @skipUnless(connection.vendor == "postgresql", "Requer locks do PostgreSQL")
-@override_settings(GUARDIAO_API_URL="https://guardiao.example/internal/guardiao/links",
+@override_settings(GUARDIAO_API_URL="https://guardiao.example/v1/guardiao/links",
                    GUARDIAO_SERVICE_TOKEN="segredo-teste")
 class ConcorrenciaGuardiaoTests(TransactionTestCase):
     def test_edicao_durante_envio_permanece_na_fila(self):

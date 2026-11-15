@@ -11,9 +11,23 @@ import org.springframework.mock.env.MockEnvironment;
 
 class GuardiaoAuthFilterTest {
   @Test
+  void statusTecnicoTambemExigeToken() throws Exception {
+    var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
+    var request = new MockHttpServletRequest("GET", "/v1/status");
+    request.setSecure(true);
+    var response = new MockHttpServletResponse();
+    filter.doFilter(request, response, (req, res) -> { throw new AssertionError("Token ausente"); });
+    assertEquals(401, response.getStatus());
+    request.addHeader("Authorization", "Bearer test-secret");
+    var called = new AtomicBoolean();
+    filter.doFilter(request, new MockHttpServletResponse(), (req, res) -> called.set(true));
+    assertTrue(called.get());
+  }
+
+  @Test
   void rejectsBeforeBodyProcessingAndRequiresSecureTransport() throws Exception {
     var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
-    var request = new MockHttpServletRequest("POST", "/internal/guardiao/links");
+    var request = new MockHttpServletRequest("POST", "/v1/guardiao/links");
     var response = new MockHttpServletResponse();
     var called = new AtomicBoolean();
     filter.doFilter(request, response, (req, res) -> called.set(true));
@@ -35,7 +49,7 @@ class GuardiaoAuthFilterTest {
   @Test
   void rejectsOversizedAuthenticatedBody() throws Exception {
     var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
-    var request = new MockHttpServletRequest("POST", "/internal/guardiao/links");
+    var request = new MockHttpServletRequest("POST", "/v1/guardiao/links");
     request.setSecure(true);
     request.addHeader("Authorization", "Bearer test-secret");
     request.setContent(new byte[65537]);
@@ -46,7 +60,7 @@ class GuardiaoAuthFilterTest {
 
   @Test
   void localProfileAllowsOnlyAuthenticatedHttpAndProductionStillRequiresHttps() throws Exception {
-    var request = new MockHttpServletRequest("POST", "/internal/guardiao/links");
+    var request = new MockHttpServletRequest("POST", "/v1/guardiao/links");
     var local = new MockEnvironment().withProperty("spring.profiles.active", "guardiao-local");
     var filter = new GuardiaoAuthFilter("test-secret", local);
     var response = new MockHttpServletResponse();

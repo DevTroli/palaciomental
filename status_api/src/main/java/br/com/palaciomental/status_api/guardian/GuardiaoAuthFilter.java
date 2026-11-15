@@ -31,7 +31,8 @@ public final class GuardiaoAuthFilter extends OncePerRequestFilter {
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    return !request.getRequestURI().startsWith(request.getContextPath() + "/internal/guardiao/");
+    String path = request.getRequestURI().substring(request.getContextPath().length());
+    return !path.startsWith("/v1/guardiao/") && !path.equals("/v1/status");
   }
 
   @Override

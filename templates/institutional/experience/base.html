@@ -209,7 +209,7 @@
             {% for social in tenant_social_links %}<a class="tenant-footer-contact" href="{{ social.url }}" aria-label="{{ social.label }} de {{ tenant_display_name }}"><span class="tenant-footer-contact-icon" aria-hidden="true"><svg class="camp-icon"><use href="#i-{{ social.icon }}"/></svg></span><span>{{ social.label }}</span></a>{% endfor %}
           </div>{% endif %}
         </div>
-        <nav aria-label="Links do rodapé"><a href="{% url 'plataforma:status' %}">Status do sistema</a><button class="tenant-footer-mode" type="button" data-display-toggle aria-label="Modo escuro" aria-pressed="false"><svg class="camp-icon" aria-hidden="true"><use href="#i-moon"/></svg><span data-display-label>Tema: claro</span></button></nav>
+        <nav aria-label="Links do rodapé"><button class="tenant-footer-mode" type="button" data-display-toggle aria-label="Modo escuro" aria-pressed="false"><svg class="camp-icon" aria-hidden="true"><use href="#i-moon"/></svg><span data-display-label>Tema: claro</span></button></nav>
       </footer>
 
     </main>

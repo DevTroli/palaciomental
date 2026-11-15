@@ -138,7 +138,7 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         footer = response.content.decode().split('<footer class="camp-footer', 1)[1].split('</footer>', 1)[0]
         self.assertNotIn("Início do ambiente", footer)
         self.assertNotIn("Meu espaço pessoal", footer)
-        self.assertIn("Status do sistema", footer)
+        self.assertNotIn("Status do sistema", footer)
         self.assertContains(response, "tenant-footer")
         self.assertNotContains(response, "Vitrine global")
         self.assertNotContains(response, "Projeto de outro tenant")

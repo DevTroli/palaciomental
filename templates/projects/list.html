@@ -4,7 +4,7 @@
 {% block content %}
 <section class="page-hero mvp-container">
   <span class="eyebrow">{% if catalog_context == 'institutional' %}Ambiente institucional · {{ catalog_name }}{% else %}Vitrine global{% endif %}</span>
-  <h1>{% if catalog_context == 'institutional' %}Projetos da {{ catalog_name }}.{% else %}Projetos em movimento.{% endif %}</h1>
+  <h1{% if catalog_context != 'institutional' %} data-status-probe="vitrine"{% endif %}>{% if catalog_context == 'institutional' %}Projetos da {{ catalog_name }}.{% else %}Projetos em movimento.{% endif %}</h1>
   <p class="lead">{% if catalog_context == 'institutional' %}Este catálogo exibe somente projetos públicos deste ambiente institucional. Projetos pessoais e de outras organizações não aparecem aqui.{% else %}Encontre projetos autorais públicos do Palácio Mental, acompanhe processos e descubra onde você pode contribuir.{% endif %}</p>
 </section>
 <section class="mvp-container content-section">

@@ -1,6 +1,10 @@
 spring:
   application:
     name: status-api
+  task:
+    scheduling:
+      pool:
+        size: 2
 
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -11,6 +15,14 @@ django:
   app:
     url: ${DJANGO_APP_URL:http://django:8000}
 
+monitor:
+  enabled: ${STATUS_MONITOR_ENABLED:false}
+  global-url: ${STATUS_MONITOR_GLOBAL_URL:}
+  tenant-login-url: ${STATUS_MONITOR_TENANT_LOGIN_URL:}
+
 springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
-    path: /
+    enabled: ${SWAGGER_ENABLED:false}
+    path: /docs
