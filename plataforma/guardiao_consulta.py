@@ -48,9 +48,17 @@ def consultar_links(links):
                     raise ValueError("Resposta inválida")
                 if link_id not in pending and status and checked_at:
                     label = ROTULOS[status]
+                    tone = "neutral"
+                    if status == "ACESSIVEL":
+                        tone = "success"
+                    elif status == "SEM_RESPOSTA":
+                        tone = "warning"
                     if status == "QUEBRADO" and item.get("failed_cycles", 0) < 3:
                         label = "Possível quebra"
-                    results[link_id] = {"status": status, "label": label, "checked_at": checked_at}
+                        tone = "warning"
+                    elif status == "QUEBRADO":
+                        tone = "danger"
+                    results[link_id] = {"status": status, "label": label, "tone": tone, "checked_at": checked_at}
         # Uma edição pode ter sido enfileirada enquanto o serviço respondia.
         pending.update(GuardiaoLinkPendente.objects.filter(pk__in=ids).values_list("pk", flat=True))
         return {pk: value for pk, value in results.items() if pk not in pending}

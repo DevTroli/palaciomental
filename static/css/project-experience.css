@@ -283,4 +283,9 @@
 .project-link .link-status strong { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border:1px solid currentColor; border-radius:999px; font-size:11px; font-weight:600; }
 .project-link .link-status strong::before { content:""; width:5px; height:5px; flex:none; border-radius:50%; background:currentColor; }
 .project-link .link-status span { font-size:11px; opacity:.85; }
-.project-link .link-status--attention strong { font-weight:700; }
+html .project-section .project-link .link-status--success strong { color:#155b36; background:#e7f5eb; border-color:#8cbda0; }
+html .project-section .project-link .link-status--warning strong { color:#754b00; background:#fff3d1; border-color:#c9a85e; }
+html .project-section .project-link .link-status--danger strong { color:#8c2432; background:#fdecef; border-color:#dca0a5; }
+html[data-display-mode="dark"] .project-section .project-link .link-status--success strong { color:#b6edc8; background:#183b2b; border-color:#508d67; }
+html[data-display-mode="dark"] .project-section .project-link .link-status--warning strong { color:#ffe0a2; background:#4b3514; border-color:#ac8547; }
+html[data-display-mode="dark"] .project-section .project-link .link-status--danger strong { color:#ffc4c5; background:#512a30; border-color:#ad7377; }

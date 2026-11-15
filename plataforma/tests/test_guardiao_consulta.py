@@ -23,10 +23,12 @@ class ConsultaGuardiaoTests(TestCase):
     @patch("plataforma.guardiao_consulta.build_opener")
     def test_cinco_estados_e_data(self, opener):
         response = opener.return_value.open.return_value.__enter__.return_value
-        for status in ("ACESSIVEL", "REDIRECIONADO", "REQUER_LOGIN", "QUEBRADO", "SEM_RESPOSTA"):
+        for status, tone in (("ACESSIVEL", "success"), ("REDIRECIONADO", "neutral"),
+                             ("REQUER_LOGIN", "neutral"), ("QUEBRADO", "warning"), ("SEM_RESPOSTA", "warning")):
             response.read.return_value = json.dumps([{"link_id": self.link.pk, "status": status, "checked_at": "2026-11-15T12:00:00Z"}]).encode()
             result = consultar_links([self.link])
             self.assertEqual(result[self.link.pk]["status"], status)
+            self.assertEqual(result[self.link.pk]["tone"], tone)
             self.assertIsNotNone(result[self.link.pk]["checked_at"])
 
     @patch("plataforma.guardiao_consulta.build_opener")
@@ -39,11 +41,13 @@ class ConsultaGuardiaoTests(TestCase):
     @patch("plataforma.guardiao_consulta.build_opener")
     def test_quebra_so_e_confirmada_apos_tres_ciclos(self, opener):
         response = opener.return_value.open.return_value.__enter__.return_value
-        for failures, label in ((1, "Possível quebra"), (2, "Possível quebra"), (3, "Link quebrado")):
+        for failures, label, tone in ((1, "Possível quebra", "warning"), (2, "Possível quebra", "warning"), (3, "Link quebrado", "danger")):
             response.read.return_value = json.dumps([{"link_id": self.link.pk, "status": "QUEBRADO",
                                                        "checked_at": "2026-11-15T12:00:00Z",
                                                        "failed_cycles": failures}]).encode()
-            self.assertEqual(consultar_links([self.link])[self.link.pk]["label"], label)
+            result = consultar_links([self.link])[self.link.pk]
+            self.assertEqual(result["label"], label)
+            self.assertEqual(result["tone"], tone)
 
     @patch("plataforma.guardiao_consulta.build_opener")
     def test_indisponibilidade_mantem_link_legivel(self, opener):
