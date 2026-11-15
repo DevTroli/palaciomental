@@ -61,7 +61,10 @@ def consultar_ameacas(urls):
 
 def verificar_ameacas_formulario(formset):
     """Valida somente links novos ou com endereço alterado; não expõe URLs no log."""
-    forms = [form for form in formset.forms
+    submitted_forms = getattr(formset, "forms", None)
+    if submitted_forms is None:
+        submitted_forms = formset if isinstance(formset, (list, tuple)) else [formset]
+    forms = [form for form in submitted_forms
              if form.cleaned_data and not form.cleaned_data.get("DELETE")
              and form.cleaned_data.get("url") and (not form.instance.pk or "url" in form.changed_data)]
     if not forms:

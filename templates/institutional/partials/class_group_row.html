@@ -1,0 +1,15 @@
+<div class="group-row">
+  <div>
+    <strong title="{{ grupo.nome }}">{{ grupo.nome }}</strong>
+    <span>{{ grupo.get_status_display }}{% if grupo.aberto_para_entrada %} · Aceita pedidos{% else %} · Por convite{% endif %}</span>
+  </div>
+  <div class="program-actions">
+    {% if grupo.pode_ver %}
+      <a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'plataforma:institutional_group_members' grupo.pk %}">{% if grupo.e_membro %}Abrir grupo{% else %}Ver grupo{% endif %}</a>
+    {% elif grupo.pedido_pendente %}
+      <span class="program-status">Pedido enviado</span>
+    {% elif aluno and turma.e_membro and grupo.aberto_para_entrada and grupo.status == 'ativo' and turma.status == 'ativo' and programa.status == 'publicado' %}
+      <form method="post" action="{% url 'plataforma:institutional_group_request_join' grupo.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--ghost camp-btn--xs">Solicitar entrada</button></form>
+    {% endif %}
+  </div>
+</div>

@@ -316,9 +316,13 @@ class Project(models.Model):
 
 
 class ProjectLink(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="links")
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="links", null=True, blank=True)
+    turma = models.ForeignKey(
+        "Turma", on_delete=models.CASCADE, related_name="referencias", null=True, blank=True,
+    )
     label = models.CharField("Nome do link", max_length=80)
     url = models.URLField("URL", max_length=500)
+    descricao = models.CharField("Como esta fonte ajuda", max_length=240, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     ameaca_estado = models.CharField(max_length=16, default="UNVERIFIED")
     ameaca_verificada_em = models.DateTimeField(null=True, blank=True)
@@ -330,9 +334,15 @@ class ProjectLink(models.Model):
         verbose_name = "Link de projeto"
         verbose_name_plural = "Links de projetos"
         ordering = ["created_at"]
+        constraints = [models.CheckConstraint(
+            condition=(models.Q(project__isnull=False, turma__isnull=True)
+                       | models.Q(project__isnull=True, turma__isnull=False)),
+            name="projectlink_has_exactly_one_context",
+        )]
 
     def __str__(self):
-        return f"{self.label} — {self.project.title}"
+        contexto = self.project.title if self.project_id else self.turma.nome
+        return f"{self.label} — {contexto}"
 
     def save(self, *args, **kwargs):
         # A alteração e sua entrada na fila devem confirmar ou reverter juntas.
@@ -520,8 +530,8 @@ class Turma(models.Model):
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     programa = models.ForeignKey(ProgramaInstitucional, on_delete=models.CASCADE, related_name="turmas", verbose_name="Programa")
-    nome = models.CharField("Nome", max_length=160)
-    descricao = models.TextField("Descrição", max_length=1000, blank=True)
+    nome = models.CharField("Nome", max_length=80)
+    descricao = models.TextField("Descrição", max_length=280, blank=True)
     professor_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="turmas_orientadas", verbose_name="Professor responsável", null=True, blank=True)
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)
     politica_participacao = models.CharField("Política de participação", max_length=20, choices=POLITICA_CHOICES, default=POLITICA_CONVITE)
@@ -546,7 +556,7 @@ class Grupo(models.Model):
     STATUS_CHOICES = ((STATUS_ATIVO, "Aberto"), (STATUS_ENCERRADO, "Encerrado"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="grupos", verbose_name="Turma")
-    nome = models.CharField("Nome", max_length=160)
+    nome = models.CharField("Nome", max_length=80)
     descricao = models.TextField("Descrição", max_length=1000, blank=True)
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="grupos_criados", verbose_name="Criado por")
     status = models.CharField("Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_ATIVO)

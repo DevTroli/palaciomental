@@ -12,10 +12,26 @@ from .models import Notification, ProjectLink
 from .rls import system_context
 
 
-def _project_url(project):
-    path = reverse("plataforma:project_detail", kwargs={"pk": project.pk})
-    if project.organizacao_id:
-        domain = project.organizacao.dominios.filter(status_verificacao="ativo").order_by("-principal", "hostname").first()
+def _link_context(link):
+    if link.project_id:
+        project = link.project
+        path = reverse("plataforma:project_detail", kwargs={"pk": project.pk})
+        organizacao = project.organizacao
+        recipient = project.owner
+        contexto = f"o projeto {project.title}"
+    else:
+        turma = link.turma
+        path = reverse("plataforma:institutional_program_detail", kwargs={"programa_id": turma.programa_id}) + f"#turma-{turma.pk}"
+        organizacao = turma.programa.organizacao
+        recipient = turma.professor_responsavel
+        contexto = f"a turma {turma.nome}"
+    return path, organizacao, recipient, contexto
+
+
+def _link_url(link):
+    path, organizacao, _recipient, _contexto = _link_context(link)
+    if organizacao:
+        domain = organizacao.dominios.filter(status_verificacao="ativo").order_by("-principal", "hostname").first()
         return f"{'http' if settings.DEBUG else 'https'}://{domain.hostname}{path}" if domain else ""
     base = getattr(settings, "PUBLIC_APP_URL", "").rstrip("/")
     if not base:
@@ -31,7 +47,10 @@ def verificar_links_salvos():
             due = due.select_for_update(skip_locked=True, of=("self",))
         else:
             due = due.select_for_update()
-        links = list(due.select_related("project", "project__owner", "project__organizacao")
+        links = list(due.select_related(
+            "project", "project__owner", "project__organizacao",
+            "turma", "turma__professor_responsavel", "turma__programa__organizacao",
+        )
                      .order_by("ameaca_proxima_verificacao", "pk")[:6])
         results = consultar_ameacas_detalhes([link.url for link in links])
         if len(results) != len(links):
@@ -47,11 +66,13 @@ def verificar_links_salvos():
                 result = "UNVERIFIED"
             notified = link.ameaca_notificada
             if result == "THREAT" and not notified:
-                Notification.objects.create(
-                    recipient=link.project.owner, kind="guardiao_ameaca",
-                    message=f"Uma verificação anterior apontou um possível risco em uma referência do projeto {link.project.title}. Confira o estado atual dos links."[:280],
-                    url=_project_url(link.project),
-                )
+                _path, _organizacao, recipient, contexto = _link_context(link)
+                if recipient:
+                    Notification.objects.create(
+                        recipient=recipient, kind="guardiao_ameaca",
+                        message=f"Uma verificação apontou possível risco em uma referência de {contexto}. Confira o estado atual dos links."[:280],
+                        url=_link_url(link),
+                    )
                 notified = True
             elif result == "NO_MATCH":
                 notified = False

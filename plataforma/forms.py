@@ -3,6 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Q
+from urllib.parse import urlsplit
 
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
 
@@ -281,13 +282,53 @@ class ProjectLinkForm(forms.ModelForm):
 ProjectLinkFormSet = inlineformset_factory(Project, ProjectLink, form=ProjectLinkForm, extra=1, can_delete=True, max_num=6, validate_max=True)
 
 
+class TurmaReferenciaForm(forms.ModelForm):
+    class Meta:
+        model = ProjectLink
+        fields = ("label", "url", "descricao")
+        widgets = {
+            "label": forms.TextInput(attrs={"placeholder": "Ex.: Guia de pesquisa"}),
+            "url": forms.URLInput(attrs={"placeholder": "https://..."}),
+            "descricao": forms.TextInput(attrs={"placeholder": "Para que esta referência pode ajudar?", "maxlength": 240}),
+        }
+
+    def clean_label(self):
+        return self.cleaned_data["label"].strip()
+
+    def clean_descricao(self):
+        return self.cleaned_data.get("descricao", "").strip()
+
+    def clean_url(self):
+        url = self.cleaned_data["url"].strip()
+        parsed = urlsplit(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+            raise forms.ValidationError("Informe um endereço HTTP ou HTTPS público, sem usuário ou senha na URL.")
+        return url
+
+
 class ProgramaInstitucionalForm(forms.ModelForm):
     class Meta:
         model = ProgramaInstitucional
         fields = ("nome", "descricao", "status")
         widgets = {
-            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o propósito deste programa?"}),
+            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Programa de projetos 2026"}),
+            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual é o objetivo deste programa?"}),
         }
+        labels = {
+            "nome": "Nome do programa",
+            "descricao": "Propósito do programa",
+            "status": "Situação do programa",
+        }
+        help_texts = {
+            "descricao": "Resuma o objetivo que reúne as turmas deste programa.",
+            "status": "Rascunhos e programas arquivados não aparecem para os membros.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if field.help_text:
+                field.widget.attrs["aria-describedby"] = f"id_{name}_help"
 
     def clean_nome(self):
         nome = self.cleaned_data["nome"].strip()
@@ -301,8 +342,8 @@ class TurmaForm(forms.ModelForm):
         model = Turma
         fields = ("nome", "descricao", "professor_responsavel", "politica_participacao", "status")
         widgets = {
-            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Coorte de Produto 2026"}),
-            "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Explique em uma frase o foco, período ou resultado esperado desta turma."}),
+            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Coorte de Produto 2026", "maxlength": 80}),
+            "descricao": forms.Textarea(attrs={"rows": 3, "maxlength": 280, "placeholder": "Resuma o foco e o resultado esperado desta turma."}),
             "professor_responsavel": forms.Select(),
         }
 
@@ -314,13 +355,17 @@ class TurmaForm(forms.ModelForm):
             "status": "Estado da turma",
         }
         help_texts = {
-            "descricao": "Uma boa descrição ajuda afiliados a entenderem rapidamente se esta é a turma certa.",
+            "nome": "Até 80 caracteres.",
+            "descricao": "Até 280 caracteres. Diga o que será desenvolvido nesta turma.",
             "politica_participacao": "Você poderá alterar esta regra depois, conforme o ciclo da turma evoluir.",
             "status": "Turmas encerradas ficam visíveis, mas não aceitam novas participações.",
         }
 
     def __init__(self, *args, organizacao=None, **kwargs):
         super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if field.help_text:
+                field.widget.attrs["aria-describedby"] = f"id_{name}_help"
         if organizacao is not None:
             self.fields["professor_responsavel"].queryset = User.objects.filter(
                 afiliacoes_organizacionais__organizacao=organizacao,
@@ -340,7 +385,7 @@ class GrupoForm(forms.ModelForm):
         model = Grupo
         fields = ("nome", "descricao", "aberto_para_entrada", "status")
         widgets = {
-            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Equipe de pesquisa"}),
+            "nome": forms.TextInput(attrs={"placeholder": "Ex.: Equipe de pesquisa", "maxlength": 80}),
             "descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Qual projeto ou objetivo este grupo vai desenvolver?"}),
         }
 
