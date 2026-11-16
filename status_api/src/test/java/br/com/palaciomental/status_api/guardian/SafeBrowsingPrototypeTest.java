@@ -44,7 +44,10 @@ class SafeBrowsingPrototypeTest {
   @Test
   void indisponibilidadeEUrlNaoSuportadaPermanecemNaoVerificadas() {
     var called = new AtomicBoolean();
-    var service = new SafeBrowsingPrototype(prefixes -> { called.set(true); throw new IOException("indisponível"); });
+    var service = new SafeBrowsingPrototype(prefixes -> {
+      called.set(true);
+      throw new IOException("indisponível");
+    });
     assertThat(service.assess("https://example.com/a%3Fb", NOW).state()).isEqualTo(ThreatAssessment.State.UNVERIFIED);
     assertThat(called).isFalse();
     assertThat(service.assess("https://example.com/", NOW).state()).isEqualTo(ThreatAssessment.State.UNVERIFIED);

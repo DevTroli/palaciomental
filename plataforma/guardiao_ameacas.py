@@ -57,34 +57,38 @@ def verificar_links_salvos():
             results = [{"state": "UNVERIFIED", "checked_at": None, "expires_at": None}] * len(links)
         checked_at = timezone.now()
         for link, detail in zip(links, results):
-            result = detail["state"]
-            if result != "UNVERIFIED" and (not detail.get("checked_at") or not detail.get("expires_at")
-                    or detail["expires_at"] <= checked_at or detail["checked_at"] > checked_at
-                    or (result == "THREAT" and checked_at - detail["checked_at"] >= timedelta(minutes=30))):
-                result = "UNVERIFIED"
-            if result not in {"THREAT", "NO_MATCH"}:
-                result = "UNVERIFIED"
-            notified = link.ameaca_notificada
-            if result == "THREAT" and not notified:
-                _path, _organizacao, recipient, contexto = _link_context(link)
-                if recipient:
-                    Notification.objects.create(
-                        recipient=recipient, kind="guardiao_ameaca",
-                        message=f"Uma verificação apontou possível risco em uma referência de {contexto}. Confira o estado atual dos links."[:280],
-                        url=_link_url(link),
-                    )
-                notified = True
-            elif result == "NO_MATCH":
-                notified = False
-            if result == "THREAT":
-                interval = min(timedelta(minutes=20), max(timedelta(seconds=30), detail["expires_at"] - checked_at))
-            elif result == "NO_MATCH":
-                interval = min(timedelta(hours=48), max(timedelta(seconds=30), detail["expires_at"] - checked_at))
-            else:
-                interval = timedelta(minutes=5) if notified else timedelta(hours=1)
-            ProjectLink.objects.filter(pk=link.pk, url=link.url).update(
-                ameaca_estado=result, ameaca_verificada_em=detail["checked_at"] if result != "UNVERIFIED" else None,
-                ameaca_expira_em=detail["expires_at"] if result != "UNVERIFIED" else None,
-                ameaca_proxima_verificacao=checked_at + interval, ameaca_notificada=notified,
-            )
+            _save_threat_result(link, detail, checked_at)
     return len(links)
+
+
+def _save_threat_result(link, detail, checked_at):
+    result = detail["state"]
+    if result != "UNVERIFIED" and (not detail.get("checked_at") or not detail.get("expires_at")
+            or detail["expires_at"] <= checked_at or detail["checked_at"] > checked_at
+            or (result == "THREAT" and checked_at - detail["checked_at"] >= timedelta(minutes=30))):
+        result = "UNVERIFIED"
+    if result not in {"THREAT", "NO_MATCH"}:
+        result = "UNVERIFIED"
+    notified = link.ameaca_notificada
+    if result == "THREAT" and not notified:
+        _path, _organizacao, recipient, contexto = _link_context(link)
+        if recipient:
+            Notification.objects.create(
+                recipient=recipient, kind="guardiao_ameaca",
+                message=f"Uma verificação apontou possível risco em uma referência de {contexto}. Confira o estado atual dos links."[:280],
+                url=_link_url(link),
+            )
+        notified = True
+    elif result == "NO_MATCH":
+        notified = False
+    if result == "THREAT":
+        interval = min(timedelta(minutes=20), max(timedelta(seconds=30), detail["expires_at"] - checked_at))
+    elif result == "NO_MATCH":
+        interval = min(timedelta(hours=48), max(timedelta(seconds=30), detail["expires_at"] - checked_at))
+    else:
+        interval = timedelta(minutes=5) if notified else timedelta(hours=1)
+    ProjectLink.objects.filter(pk=link.pk, url=link.url).update(
+        ameaca_estado=result, ameaca_verificada_em=detail["checked_at"] if result != "UNVERIFIED" else None,
+        ameaca_expira_em=detail["expires_at"] if result != "UNVERIFIED" else None,
+        ameaca_proxima_verificacao=checked_at + interval, ameaca_notificada=notified,
+    )

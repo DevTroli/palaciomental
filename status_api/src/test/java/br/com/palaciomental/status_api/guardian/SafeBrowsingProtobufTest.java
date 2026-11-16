@@ -27,10 +27,19 @@ class SafeBrowsingProtobufTest {
 
   @Test
   void interpretaAmeacaEAtributosEmpacotados() throws Exception {
-    byte[] detail = message(out -> { out.writeEnum(1, 1); out.writeByteArray(2, new byte[]{1, 2}); });
-    byte[] match = message(out -> { out.writeByteArray(1, new byte[32]); out.writeByteArray(2, detail); });
+    byte[] detail = message(out -> {
+      out.writeEnum(1, 1);
+      out.writeByteArray(2, new byte[]{1, 2});
+    });
+    byte[] match = message(out -> {
+      out.writeByteArray(1, new byte[32]);
+      out.writeByteArray(2, detail);
+    });
     byte[] duration = message(out -> out.writeInt64(1, 300));
-    byte[] response = message(out -> { out.writeByteArray(1, match); out.writeByteArray(2, duration); });
+    byte[] response = message(out -> {
+      out.writeByteArray(1, match);
+      out.writeByteArray(2, duration);
+    });
     var reply = SafeBrowsingProtobuf.parse(response);
     assertThat(reply.matches()).hasSize(1);
     assertThat(reply.matches().getFirst().details().getFirst().threatType()).isEqualTo("MALWARE");

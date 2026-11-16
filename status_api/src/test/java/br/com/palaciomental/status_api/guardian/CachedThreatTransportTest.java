@@ -25,7 +25,8 @@ class CachedThreatTransportTest {
     var calls = new AtomicInteger();
     var requests = new java.util.ArrayList<List<String>>();
     var transport = new CachedThreatTransport(prefixes -> {
-      calls.incrementAndGet(); requests.add(List.copyOf(prefixes));
+      calls.incrementAndGet();
+      requests.add(List.copyOf(prefixes));
       return new SafeBrowsingPrototype.Reply(List.of(), Duration.ofMinutes(5));
     }, clock);
     String a = Base64.getEncoder().encodeToString(new byte[]{1, 2, 3, 4});

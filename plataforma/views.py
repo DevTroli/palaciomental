@@ -861,16 +861,7 @@ def _delete_institutional_structure(request, kind, pk):
         grupos_impactados = Grupo.objects.filter(pk=objeto.pk)
         destino = "plataforma:institutional_program_detail"
         destino_kwargs = {"programa_id": objeto.turma.programa_id}
-    def motivo_bloqueio():
-        if vinculos.exists():
-            return "Existem projetos vinculados. Altere ou remova os vínculos institucionais antes de excluir."
-        if kind == "programa" and turmas_impactadas.exists():
-            return "Este programa ainda tem turmas. Exclua as turmas antes de excluir o programa."
-        if kind == "turma" and grupos_impactados.exists():
-            return "Esta turma ainda tem grupos. Cada grupo deve ser excluído pelo seu autor antes de excluir a turma."
-        return ""
-
-    motivo = motivo_bloqueio()
+    motivo = _institutional_delete_block_reason(kind, vinculos, turmas_impactadas, grupos_impactados)
     if request.method == "POST":
         with transaction.atomic():
             objeto = type(objeto).objects.select_for_update().get(pk=objeto.pk)
@@ -879,13 +870,23 @@ def _delete_institutional_structure(request, kind, pk):
                 list(Grupo.objects.select_for_update().filter(turma__programa=objeto))
             elif kind == "turma":
                 list(Grupo.objects.select_for_update().filter(turma=objeto))
-            motivo = motivo_bloqueio()
+            motivo = _institutional_delete_block_reason(kind, vinculos, turmas_impactadas, grupos_impactados)
             if not motivo:
                 objeto.delete()
                 messages.success(request, "Exclusão concluída.")
                 return redirect(destino, **destino_kwargs)
     impacto = {"turmas": turmas_impactadas.count(), "grupos": grupos_impactados.count(), "participacoes_turma": MembroTurma.objects.filter(turma__in=turmas_impactadas).count(), "participacoes_grupo": MembroGrupo.objects.filter(grupo__in=grupos_impactados).count()}
     return render(request, "institutional/structure_delete.html", {"objeto": objeto, "tipo": kind, "bloqueado": bool(motivo), "motivo_bloqueio": motivo, "impacto": impacto, "cancelar": reverse(destino, kwargs=destino_kwargs), "nav_ativo": "turmas_e_equipes"}, status=409 if request.method == "POST" and motivo else 200)
+
+
+def _institutional_delete_block_reason(kind, vinculos, turmas, grupos):
+    if vinculos.exists():
+        return "Existem projetos vinculados. Altere ou remova os vínculos institucionais antes de excluir."
+    if kind == "programa" and turmas.exists():
+        return "Este programa ainda tem turmas. Exclua as turmas antes de excluir o programa."
+    if kind == "turma" and grupos.exists():
+        return "Esta turma ainda tem grupos. Cada grupo deve ser excluído pelo seu autor antes de excluir a turma."
+    return ""
 
 
 @login_required

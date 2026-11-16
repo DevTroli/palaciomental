@@ -71,13 +71,27 @@ public final class GoogleSafeBrowsingTransport implements SafeBrowsingPrototype.
       if (duration.isZero() || duration.isNegative()) throw new IllegalArgumentException();
       JsonNode hashes = root.get("fullHashes");
       if (hashes != null && !hashes.isArray()) throw new IllegalArgumentException();
-      List<ThreatHashMatcher.Match> matches = new ArrayList<>();
-      if (hashes != null) for (JsonNode hash : hashes) {
+      List<ThreatHashMatcher.Match> matches = parseMatches(hashes);
+      return new SafeBrowsingPrototype.Reply(matches, duration);
+    } catch (RuntimeException ex) {
+      throw new IOException("Resposta inválida do provedor.");
+    }
+  }
+
+  private static List<ThreatHashMatcher.Match> parseMatches(JsonNode hashes) {
+    List<ThreatHashMatcher.Match> matches = new ArrayList<>();
+    if (hashes != null) for (JsonNode hash : hashes) {
         if (!hash.path("fullHash").isTextual() || !hash.path("fullHashDetails").isArray()) throw new IllegalArgumentException();
         byte[] fullHash = Base64.getDecoder().decode(hash.path("fullHash").asText());
         if (fullHash.length != 32) throw new IllegalArgumentException();
-        List<ThreatHashMatcher.Detail> details = new ArrayList<>();
-        for (JsonNode detail : hash.path("fullHashDetails")) {
+        matches.add(new ThreatHashMatcher.Match(fullHash, parseDetails(hash.path("fullHashDetails"))));
+    }
+    return matches;
+  }
+
+  private static List<ThreatHashMatcher.Detail> parseDetails(JsonNode detailsNode) {
+    List<ThreatHashMatcher.Detail> details = new ArrayList<>();
+    for (JsonNode detail : detailsNode) {
           if (!detail.path("threatType").isTextual()) throw new IllegalArgumentException();
           JsonNode attrs = detail.get("attributes");
           if (attrs != null && !attrs.isArray()) throw new IllegalArgumentException();
@@ -86,13 +100,8 @@ public final class GoogleSafeBrowsingTransport implements SafeBrowsingPrototype.
             if (!attr.isTextual()) throw new IllegalArgumentException();
             attributes.add(attr.asText());
           }
-          details.add(new ThreatHashMatcher.Detail(detail.path("threatType").asText(), attributes));
-        }
-        matches.add(new ThreatHashMatcher.Match(fullHash, details));
-      }
-      return new SafeBrowsingPrototype.Reply(matches, duration);
-    } catch (RuntimeException ex) {
-      throw new IOException("Resposta inválida do provedor.");
+      details.add(new ThreatHashMatcher.Detail(detail.path("threatType").asText(), attributes));
     }
+    return details;
   }
 }

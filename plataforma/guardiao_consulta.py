@@ -97,24 +97,9 @@ def consultar_links(links):
             if not isinstance(data, list) or len(data) > len(chunk):
                 raise ValueError("Resposta inválida")
             for item in data:
-                link_id = item["link_id"]
-                status = item["status"]
-                checked_at = parse_datetime(item["checked_at"]) if item["checked_at"] else None
-                if link_id not in chunk or (status is not None and status not in ROTULOS):
-                    raise ValueError("Resposta inválida")
-                if link_id not in pending and status and checked_at:
-                    label = ROTULOS[status]
-                    tone = "neutral"
-                    if status == "ACESSIVEL":
-                        tone = "success"
-                    elif status == "SEM_RESPOSTA":
-                        tone = "warning"
-                    if status == "QUEBRADO" and item.get("failed_cycles", 0) < 3:
-                        label = "Possível quebra"
-                        tone = "warning"
-                    elif status == "QUEBRADO":
-                        tone = "danger"
-                    results[link_id] = {"status": status, "label": label, "tone": tone, "checked_at": checked_at}
+                parsed = _parse_link_result(item, chunk, pending)
+                if parsed:
+                    results[item["link_id"]] = parsed
         # Uma edição pode ter sido enfileirada enquanto o serviço respondia.
         pending.update(GuardiaoLinkPendente.objects.filter(pk__in=ids).values_list("pk", flat=True))
         return {pk: value for pk, value in results.items() if pk not in pending}
@@ -124,6 +109,24 @@ def consultar_links(links):
     except (CommandError, URLError, OSError, TimeoutError, ValueError, TypeError, KeyError, AttributeError) as exc:
         logger.warning("Consulta ao Guardião indisponível (%s).", type(exc).__name__)
         return None
+
+
+def _parse_link_result(item, chunk, pending):
+    link_id = item["link_id"]
+    status = item["status"]
+    checked_at = parse_datetime(item["checked_at"]) if item["checked_at"] else None
+    if link_id not in chunk or (status is not None and status not in ROTULOS):
+        raise ValueError("Resposta inválida")
+    if link_id in pending or not status or not checked_at:
+        return None
+    label = ROTULOS[status]
+    tone = {"ACESSIVEL": "success", "SEM_RESPOSTA": "warning"}.get(status, "neutral")
+    if status == "QUEBRADO":
+        if item.get("failed_cycles", 0) < 3:
+            label, tone = "Possível quebra", "warning"
+        else:
+            tone = "danger"
+    return {"status": status, "label": label, "tone": tone, "checked_at": checked_at}
 
 
 def marcar_links(links):

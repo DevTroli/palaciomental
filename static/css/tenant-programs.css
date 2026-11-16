@@ -1,6 +1,6 @@
 .programs-page { display: grid; gap: 28px; min-width: 0; padding-block: 12px 40px; }
 /* Turma: o resumo e as áreas de trabalho têm responsabilidades e cartões próprios. */
-.class-shell { gap: 0; padding: clamp(22px, 3vw, 32px); border-left-width: 4px; }
+.class-shell { gap: 0; border-left-width: 4px; }
 .class-header { align-items: center; gap: clamp(20px, 4vw, 48px); }
 .class-identity { display: grid; gap: 12px; min-width: 0; flex: 1; }
 .class-identity h3 { font-size: clamp(1.25rem, 2vw, 1.65rem); line-height: 1.25; }
@@ -28,7 +28,6 @@
 .class-content-disclosure__body { padding: 20px; }
 .class-content-disclosure--references { border-top: 3px solid var(--tenant-accent); }
 .class-content-disclosure--groups { border-top: 3px solid var(--tenant-primary); }
-.groups-panel { margin: 0; padding: 0; }
 .class-references { display: grid; gap: 14px; margin: 0; padding: 0; border: 0; background: transparent; }
 .class-references__header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .class-references__header p { margin: 0; color: var(--tenant-muted); font-size: .88rem; }

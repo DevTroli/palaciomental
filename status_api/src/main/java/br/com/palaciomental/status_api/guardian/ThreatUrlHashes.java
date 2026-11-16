@@ -32,18 +32,7 @@ public final class ThreatUrlHashes {
         || value.chars().anyMatch(c -> c < 0x20 || c == 0x7f)) return Optional.empty();
     try {
       URI uri = URI.create(value);
-      String host = uri.getHost();
-      if (host == null && uri.getRawAuthority() != null) {
-        String authority = uri.getRawAuthority();
-        if (authority.indexOf('@') >= 0 || authority.indexOf('%') >= 0 || authority.startsWith("[")) return Optional.empty();
-        int colon = authority.lastIndexOf(':');
-        if (colon >= 0) {
-          String port = authority.substring(colon + 1);
-          if (!port.matches("[0-9]{1,5}") || Integer.parseInt(port) > 65535) return Optional.empty();
-          authority = authority.substring(0, colon);
-        }
-        host = java.net.IDN.toASCII(authority, java.net.IDN.USE_STD3_ASCII_RULES);
-      }
+      String host = extractHost(uri);
       if (uri.isOpaque() || uri.getUserInfo() != null || host == null
           || uri.getPort() > 65535
           || !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
@@ -63,6 +52,29 @@ public final class ThreatUrlHashes {
       rawPath = normalizePath(rawPath);
       String path = escape(rawPath.getBytes(StandardCharsets.ISO_8859_1));
       String query = uri.getRawQuery() == null ? null : escape(unescape(uri.getRawQuery()));
+      return Optional.of(buildCandidates(host, root, path, query));
+    } catch (IllegalArgumentException ex) {
+      return Optional.empty();
+    }
+  }
+
+  private static String extractHost(URI uri) {
+    String host = uri.getHost();
+      if (host == null && uri.getRawAuthority() != null) {
+        String authority = uri.getRawAuthority();
+        if (authority.indexOf('@') >= 0 || authority.indexOf('%') >= 0 || authority.startsWith("[")) return null;
+        int colon = authority.lastIndexOf(':');
+        if (colon >= 0) {
+          String port = authority.substring(colon + 1);
+          if (!port.matches("[0-9]{1,5}") || Integer.parseInt(port) > 65535) return null;
+          authority = authority.substring(0, colon);
+        }
+        host = java.net.IDN.toASCII(authority, java.net.IDN.USE_STD3_ASCII_RULES);
+      }
+    return host;
+  }
+
+  private static Candidates buildCandidates(String host, String root, String path, String query) {
       Set<String> paths = new LinkedHashSet<>();
       if (query != null) paths.add(path + "?" + query);
       paths.add(path);
@@ -88,10 +100,7 @@ public final class ThreatUrlHashes {
           prefixes.add(Base64.getEncoder().encodeToString(java.util.Arrays.copyOf(hash, 4)));
         }
       }
-      return Optional.of(new Candidates(hashes, List.copyOf(prefixes)));
-    } catch (IllegalArgumentException ex) {
-      return Optional.empty();
-    }
+    return new Candidates(hashes, List.copyOf(prefixes));
   }
 
   private static String normalizePath(String path) {

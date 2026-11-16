@@ -48,14 +48,22 @@ public final class PublicDestinationPolicy {
     }
     byte[] bytes = address.getAddress();
     if (address instanceof Inet4Address) {
-      int a = bytes[0] & 255, b = bytes[1] & 255, c = bytes[2] & 255;
-      return !(a == 0 || a >= 224 || a == 10 || a == 127
-          || a == 100 && b >= 64 && b <= 127
-          || a == 169 && b == 254 || a == 172 && b >= 16 && b <= 31
-          || a == 192 && (b == 168 || b == 0 && (c == 0 || c == 2) || b == 88 && c == 99)
-          || a == 198 && (b == 18 || b == 19 || b == 51 && c == 100)
-          || a == 203 && b == 0 && c == 113);
+      return isPublicIpv4(bytes);
     }
+    return isPublicIpv6(bytes);
+  }
+
+  private static boolean isPublicIpv4(byte[] bytes) {
+    int a = bytes[0] & 255, b = bytes[1] & 255, c = bytes[2] & 255;
+    return !(a == 0 || a >= 224 || a == 10 || a == 127
+        || a == 100 && b >= 64 && b <= 127
+        || a == 169 && b == 254 || a == 172 && b >= 16 && b <= 31
+        || a == 192 && (b == 168 || b == 0 && (c == 0 || c == 2) || b == 88 && c == 99)
+        || a == 198 && (b == 18 || b == 19 || b == 51 && c == 100)
+        || a == 203 && b == 0 && c == 113);
+  }
+
+  private static boolean isPublicIpv6(byte[] bytes) {
     int a = bytes[0] & 255, b = bytes[1] & 255, c = bytes[2] & 255, d = bytes[3] & 255;
     // Global unicast only; exclude documentation, IETF special-use and transition ranges.
     return (a & 0xe0) == 0x20 && !(a == 0x20 && b == 0x01 && c == 0x0d && d == 0xb8)

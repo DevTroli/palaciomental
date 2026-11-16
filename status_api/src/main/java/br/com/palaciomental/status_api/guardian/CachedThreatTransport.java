@@ -29,27 +29,7 @@ final class CachedThreatTransport implements SafeBrowsingPrototype.Transport {
     cache.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
     var missing = prefixes.stream().distinct().filter(prefix -> !cache.containsKey(prefix)).toList();
     if (!missing.isEmpty()) {
-      if (cache.size() + missing.size() > MAX_PREFIXES) throw new IOException("Cache de consultas cheio.");
-      var reply = delegate.search(missing);
-      Instant received = clock.instant();
-      if (reply == null || reply.matches() == null || reply.cacheDuration() == null
-          || reply.cacheDuration().isZero() || reply.cacheDuration().isNegative()) throw new IOException("Resposta inválida.");
-      // A API permite estender respostas inteiramente vazias por até 24 horas.
-      Duration cacheDuration = reply.matches().isEmpty()
-          && reply.cacheDuration().compareTo(Duration.ofHours(24)) < 0
-          ? Duration.ofHours(24) : reply.cacheDuration();
-      final Instant expires;
-      try { expires = received.plus(cacheDuration); }
-      catch (RuntimeException ex) { throw new IOException("Validade inválida."); }
-      Map<String, List<ThreatHashMatcher.Match>> grouped = new HashMap<>();
-      for (String prefix : missing) grouped.put(prefix, new ArrayList<>());
-      for (var match : reply.matches()) {
-        if (match == null || match.fullHash() == null || match.fullHash().length != 32) throw new IOException("Resposta inválida.");
-        String prefix = Base64.getEncoder().encodeToString(java.util.Arrays.copyOf(match.fullHash(), 4));
-        if (!grouped.containsKey(prefix)) throw new IOException("Resposta inválida.");
-        grouped.get(prefix).add(match);
-      }
-      grouped.forEach((prefix, matches) -> cache.put(prefix, new Entry(List.copyOf(matches), received, expires)));
+      cacheMissing(missing);
     }
     List<ThreatHashMatcher.Match> matches = new ArrayList<>();
     Instant oldest = now;
@@ -62,5 +42,29 @@ final class CachedThreatTransport implements SafeBrowsingPrototype.Transport {
       if (entry.expiresAt().isBefore(expiry)) expiry = entry.expiresAt();
     }
     return new SafeBrowsingPrototype.Reply(matches, Duration.between(oldest, expiry), oldest);
+  }
+
+  private void cacheMissing(List<String> missing) throws IOException {
+    if (cache.size() + missing.size() > MAX_PREFIXES) throw new IOException("Cache de consultas cheio.");
+    var reply = delegate.search(missing);
+    Instant received = clock.instant();
+    if (reply == null || reply.matches() == null || reply.cacheDuration() == null
+        || reply.cacheDuration().isZero() || reply.cacheDuration().isNegative()) throw new IOException("Resposta inválida.");
+    // A API permite estender respostas inteiramente vazias por até 24 horas.
+    Duration cacheDuration = reply.matches().isEmpty()
+        && reply.cacheDuration().compareTo(Duration.ofHours(24)) < 0
+        ? Duration.ofHours(24) : reply.cacheDuration();
+    final Instant expires;
+    try { expires = received.plus(cacheDuration); }
+    catch (RuntimeException ex) { throw new IOException("Validade inválida."); }
+    Map<String, List<ThreatHashMatcher.Match>> grouped = new HashMap<>();
+    for (String prefix : missing) grouped.put(prefix, new ArrayList<>());
+    for (var match : reply.matches()) {
+      if (match == null || match.fullHash() == null || match.fullHash().length != 32) throw new IOException("Resposta inválida.");
+      String prefix = Base64.getEncoder().encodeToString(java.util.Arrays.copyOf(match.fullHash(), 4));
+      if (!grouped.containsKey(prefix)) throw new IOException("Resposta inválida.");
+      grouped.get(prefix).add(match);
+    }
+    grouped.forEach((prefix, matches) -> cache.put(prefix, new Entry(List.copyOf(matches), received, expires)));
   }
 }
