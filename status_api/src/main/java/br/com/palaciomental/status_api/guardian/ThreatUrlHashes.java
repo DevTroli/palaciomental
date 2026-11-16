@@ -33,29 +33,41 @@ public final class ThreatUrlHashes {
     try {
       URI uri = URI.create(value);
       String host = extractHost(uri);
-      if (uri.isOpaque() || uri.getUserInfo() != null || host == null
-          || uri.getPort() > 65535
-          || !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
-          || !host.matches("[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z0-9-]+")) return Optional.empty();
+      if (!validUri(uri, host)) return Optional.empty();
       host = host.toLowerCase(Locale.ROOT);
       java.net.IDN.toASCII(host, java.net.IDN.USE_STD3_ASCII_RULES);
-      String tld = host.substring(host.lastIndexOf('.') + 1);
-      if (!tld.matches("[a-z-]+|xn--[a-z0-9-]+")) return Optional.empty();
       var suffixes = PublicSuffixMatcherLoader.getDefault();
-      if (!suffixes.matches(tld)) return Optional.empty();
       String root = suffixes.getDomainRoot(host);
-      if (root == null || !(host.equals(root) || host.endsWith("." + root))) return Optional.empty();
-      String rawPath = uri.getRawPath();
-      if (rawPath == null || rawPath.isEmpty()) rawPath = "/";
-      rawPath = new String(unescape(rawPath), StandardCharsets.ISO_8859_1).replaceAll("/{2,}", "/");
-      if (!rawPath.startsWith("/") || rawPath.indexOf('?') >= 0) return Optional.empty();
-      rawPath = normalizePath(rawPath);
-      String path = escape(rawPath.getBytes(StandardCharsets.ISO_8859_1));
+      if (!validDomain(host, root)) return Optional.empty();
+      String path = canonicalPath(uri);
+      if (path == null) return Optional.empty();
       String query = uri.getRawQuery() == null ? null : escape(unescape(uri.getRawQuery()));
       return Optional.of(buildCandidates(host, root, path, query));
     } catch (IllegalArgumentException ex) {
       return Optional.empty();
     }
+  }
+
+  private static boolean validUri(URI uri, String host) {
+    return !uri.isOpaque() && uri.getUserInfo() == null && host != null
+        && uri.getPort() <= 65535
+        && ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+        && host.matches("[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z0-9-]+");
+  }
+
+  private static boolean validDomain(String host, String root) {
+    String tld = host.substring(host.lastIndexOf('.') + 1);
+    var suffixes = PublicSuffixMatcherLoader.getDefault();
+    return tld.matches("[a-z-]+|xn--[a-z0-9-]+") && suffixes.matches(tld)
+        && root != null && (host.equals(root) || host.endsWith("." + root));
+  }
+
+  private static String canonicalPath(URI uri) {
+    String rawPath = uri.getRawPath();
+    if (rawPath == null || rawPath.isEmpty()) rawPath = "/";
+    rawPath = new String(unescape(rawPath), StandardCharsets.ISO_8859_1).replaceAll("/{2,}", "/");
+    if (!rawPath.startsWith("/") || rawPath.indexOf('?') >= 0) return null;
+    return escape(normalizePath(rawPath).getBytes(StandardCharsets.ISO_8859_1));
   }
 
   private static String extractHost(URI uri) {
