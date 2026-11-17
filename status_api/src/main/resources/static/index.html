@@ -34,7 +34,7 @@
     .journey-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; }
     .journey h3 { font-size:1rem; margin:0; } .badge { font-size:.75rem; font-weight:750; padding:.25rem .65rem; border-radius:999px; max-width:100%; overflow-wrap:anywhere; }
     .badge.funcionando { background:#e4f2eb; color:#17613f; } .badge.falha { background:#faeae7; color:#9c3026; } .badge.recuperando { background:#fff1d9; color:#805000; } .badge.sem_coleta { background:#efedf0; color:#5e5662; }
-    .history { display:grid; grid-template-columns:repeat(30,minmax(0,1fr)); gap:4px; margin:1rem 0 .4rem; }
+    .history { display:grid; grid-template-columns:repeat(var(--history-days,30),minmax(0,1fr)); gap:4px; margin:1rem 0 .4rem; }
     .day { display:block; width:100%; height:24px; padding:0; border:0; cursor:pointer; border-radius:3px; background:#c0bbc1; transition:transform .16s ease, box-shadow .16s ease; } .day.funcionando { background:#238b60; } .day.falha { background:#b34238; } .day.parcial { background:#bc7a1d; }
     .day:hover,.day:focus-visible,.day[aria-pressed="true"] { transform:translateY(-3px); box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--purple); outline:0; }
     .day-detail { min-height:1.3em; margin:.6rem 0 0; color:var(--purple); font-size:.76rem; font-weight:650; }
@@ -42,9 +42,9 @@
     .history-meta { display:flex; justify-content:space-between; gap:1rem; color:var(--muted); font-size:.73rem; }
     .journey-meta { margin:.8rem 0 0; color:var(--muted); font-size:.78rem; }
     a:focus-visible { outline:3px solid #238b60; outline-offset:3px; }
-    .legend { display:flex; flex-wrap:wrap; gap:.5rem 1rem; color:var(--muted); font-size:.72rem; margin:0 0 .55rem; }
+    .legend { display:flex; flex-wrap:nowrap; justify-content:space-between; gap:.35rem; overflow-x:auto; color:var(--muted); font-size:.7rem; margin:0 0 .55rem; }
     .legend-notes { display:grid; gap:.2rem; list-style:none; padding:0; margin:0 0 1rem; color:var(--muted); font-size:.75rem; }
-    .legend span { display:inline-flex; align-items:center; gap:.35rem; } .dot { width:.55rem; height:.55rem; border-radius:50%; background:#c0bbc1; }
+    .legend span { display:inline-flex; align-items:center; gap:.25rem; white-space:nowrap; } .legend .dot { flex:none; } .dot { width:.55rem; height:.55rem; border-radius:50%; background:#c0bbc1; }
     .dot.good { background:#238b60; } .dot.bad { background:#b34238; } .dot.partial { background:#bc7a1d; }
     .incident { margin-top:.8rem; padding:1rem; border:1px solid #ecd8d3; border-left:3px solid #b34238; border-radius:12px; background:#fffaf8; overflow-wrap:anywhere; }
     .incident.resolved { border-color:var(--line); border-left-color:#238b60; background:#fbfdfb; }
@@ -56,7 +56,7 @@
     .empty { border-top:1px solid var(--line); padding-top:1rem; color:var(--muted); font-size:.9rem; }
     .footnote { color:var(--muted); font-size:.77rem; margin:1.5rem 0 0; } [hidden] { display:none !important; }
     @media (max-width:760px) { .wrap { width:min(100% - 2rem, 1200px); } main { padding-top:2rem; } .page-header { align-items:start; flex-direction:column; gap:.35rem; } .overview { grid-template-columns:1fr; gap:1.2rem; padding:1.5rem; } .overview-side { border:0; border-top:1px solid #ffffff45; padding:1rem 0 0; } .layout { grid-template-columns:1fr; } .panel { padding:1.2rem; } .topbar-inner { min-height:68px; } }
-    @media (max-width:900px), (pointer:coarse) { .history-help { display:block; } .history { grid-template-columns:repeat(30,28px); gap:4px; overflow-x:auto; padding:5px 4px 7px; scroll-snap-type:x proximity; } .day { height:32px; scroll-snap-align:nearest; } }
+    @media (max-width:900px), (pointer:coarse) { .history-help { display:block; } .history { grid-template-columns:repeat(var(--history-days,30),28px); gap:4px; overflow-x:auto; padding:5px 4px 7px; scroll-snap-type:x proximity; } .day { height:32px; scroll-snap-align:nearest; } }
     @media (max-width:360px) { .top-label { font-size:.72rem; } }
     @media (prefers-reduced-motion:reduce) { .day { transition:none; } .day:hover,.day:focus-visible,.day[aria-pressed="true"] { transform:none; } }
   </style>
@@ -64,13 +64,13 @@
 <body>
   <header class="topbar"><div class="wrap topbar-inner"><a class="brand" href="https://palaciomental.com.br/"><img src="/palacio-logo.png" alt=""><span>Palácio Mental</span></a><span class="top-label">Status do serviço</span></div></header>
   <main class="wrap">
-    <div class="page-header"><div><p class="eyebrow">Central de status</p><h1>Como está o Palácio Mental</h1><p class="intro">Acompanhe a disponibilidade dos principais acessos.</p></div><span class="period">Histórico de 30 dias</span></div>
+    <div class="page-header"><div><p class="eyebrow">Central de status</p><h1>Como está o Palácio Mental</h1><p class="intro">Acompanhe a disponibilidade dos principais acessos.</p></div><span class="period">Histórico de até 30 dias</span></div>
     <section class="overview" aria-labelledby="overview-title" aria-live="polite">
       <div><p class="eyebrow">Visão geral</p><h2 id="overview-title">Consultando o status...</h2><p id="summary">Aguarde um instante.</p></div>
       <div class="overview-side" id="overview-side" hidden><strong id="overview-count"></strong><span>acessos com coleta recente</span></div>
     </section>
     <div class="layout" id="content" hidden>
-      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count">30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Resposta normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha na verificação</span><span><i class="dot partial" aria-hidden="true"></i>Dados incompletos</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 5 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Cobertura: consultas registradas.</li></ul><div id="journeys"></div></section>
+      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Parcial</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 5 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Cobertura: consultas registradas.</li></ul><div id="journeys"></div></section>
       <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div id="incidents"></div></section>
     </div>
     <p class="footnote">Horários no fuso do seu navegador. Histórico diário em UTC.</p>
@@ -89,13 +89,16 @@
       document.querySelector('#summary').textContent = failures || active ? 'Confira os acessos e incidentes abaixo.' : !fresh ? 'Ainda não há verificações recentes para mostrar.' : fresh === data.jornadas.length ? 'As páginas verificadas responderam como esperado.' : 'Algumas páginas estão sem verificações recentes.';
       document.querySelector('#overview-count').textContent = fresh + '/' + data.jornadas.length;
       document.querySelector('#overview-side').hidden = false; document.querySelector('#content').hidden = false;
+      const historyDays = Math.max(0, ...data.jornadas.map(journey => journey.dias.length));
+      document.querySelector('#history-count').textContent = historyDays + (historyDays === 1 ? ' dia' : ' dias');
       const openJourneys = new Set(data.incidentes.filter(item => !item.fim).map(item => item.jornada));
       for (const journey of data.jornadas) {
         const item = node('article', '', 'journey'); const head = node('div', '', 'journey-head');
         const recovering = journey.estado === 'funcionando' && openJourneys.has(journey.nome);
         head.append(node('h3', journey.nome), node('span', recovering ? 'Em recuperação' : labels[journey.estado], 'badge ' + (recovering ? 'recuperando' : journey.estado))); item.append(head);
         const history = node('div', '', 'history'); history.setAttribute('role', 'group'); history.setAttribute('aria-label', 'Histórico diário de ' + journey.nome);
-        const selection = node('p', 'Selecione um dia para ver detalhes.', 'day-detail'); selection.setAttribute('aria-live', 'polite');
+        history.style.setProperty('--history-days', Math.max(1, journey.dias.length)); history.style.maxWidth = Math.max(1, journey.dias.length) * 32 + 'px';
+        const selection = node('p', journey.dias.length ? 'Selecione um dia para ver detalhes.' : 'Aguardando a primeira coleta.', 'day-detail'); selection.setAttribute('aria-live', 'polite');
         for (const day of journey.dias) {
           const dayLabel = day.estado === 'sem_coleta' ? 'Sem dados' : labels[day.estado];
           const dayCoverage = day.esperadas ? Math.min(100, Math.floor(day.coletas / day.esperadas * 100)) : 0;
@@ -106,11 +109,11 @@
         }
         history.addEventListener('keydown', event => { if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return; const buttons = Array.from(history.querySelectorAll('button')); const index = buttons.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); const next = buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]; buttons.forEach(button => { button.tabIndex = -1; }); next.tabIndex = 0; next.focus(); next.click(); });
         if (history.lastElementChild) history.lastElementChild.tabIndex = 0;
-        item.append(node('p', 'Deslize para ver os dias anteriores.', 'history-help'), history);
-        const meta = node('div', '', 'history-meta'); meta.append(node('span', 'Há 30 dias'), node('span', 'Hoje')); item.append(meta);
+        if (journey.dias.length > 7) item.append(node('p', 'Deslize para ver os dias anteriores.', 'history-help')); item.append(history);
+        const meta = node('div', '', 'history-meta'); meta.append(node('span', journey.dias.length > 1 ? 'Desde ' + journey.dias[0].data.split('-').reverse().join('/') : 'Hoje'), node('span', journey.dias.length > 1 ? 'Hoje' : '')); item.append(meta);
         const total = journey.dias.reduce((sum, day) => sum + day.coletas, 0); const expected = journey.dias.reduce((sum, day) => sum + day.esperadas, 0);
         const coverage = expected ? Math.min(100, Math.floor(total / expected * 100)) : 0;
-        item.append(selection, node('p', 'Última verificação: ' + dateTime(journey.ultima_verificacao) + ' · Consultas registradas: ' + coverage + '% das previstas', 'journey-meta'));
+        item.append(selection, node('p', 'Última verificação: ' + dateTime(journey.ultima_verificacao) + ' · Cobertura no período: ' + coverage + '%', 'journey-meta'));
         document.querySelector('#journeys').append(item);
         history.scrollLeft = history.scrollWidth;
       }

@@ -41,6 +41,7 @@ class ServiceMonitoringPostgresTest {
     transactions.executeWithoutResult(s -> restarted.record("inicio", true));
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.service_incidents WHERE journey = 'inicio' AND recovered_at IS NOT NULL", Integer.class)).isEqualTo(1);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.service_checks WHERE journey = 'inicio'", Integer.class)).isEqualTo(4);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.service_journeys WHERE journey = 'inicio'", Integer.class)).isEqualTo(1);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.incident_alert_events e JOIN guardiao.service_incidents i ON i.id = e.incident_id WHERE i.journey = 'inicio'", Integer.class)).isEqualTo(2);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.incident_alert_deliveries d JOIN guardiao.incident_alert_events e ON e.id = d.event_id JOIN guardiao.service_incidents i ON i.id = e.incident_id WHERE i.journey = 'inicio' AND d.channel = 'discord'", Integer.class)).isEqualTo(2);
 
@@ -62,6 +63,30 @@ class ServiceMonitoringPostgresTest {
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.incident_alert_deliveries d JOIN guardiao.incident_alert_events e ON e.id = d.event_id WHERE e.incident_id = ? AND d.channel = 'email' AND d.status = 'sent'", Integer.class, incidentId)).isEqualTo(1);
     transactions.executeWithoutResult(s -> IncidentAlertEvents.enqueue(jdbc, incidentId, "extended", java.time.Instant.now()));
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.incident_alert_deliveries d JOIN guardiao.incident_alert_events e ON e.id = d.event_id WHERE e.incident_id = ? AND d.channel = 'email'", Integer.class, incidentId)).isEqualTo(1);
+  }
+
+  @Test
+  void monitoringStartSurvivesGlobalRetentionAfterLongJourneyGap() {
+    var source = new DriverManagerDataSource(System.getenv("STATUS_TEST_DATABASE_URL"), "gc05", "gc05-temporary");
+    var jdbc = new JdbcTemplate(source);
+    var transactions = new TransactionTemplate(new DataSourceTransactionManager(source));
+    var environment = mock(Environment.class);
+    when(environment.acceptsProfiles(org.mockito.ArgumentMatchers.any(Profiles.class))).thenReturn(true);
+    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "");
+    clearTestData(jdbc);
+
+    transactions.executeWithoutResult(s -> monitor.record("inicio", true));
+    var originalStart = jdbc.queryForObject("SELECT started_at FROM guardiao.service_journeys WHERE journey = 'inicio'", java.sql.Timestamp.class).toInstant();
+    jdbc.update("UPDATE guardiao.service_checks SET checked_at = now() - interval '32 days' WHERE journey = 'inicio'");
+
+    transactions.executeWithoutResult(s -> monitor.record("vitrine", true));
+
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.service_checks WHERE journey = 'inicio'", Integer.class)).isZero();
+    var controller = new PublicStatusController(jdbc, monitor);
+    assertThat(controller.firstMonitoringStart("inicio", java.util.List.of())).isEqualTo(originalStart);
+    var history = PublicStatusController.history(java.util.List.of(), originalStart, java.time.Instant.now());
+    assertThat(history).isNotEmpty();
+    assertThat(history.getFirst()).containsEntry("estado", "sem_coleta");
   }
 
   @Test
@@ -177,6 +202,7 @@ class ServiceMonitoringPostgresTest {
     jdbc.update("DELETE FROM guardiao.incident_alert_events WHERE incident_id IN (SELECT id FROM guardiao.service_incidents WHERE journey IN ('inicio', 'vitrine', 'organizacao', 'cadastro'))");
     jdbc.update("DELETE FROM guardiao.service_incidents WHERE journey IN ('inicio', 'vitrine', 'organizacao', 'cadastro')");
     jdbc.update("DELETE FROM guardiao.service_checks WHERE journey IN ('inicio', 'vitrine', 'organizacao', 'cadastro')");
+    jdbc.update("DELETE FROM guardiao.service_journeys WHERE journey IN ('inicio', 'vitrine', 'organizacao', 'cadastro')");
   }
 
   private static void ageLastCheck(JdbcTemplate jdbc) {
