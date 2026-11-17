@@ -75,13 +75,16 @@ class Command(BaseCommand):
         endpoint, token = self._configuracao()
         opener = build_opener(_NoRedirect())
         total = 0
-        # O lock serializa alterações do mesmo link, inclusive entre workers. A transação
-        # só confirma a remoção da fila depois da resposta; uma repetição é idempotente.
+        attempted = set()
+        # O lock mantém a ordem das alterações do mesmo link entre workers.
+        # Uma rejeição individual permanece na fila, mas não bloqueia os demais.
         for _ in range(100):
             with transaction.atomic(), system_context():
-                pending = GuardiaoLinkPendente.objects.select_for_update().order_by("link_id").first()
+                pending = (GuardiaoLinkPendente.objects.select_for_update()
+                           .exclude(link_id__in=attempted).order_by("atualizado_em", "link_id").first())
                 if pending is None:
                     break
+                attempted.add(pending.link_id)
                 link = ProjectLink.objects.filter(pk=pending.link_id).values("pk", "url").first()
                 if link:
                     url, expected = endpoint, 202
@@ -97,7 +100,13 @@ class Command(BaseCommand):
                     with opener.open(request, timeout=10) as response:  # nosec B310: HTTPS ou destino fixo de desenvolvimento
                         if response.status != expected:
                             raise CommandError("O Guardião não aceitou a operação.")
-                except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                except HTTPError as exc:
+                    if method == "POST" and exc.code in {400, 422}:
+                        pending.save(update_fields=["atualizado_em"])
+                        self.stderr.write(f"Link {pending.link_id} rejeitado pelo Guardião (HTTP {exc.code}); preservado para revisão.")
+                        continue
+                    raise CommandError("Não foi possível comunicar com o Guardião.") from exc
+                except (URLError, TimeoutError, OSError) as exc:
                     raise CommandError("Não foi possível comunicar com o Guardião.") from exc
                 pending.delete()
                 total += 1
