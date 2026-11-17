@@ -3,7 +3,8 @@ package br.com.palaciomental.status_api;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Hidden
 @RestController
 public class PublicStatusController {
+  private static final ZoneId DISPLAY_ZONE = ZoneId.of("America/Sao_Paulo");
   private static final Map<String, String> NAMES = Map.of(
       "inicio", "Página inicial", "vitrine", "Vitrine de projetos", "entrada", "Entrada", "cadastro", "Cadastro", "organizacao", "Entrada da organização");
   private final JdbcTemplate jdbc;
@@ -32,24 +34,15 @@ public class PublicStatusController {
     if (!monitor.enabled()) return response(Map.of("disponivel", false));
     try {
       Instant now = Instant.now();
-      LocalDate today = LocalDate.now(ZoneOffset.UTC);
-      var start = today.minusDays(29).atStartOfDay().toInstant(ZoneOffset.UTC);
+      LocalDate today = LocalDate.now(DISPLAY_ZONE);
+      var start = today.minusDays(29).atStartOfDay(DISPLAY_ZONE).toInstant();
       var journeys = new ArrayList<Map<String, Object>>();
       for (String id : List.of("inicio", "vitrine", "entrada", "cadastro", "organizacao")) {
         var checks = jdbc.query("SELECT max(checked_at), bool_and(successful) FROM guardiao.service_checks "
                 + "WHERE (journey = ? OR (? = 'organizacao' AND journey LIKE 'organizacao:%')) AND checked_at >= ? "
                 + "GROUP BY date_bin(interval '5 minutes', checked_at, timestamptz '2000-01-01') ORDER BY max(checked_at) DESC",
             (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), id, id, java.sql.Timestamp.from(start));
-        var days = new ArrayList<Map<String, Object>>();
-        for (int offset = 29; offset >= 0; offset--) {
-          LocalDate date = today.minusDays(offset);
-          var dayChecks = checks.stream().filter(c -> c.at().atZone(ZoneOffset.UTC).toLocalDate().equals(date)).toList();
-          int expected = date.equals(today) ? (int) (DurationSeconds.sinceMidnight(now) / 300) + 1 : 288;
-          String dayState = dayChecks.isEmpty() ? "sem_coleta"
-              : dayChecks.stream().anyMatch(c -> !c.ok()) ? "falha"
-              : dayChecks.size() < expected ? "parcial" : "funcionando";
-          days.add(Map.of("data", date.toString(), "coletas", dayChecks.size(), "esperadas", expected, "estado", dayState));
-        }
+        var days = history(checks, firstMonitoringStart(id, checks), now);
         Check latest = checks.isEmpty() ? null : checks.getFirst();
         String state = currentState(id, latest, now);
         journeys.add(Map.of("nome", NAMES.get(id), "estado", state, "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", days));
@@ -91,7 +84,36 @@ public class PublicStatusController {
   }
 
   record Check(Instant at, boolean ok) {}
-  private static final class DurationSeconds {
-    static long sinceMidnight(Instant now) { return now.getEpochSecond() % 86400; }
+  Instant firstMonitoringStart(String journey, List<Check> checks) {
+    java.sql.Timestamp startedAt = jdbc.queryForObject("SELECT min(started_at) FROM guardiao.service_journeys WHERE journey = ? "
+        + "OR (? = 'organizacao' AND journey LIKE 'organizacao:%')", java.sql.Timestamp.class, journey, journey);
+    if (startedAt != null) return startedAt.toInstant();
+    return checks.isEmpty() ? null : checks.getLast().at();
+  }
+
+  static List<Map<String, Object>> history(List<Check> checks, Instant first, Instant now) {
+    if (first == null) return List.of();
+    LocalDate today = now.atZone(DISPLAY_ZONE).toLocalDate();
+    LocalDate beginning = first.atZone(DISPLAY_ZONE).toLocalDate();
+    if (beginning.isBefore(today.minusDays(29))) beginning = today.minusDays(29);
+    var days = new ArrayList<Map<String, Object>>();
+    for (LocalDate date = beginning; !date.isAfter(today); date = date.plusDays(1)) {
+      days.add(historyDay(checks, first, now, date));
+    }
+    return days;
+  }
+
+  private static Map<String, Object> historyDay(List<Check> checks, Instant first, Instant now, LocalDate date) {
+    Instant start = date.atStartOfDay(DISPLAY_ZONE).toInstant();
+    Instant end = date.plusDays(1).atStartOfDay(DISPLAY_ZONE).toInstant();
+    if (first.isAfter(start)) start = first;
+    boolean currentDay = now.isBefore(end);
+    if (currentDay) end = now;
+    int expected = (int) ((Duration.between(start, end).getSeconds() + (currentDay ? 0 : -1)) / 300) + 1;
+    var dayChecks = checks.stream().filter(c -> c.at().atZone(DISPLAY_ZONE).toLocalDate().equals(date)).toList();
+    String state = dayChecks.isEmpty() ? "sem_coleta"
+        : dayChecks.stream().anyMatch(c -> !c.ok()) ? "falha"
+        : dayChecks.size() < expected ? "parcial" : "funcionando";
+    return Map.of("data", date.toString(), "coletas", dayChecks.size(), "esperadas", expected, "estado", state);
   }
 }

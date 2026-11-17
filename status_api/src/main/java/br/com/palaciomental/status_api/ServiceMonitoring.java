@@ -80,6 +80,8 @@ public class ServiceMonitoring {
         (rs, row) -> new Previous(rs.getBoolean(1), rs.getTimestamp(2).toInstant()), journey);
     Instant now = Instant.now();
     if (!previous.isEmpty() && previous.getFirst().at().isAfter(now.minusSeconds(240))) return;
+    jdbc.update("INSERT INTO guardiao.service_journeys (journey, started_at) VALUES (?, ?) ON CONFLICT (journey) DO NOTHING",
+        journey, java.sql.Timestamp.from(now));
     jdbc.update("INSERT INTO guardiao.service_checks (journey, checked_at, successful) VALUES (?, ?, ?)", journey, java.sql.Timestamp.from(now), successful);
     if (!previous.isEmpty() && consecutive(previous.getFirst().successful(), previous.getFirst().at(), successful, now)) {
       if (!successful) {
