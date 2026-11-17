@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from django.test import override_settings
 from django.urls import reverse
 
@@ -16,9 +14,8 @@ class AccessiYesLayoutsTests(PortalInstitucionalBase):
         html = response.content.decode()
         self.assertLess(html.index("window._cyA11yConfig"), html.index("cdn-cookieyes.com/widgets/accessibility.js"))
 
-    @patch("plataforma.views._fetch_status_api", return_value=None)
-    def test_global_and_tenant_layouts_include_widget(self, _status):
-        for path in ("/", "/entrar/", "/cadastrar/", "/status/"):
+    def test_global_and_tenant_layouts_include_widget(self):
+        for path in ("/", "/entrar/", "/cadastrar/"):
             with self.subTest(path=path):
                 self.assert_widget_once(self.client.get(path, HTTP_HOST="palaciomental.com.br"))
         self.assert_widget_once(self.client.get("/entrar/", HTTP_HOST="camppg.palaciomental.com.br"))

@@ -214,6 +214,8 @@ def _notificacoes_tenant(request, *, nao_lidas=False):
     urls = Q(pk__in=[])
     for domain in domains:
         urls |= Q(url__startswith=f"https://{domain}/") | Q(url__startswith=f"http://{domain}/")
+    urls |= Q(kind="status_incident_global", scope_organization__isnull=True)
+    urls |= Q(kind="status_incident_tenant", scope_organization=request.organizacao)
     queryset = Notification.objects.filter(recipient=request.user).filter(urls)
     return queryset.filter(read_at__isnull=True) if nao_lidas else queryset
 
@@ -633,6 +635,8 @@ def inbox(request):
     notifications = _notificacoes_tenant(request)
     notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     context["notifications"] = notifications[:50]
+    from .guardiao_consulta import contar_atencao
+    context["links_atencao"] = contar_atencao(request.user, request.organizacao)
     return render(request, "institutional/experience/inbox.html", context)
 
 

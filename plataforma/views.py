@@ -1,10 +1,6 @@
-import json
 import hashlib
 import secrets
-from datetime import datetime, timedelta
-from urllib.error import URLError
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -27,9 +23,8 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .health import deployment_metadata
-from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm
-from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
+from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm, TurmaReferenciaForm
+from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, Organizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
 from .navigation import global_home_url as _global_home_url, project_notification_url
@@ -541,7 +536,7 @@ def institutional_programs(request):
                 programa.save()
                 messages.success(request, "Programa criado. Agora você pode adicionar uma turma.")
                 return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
-        return render(request, "institutional/program_create.html", {"organizacao": organizacao, "form": form, "nav_ativo": "turmas_e_equipes"})
+        return render(request, "institutional/program_form.html", {"organizacao": organizacao, "form": form, "nav_ativo": "turmas_e_equipes"})
     programas = _visible_programs(request).annotate(total_turmas=Count("turmas", distinct=True))
     return render(
         request,
@@ -558,7 +553,7 @@ def institutional_program_create(request):
         return HttpResponseForbidden("Apenas a gestão pode criar programas.")
     if request.method == "POST":
         return institutional_programs(request)
-    return render(request, "institutional/program_create.html", {"organizacao": organizacao, "form": ProgramaInstitucionalForm(), "nav_ativo": "turmas_e_equipes"})
+    return render(request, "institutional/program_form.html", {"organizacao": organizacao, "form": ProgramaInstitucionalForm(), "nav_ativo": "turmas_e_equipes"})
 
 
 @login_required
@@ -567,9 +562,9 @@ def institutional_program_detail(request, programa_id):
     if organizacao is None or getattr(request, "membro_organizacao", None) is None:
         raise Http404
     programa = get_object_or_404(_visible_programs(request), pk=programa_id)
-    turmas = programa.turmas.prefetch_related("grupos").annotate(
+    turmas = list(programa.turmas.prefetch_related("grupos", "referencias").annotate(
         solicitacoes_pendentes=Count("solicitacoes", filter=Q(solicitacoes__status=SolicitacaoTurma.STATUS_PENDENTE))
-    ).all()
+    ).all())
     turmas = [turma for turma in turmas if _can_view_class(request, turma)]
     gerenciaveis = [turma for turma in turmas if _can_manage_class(request, turma)]
     participacoes = set(MembroTurma.objects.filter(turma__in=turmas, usuario=request.user, status=MembroTurma.STATUS_ATIVO).values_list("turma_id", flat=True))
@@ -579,23 +574,136 @@ def institutional_program_detail(request, programa_id):
     pedidos_turma = set(SolicitacaoTurma.objects.filter(turma__in=turmas, usuario=request.user, status=SolicitacaoTurma.STATUS_PENDENTE).values_list("turma_id", flat=True))
     pedidos_grupo = set(SolicitacaoGrupo.objects.filter(grupo__turma__in=turmas, usuario=request.user, status=SolicitacaoGrupo.STATUS_PENDENTE).values_list("grupo_id", flat=True))
     aluno = request.membro_organizacao.papel == MembroOrganizacao.PAPEL_MEMBRO
+    referencias_visiveis = []
     for turma in turmas:
         turma.e_membro = turma.pk in participacoes
         turma.suspenso = turma.pk in turmas_suspensas
         turma.pedido_pendente = turma.pk in pedidos_turma
         turma.pode_criar_grupo = aluno and turma.e_membro and turma.status == Turma.STATUS_ATIVO and programa.status == ProgramaInstitucional.STATUS_PUBLICADO
+        turma.pode_editar_referencias = (
+            request.membro_organizacao.papel == MembroOrganizacao.PAPEL_PROFESSOR
+            and turma.professor_responsavel_id == request.user.pk
+        )
+        turma.pode_ver_referencias = _can_manage_class(request, turma) or turma.e_membro
+        turma.referencias_visiveis = []
+        if turma.pode_ver_referencias:
+            referencias_visiveis.extend(turma.referencias.all())
         for grupo in turma.grupos.all():
             grupo.e_membro = grupo.pk in grupos_membro
             grupo.suspenso = grupo.pk in grupos_suspensos
             grupo.pedido_pendente = grupo.pk in pedidos_grupo
             grupo.pode_ver = grupo.e_membro or turma in gerenciaveis or turma.e_membro
             grupo.pode_excluir = grupo.criado_por_id == request.user.pk
+    if referencias_visiveis:
+        from .guardiao_consulta import marcar_links
+        referencias_por_turma = {}
+        for referencia in marcar_links(referencias_visiveis):
+            referencias_por_turma.setdefault(referencia.turma_id, []).append(referencia)
+        for turma in turmas:
+            turma.referencias_visiveis = referencias_por_turma.get(turma.pk, [])
     solicitacoes = SolicitacaoTurma.objects.filter(turma__in=gerenciaveis, status=SolicitacaoTurma.STATUS_PENDENTE).select_related("usuario", "turma")
     return render(
         request,
         "institutional/program_detail.html",
         {"organizacao": organizacao, "programa": programa, "turmas": turmas, "solicitacoes": solicitacoes, "pode_gerenciar": _can_manage_institutional_structure(request), "aluno": aluno, "nav_ativo": "turmas_e_equipes"},
     )
+
+
+MAX_REFERENCIAS_TURMA = 6
+
+
+def _professor_responsavel_turma(request, turma_id):
+    organizacao = getattr(request, "organizacao", None)
+    if organizacao is None:
+        raise Http404
+    turma = get_object_or_404(
+        Turma.objects.select_related("programa", "programa__organizacao"),
+        pk=turma_id,
+        programa__organizacao=organizacao,
+    )
+    afiliacao = getattr(request, "membro_organizacao", None)
+    if (not afiliacao or afiliacao.papel != MembroOrganizacao.PAPEL_PROFESSOR
+            or turma.professor_responsavel_id != request.user.pk):
+        raise PermissionError
+    return turma
+
+
+def _render_referencia_turma(request, turma, form, heading, submit_label):
+    return render(request, "institutional/class_reference_form.html", {
+        "organizacao": request.organizacao,
+        "programa": turma.programa,
+        "turma": turma,
+        "form": form,
+        "heading": heading,
+        "submit_label": submit_label,
+        "nav_ativo": "turmas_e_equipes",
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def institutional_class_reference_create(request, turma_id):
+    try:
+        turma = _professor_responsavel_turma(request, turma_id)
+    except PermissionError:
+        return HttpResponseForbidden("Somente o professor responsável pode gerenciar as fontes desta turma.")
+    form = TurmaReferenciaForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        from .guardiao_consulta import verificar_ameacas_formulario
+        nao_verificado = verificar_ameacas_formulario(form)
+        if form.errors:
+            return _render_referencia_turma(request, turma, form, "Adicionar referência", "Adicionar fonte")
+        referencia = form.save(commit=False)
+        referencia.turma = turma
+        referencia.project = None
+        with transaction.atomic():
+            Turma.objects.select_for_update().get(pk=turma.pk)
+            if ProjectLink.objects.filter(turma=turma).count() >= MAX_REFERENCIAS_TURMA:
+                form.add_error(None, "Esta turma já atingiu o limite de seis referências.")
+                return _render_referencia_turma(request, turma, form, "Adicionar referência", "Adicionar fonte")
+            referencia.save()
+        if nao_verificado:
+            messages.warning(request, "A referência foi salva, mas não foi possível verificar sua segurança agora.")
+        else:
+            messages.success(request, "Fonte adicionada à turma.")
+        return redirect(f"{reverse('plataforma:institutional_program_detail', kwargs={'programa_id': turma.programa_id})}#turma-{turma.pk}")
+    return _render_referencia_turma(request, turma, form, "Adicionar referência", "Adicionar fonte")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def institutional_class_reference_edit(request, turma_id, link_id):
+    try:
+        turma = _professor_responsavel_turma(request, turma_id)
+    except PermissionError:
+        return HttpResponseForbidden("Somente o professor responsável pode gerenciar as fontes desta turma.")
+    referencia = get_object_or_404(ProjectLink, pk=link_id, turma=turma)
+    form = TurmaReferenciaForm(request.POST or None, instance=referencia)
+    if request.method == "POST" and form.is_valid():
+        from .guardiao_consulta import verificar_ameacas_formulario
+        nao_verificado = verificar_ameacas_formulario(form)
+        if form.errors:
+            return _render_referencia_turma(request, turma, form, "Editar referência", "Salvar alterações")
+        form.save()
+        if nao_verificado:
+            messages.warning(request, "A referência foi atualizada, mas não foi possível verificar sua segurança agora.")
+        else:
+            messages.success(request, "Referência atualizada.")
+        return redirect(f"{reverse('plataforma:institutional_program_detail', kwargs={'programa_id': turma.programa_id})}#turma-{turma.pk}")
+    return _render_referencia_turma(request, turma, form, "Editar referência", "Salvar alterações")
+
+
+@login_required
+@require_http_methods(["POST"])
+def institutional_class_reference_delete(request, turma_id, link_id):
+    try:
+        turma = _professor_responsavel_turma(request, turma_id)
+    except PermissionError:
+        return HttpResponseForbidden("Somente o professor responsável pode gerenciar as fontes desta turma.")
+    referencia = get_object_or_404(ProjectLink, pk=link_id, turma=turma)
+    referencia.delete()
+    messages.success(request, "Referência removida da turma.")
+    return redirect(f"{reverse('plataforma:institutional_program_detail', kwargs={'programa_id': turma.programa_id})}#turma-{turma.pk}")
 
 
 @login_required
@@ -705,7 +813,7 @@ def institutional_program_edit(request, programa_id):
         form.save()
         messages.success(request, "Programa atualizado.")
         return redirect("plataforma:institutional_program_detail", programa_id=programa.pk)
-    return render(request, "institutional/structure_form.html", {"organizacao": organizacao, "programa": programa, "form": form, "titulo": "Editar programa", "nav_ativo": "turmas_e_equipes"})
+    return render(request, "institutional/program_form.html", {"organizacao": organizacao, "programa": programa, "form": form, "nav_ativo": "turmas_e_equipes"})
 
 
 @login_required
@@ -721,8 +829,8 @@ def institutional_class_edit(request, turma_id):
         else:
             form.save()
             messages.success(request, "Turma atualizada.")
-            return redirect("plataforma:institutional_program_detail", programa_id=turma.programa_id)
-    return render(request, "institutional/structure_form.html", {"organizacao": organizacao, "programa": turma.programa, "form": form, "titulo": "Editar turma", "nav_ativo": "turmas_e_equipes"})
+            return redirect(reverse("plataforma:institutional_program_detail", kwargs={"programa_id": turma.programa_id}) + f"#turma-{turma.pk}")
+    return render(request, "institutional/class_form.html", {"organizacao": organizacao, "programa": turma.programa, "turma": turma, "form": form, "nav_ativo": "turmas_e_equipes"})
 
 
 def _delete_institutional_structure(request, kind, pk):
@@ -753,16 +861,7 @@ def _delete_institutional_structure(request, kind, pk):
         grupos_impactados = Grupo.objects.filter(pk=objeto.pk)
         destino = "plataforma:institutional_program_detail"
         destino_kwargs = {"programa_id": objeto.turma.programa_id}
-    def motivo_bloqueio():
-        if vinculos.exists():
-            return "Existem projetos vinculados. Altere ou remova os vínculos institucionais antes de excluir."
-        if kind == "programa" and turmas_impactadas.exists():
-            return "Este programa ainda tem turmas. Exclua as turmas antes de excluir o programa."
-        if kind == "turma" and grupos_impactados.exists():
-            return "Esta turma ainda tem grupos. Cada grupo deve ser excluído pelo seu autor antes de excluir a turma."
-        return ""
-
-    motivo = motivo_bloqueio()
+    motivo = _institutional_delete_block_reason(kind, vinculos, turmas_impactadas, grupos_impactados)
     if request.method == "POST":
         with transaction.atomic():
             objeto = type(objeto).objects.select_for_update().get(pk=objeto.pk)
@@ -771,13 +870,23 @@ def _delete_institutional_structure(request, kind, pk):
                 list(Grupo.objects.select_for_update().filter(turma__programa=objeto))
             elif kind == "turma":
                 list(Grupo.objects.select_for_update().filter(turma=objeto))
-            motivo = motivo_bloqueio()
+            motivo = _institutional_delete_block_reason(kind, vinculos, turmas_impactadas, grupos_impactados)
             if not motivo:
                 objeto.delete()
                 messages.success(request, "Exclusão concluída.")
                 return redirect(destino, **destino_kwargs)
     impacto = {"turmas": turmas_impactadas.count(), "grupos": grupos_impactados.count(), "participacoes_turma": MembroTurma.objects.filter(turma__in=turmas_impactadas).count(), "participacoes_grupo": MembroGrupo.objects.filter(grupo__in=grupos_impactados).count()}
     return render(request, "institutional/structure_delete.html", {"objeto": objeto, "tipo": kind, "bloqueado": bool(motivo), "motivo_bloqueio": motivo, "impacto": impacto, "cancelar": reverse(destino, kwargs=destino_kwargs), "nav_ativo": "turmas_e_equipes"}, status=409 if request.method == "POST" and motivo else 200)
+
+
+def _institutional_delete_block_reason(kind, vinculos, turmas, grupos):
+    if vinculos.exists():
+        return "Existem projetos vinculados. Altere ou remova os vínculos institucionais antes de excluir."
+    if kind == "programa" and turmas.exists():
+        return "Este programa ainda tem turmas. Exclua as turmas antes de excluir o programa."
+    if kind == "turma" and grupos.exists():
+        return "Esta turma ainda tem grupos. Cada grupo deve ser excluído pelo seu autor antes de excluir a turma."
+    return ""
 
 
 @login_required
@@ -1082,7 +1191,9 @@ def project_detail(request, pk):
         from core.rankings import ranked_projects
         ranked = ranked_projects(Project.objects.filter(organizacao=request.organizacao, votes__isnull=False).distinct(), tenant_id=request.organizacao.pk)
         ranking_posicao = next((index for index, item in enumerate(ranked[:5], 1) if item.pk == project.pk), None)
-    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": project.links.all(), "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
+    from .guardiao_consulta import marcar_links
+    links = marcar_links(list(project.links.all()))
+    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": links, "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
     organizacao = getattr(request, "organizacao", None)
@@ -1113,9 +1224,15 @@ def project_context(request, pk):
     form = ProjectContextForm(request.POST or None, instance=project)
     formset = ProjectLinkFormSet(request.POST or None, instance=project, prefix="links")
     if request.method == "POST" and form.is_valid() and formset.is_valid():
+        from .guardiao_consulta import verificar_ameacas_formulario
+        nao_verificados = verificar_ameacas_formulario(formset)
+        if any(link_form.errors for link_form in formset.forms):
+            return render(request, "institutional/experience/project_form.html" if getattr(request, "organizacao", None) else "projects/form.html", {"form": form, "formset": formset, "heading": "Editar contexto", "submit_label": "Salvar contexto", "form_phase": "context", "project": project, "organizacao": getattr(request, "organizacao", None)})
         before = {"category": project.category, "tags": project.tags, "visibility": project.visibility, "seeking_collaborators": project.seeking_collaborators, "links": project.links.count()}
         project = form.save()
         formset.save()
+        if nao_verificados:
+            messages.warning(request, "Os links foram salvos, mas a verificação de ameaças não está disponível.")
         changes = [label for key, label in [("category", "categoria"), ("tags", "tags"), ("visibility", "visibilidade"), ("seeking_collaborators", "colaboração")] if before[key] != getattr(project, key)]
         if formset.has_changed():
             changes.append("links")
@@ -1318,143 +1435,16 @@ def inbox(request):
     if getattr(request, "organizacao", None):
         from .experience import inbox as institutional_inbox
         return institutional_inbox(request)
-    notifications = request.user.notifications.all()
-    request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
-    return render(request, "notifications/inbox.html", {"notifications": notifications})
+    notifications = request.user.notifications.filter(
+        ~Q(kind="status_incident_tenant")
+        | Q(kind="status_incident_tenant", scope_organization__afiliacoes__usuario=request.user,
+            scope_organization__afiliacoes__status=MembroOrganizacao.STATUS_ATIVA,
+            scope_organization__status=Organizacao.STATUS_ATIVA)
+    ).distinct()
+    notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
+    from .guardiao_consulta import contar_atencao
+    return render(request, "notifications/inbox.html", {"notifications": notifications, "links_atencao": contar_atencao(request.user, None)})
 
 
 def saude(request):
-    return JsonResponse({"status": "ok", "deployment": deployment_metadata()})
-
-
-STATUS_COPY = {
-    "operacional": ("operational", "Funcionando", "Tudo funcionando normalmente.", "✓"),
-    "degradado": ("degraded", "Instabilidade", "Pode haver alguma lentidão ou falha pontual.", "!"),
-    "indisponivel": ("unavailable", "Indisponível", "Este serviço não está disponível agora.", "×"),
-}
-
-
-def _service_status(raw_status):
-    """Converte o status técnico da API em dados seguros e amigáveis para a UI."""
-    normalized = str(raw_status or "").strip().lower()
-    return STATUS_COPY.get(
-        normalized,
-        ("unknown", "Não verificado", "Não foi possível verificar este serviço agora.", "?"),
-    )
-
-
-def _fetch_status_api():
-    """Busca o payload da status_api sem deixar uma falha externa quebrar a página."""
-    if urlparse(settings.STATUS_API_URL).scheme not in {"http", "https"}:
-        return None
-    request = Request(
-        settings.STATUS_API_URL,
-        headers={"Accept": "application/json", "User-Agent": "PalacioMentalStatus/1.0"},
-    )
-    with urlopen(request, timeout=settings.STATUS_API_TIMEOUT) as response:  # nosec B310: esquema validado acima
-        if response.status < 200 or response.status >= 300:
-            return None
-        payload = json.loads(response.read().decode("utf-8"))
-        return payload if isinstance(payload, dict) else None
-
-
-def _service_card(name, icon, raw_status, metrics=None, group="Serviços principais"):
-    status, label, message, _ = _service_status(raw_status)
-    return {
-        "name": name,
-        "icon": icon,
-        "status": status,
-        "label": label,
-        "message": message,
-        "metrics": metrics or [],
-        "group": group,
-    }
-
-
-def _database_metrics(database):
-    details = database.get("details") or {}
-    metrics = []
-    if details.get("version"):
-        metrics.append({"label": "Versão", "value": str(details["version"]).split()[0]})
-    if details.get("used_connections") is not None:
-        metrics.append({"label": "Conexões em uso", "value": details["used_connections"]})
-    if details.get("max_connections") is not None:
-        metrics.append({"label": "Limite de conexões", "value": details["max_connections"]})
-    if database.get("response_time_ms") is not None:
-        metrics.append({"label": "Resposta", "value": f"{database['response_time_ms']} ms"})
-    return metrics
-
-
-def _response_metric(service):
-    if service.get("response_time_ms") is None:
-        return []
-    return [{"label": "Resposta", "value": f"{service['response_time_ms']} ms"}]
-
-
-def _deployment_metrics(deployment):
-    labels = {
-        "commit": "Commit",
-        "author": "Autor",
-        "branch": "Branch",
-        "service": "Serviço",
-        "environment": "Ambiente",
-    }
-    return [
-        {"label": labels[key], "value": value[:12] if key == "commit" else value}
-        for key, value in deployment.items()
-        if key in labels and value
-    ]
-
-
-def status_page(request):
-    """Exibe o estado resumido dos serviços sem depender da disponibilidade da API."""
-    context = {"status_available": False, "services": []}
-    try:
-        payload = _fetch_status_api()
-    except (OSError, URLError, TimeoutError, ValueError, json.JSONDecodeError):
-        payload = None
-
-    if payload:
-        dependencies = payload.get("dependencies") or {}
-        database = dependencies.get("database") or {}
-        django = dependencies.get("django_app") or {}
-        deployment = payload.get("deployment") or django.get("deployment") or {}
-        context.update(
-            status_available=True,
-            overall_status=_service_status(payload.get("status"))[0],
-            overall_label=_service_status(payload.get("status"))[1],
-            overall_message=_service_status(payload.get("status"))[2],
-            overall_icon=_service_status(payload.get("status"))[3],
-            services=[
-                _service_card(
-                    "Banco de dados", "▦", database.get("status"), _database_metrics(database), "Banco de dados"
-                ),
-                _service_card(
-                    "Aplicação web (Django)",
-                    "⌂",
-                    django.get("status"),
-                    _response_metric(django) + ([{"label": "Verificação", "value": "GET /pronto"}] if django else []),
-                    "Servidor web",
-                ),
-                _service_card(
-                    "API de status", "↗", payload.get("status"), _response_metric(payload), "APIs e serviços"
-                ),
-            ],
-            deployment_metrics=_deployment_metrics(deployment),
-        )
-        checked_at = payload.get("checked_at")
-        if checked_at:
-            try:
-                context["checked_at"] = datetime.fromisoformat(checked_at.replace("Z", "+00:00")).strftime(
-                    "%d/%m/%Y às %H:%M"
-                )
-            except (TypeError, ValueError):
-                pass
-    else:
-        context["services"] = [
-            _service_card("Banco de dados", "▦", None),
-            _service_card("Aplicação web", "⌂", None),
-            _service_card("API de status", "↗", None),
-        ]
-
-    return render(request, "status.html", context)
+    return JsonResponse({"status": "ok"})

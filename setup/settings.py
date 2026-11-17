@@ -92,6 +92,9 @@ STATUS_API_URL = config(
     default="https://api.palaciomental.com.br/v1/status",
 )
 STATUS_API_TIMEOUT = config("STATUS_API_TIMEOUT", cast=float, default=3.0)
+GUARDIAO_API_URL = config("GUARDIAO_API_URL", default="")
+GUARDIAO_SERVICE_TOKEN = config("GUARDIAO_SERVICE_TOKEN", default="")
+GUARDIAO_LOCAL_HTTP = config("GUARDIAO_LOCAL_HTTP", cast=bool, default=False)
 
 # E-mail transacional de convites. Em desenvolvimento, o conteúdo aparece no
 # terminal; em produção, selecionar explicitamente o backend do provedor.

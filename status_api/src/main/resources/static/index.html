@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Status | Palácio Mental</title>
+  <style>
+    :root { color-scheme: light; --ink:#302b34; --purple:#48335c; --green:#176d49; --cream:#f7f4ee; --paper:#fffdfa; --muted:#6b626f; --line:#e6e0d9; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--cream); color:var(--ink); font-family:system-ui,-apple-system,sans-serif; line-height:1.5; }
+    .wrap { width:min(1200px, calc(100% - 3rem)); margin:auto; }
+    .topbar { background:var(--paper); border-bottom:1px solid var(--line); }
+    .topbar-inner { min-height:78px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem 1rem; padding:.5rem 0; }
+    .brand { display:flex; align-items:center; gap:.75rem; color:var(--ink); text-decoration:none; font-weight:750; }
+    .brand img { width:42px; height:42px; object-fit:contain; border-radius:10px; }
+    .top-label { color:var(--muted); font-size:.82rem; font-weight:650; }
+    main { padding:3rem 0 5rem; }
+    .eyebrow { margin:0 0 .55rem; color:#685676; text-transform:uppercase; font-size:.72rem; font-weight:800; letter-spacing:.12em; }
+    .page-header { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin-bottom:1.8rem; }
+    h1,h2,h3,p { margin-top:0; } h1 { font-size:clamp(2rem,4vw,3rem); letter-spacing:-.045em; line-height:1.12; margin-bottom:.55rem; }
+    .intro { color:var(--muted); margin:0; } .period { color:var(--muted); font-size:.85rem; white-space:nowrap; }
+    .overview { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2rem; align-items:center; padding:2rem 2.2rem; border-radius:20px; color:#fff; background:var(--purple); }
+    .overview .eyebrow { color:#e2d6eb; } .overview h2 { font-size:clamp(1.4rem,3vw,2rem); letter-spacing:-.03em; line-height:1.2; margin:0 0 .5rem; }
+    .overview p:last-child { color:#e7dfeb; margin:0; } .overview-side { display:flex; align-items:center; gap:.8rem; border-left:1px solid #ffffff45; padding-left:2rem; }
+    .overview-side strong { font-size:2rem; line-height:1; } .overview-side span { color:#eee8f2; font-size:.8rem; max-width:7rem; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(270px,1fr); align-items:start; gap:1.3rem; margin-top:2rem; }
+    .panel { background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:1.65rem; min-width:0; }
+    .panel-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:start; gap:.65rem; margin-bottom:1.3rem; min-width:0; }
+    .panel-head > div { min-width:0; flex:1 1 11rem; }
+    .panel-head h2 { font-size:1.2rem; letter-spacing:-.02em; margin:0; overflow-wrap:anywhere; } .panel-head p { font-size:.83rem; color:var(--muted); margin:.25rem 0 0; }
+    .count { border-radius:999px; background:#eee8f2; color:var(--purple); padding:.25rem .6rem; font-size:.75rem; font-weight:750; white-space:nowrap; }
+    .journey { padding:1.25rem 0; border-top:1px solid var(--line); }
+    .journey-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; }
+    .journey h3 { font-size:1rem; margin:0; } .badge { font-size:.75rem; font-weight:750; padding:.25rem .65rem; border-radius:999px; max-width:100%; overflow-wrap:anywhere; }
+    .badge.funcionando { background:#e4f2eb; color:#17613f; } .badge.falha { background:#faeae7; color:#9c3026; } .badge.recuperando { background:#fff1d9; color:#805000; } .badge.sem_coleta { background:#efedf0; color:#5e5662; }
+    .history { display:grid; grid-template-columns:repeat(30,minmax(0,1fr)); gap:4px; margin:1rem 0 .4rem; }
+    .day { display:block; width:100%; height:24px; padding:0; border:0; cursor:pointer; border-radius:3px; background:#c0bbc1; transition:transform .16s ease, box-shadow .16s ease; } .day.funcionando { background:#238b60; } .day.falha { background:#b34238; } .day.parcial { background:#bc7a1d; }
+    .day:hover,.day:focus-visible,.day[aria-pressed="true"] { transform:translateY(-3px); box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--purple); outline:0; }
+    .day-detail { min-height:1.3em; margin:.6rem 0 0; color:var(--purple); font-size:.76rem; font-weight:650; }
+    .history-help { display:none; margin:.75rem 0 0; color:var(--muted); font-size:.73rem; }
+    .history-meta { display:flex; justify-content:space-between; gap:1rem; color:var(--muted); font-size:.73rem; }
+    .journey-meta { margin:.8rem 0 0; color:var(--muted); font-size:.78rem; }
+    a:focus-visible { outline:3px solid #238b60; outline-offset:3px; }
+    .legend { display:flex; flex-wrap:wrap; gap:.5rem 1rem; color:var(--muted); font-size:.72rem; margin:0 0 .55rem; }
+    .legend-notes { display:grid; gap:.2rem; list-style:none; padding:0; margin:0 0 1rem; color:var(--muted); font-size:.75rem; }
+    .legend span { display:inline-flex; align-items:center; gap:.35rem; } .dot { width:.55rem; height:.55rem; border-radius:50%; background:#c0bbc1; }
+    .dot.good { background:#238b60; } .dot.bad { background:#b34238; } .dot.partial { background:#bc7a1d; }
+    .incident { margin-top:.8rem; padding:1rem; border:1px solid #ecd8d3; border-left:3px solid #b34238; border-radius:12px; background:#fffaf8; overflow-wrap:anywhere; }
+    .incident.resolved { border-color:var(--line); border-left-color:#238b60; background:#fbfdfb; }
+    .incident h3 { font-size:1rem; margin:.65rem 0 .8rem; } .incident dl { margin:0; display:grid; gap:.5rem; }
+    .incident dl div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.15rem .75rem; font-size:.8rem; }
+    .incident dt { color:var(--muted); } .incident dd { margin:0; font-weight:650; }
+    .incident-state { display:inline-block; max-width:100%; overflow-wrap:anywhere; color:#9c3026; background:#faeae7; border-radius:999px; padding:.25rem .6rem; font-weight:750; font-size:.72rem; } .incident-state.resolved { color:var(--green); background:#e4f2eb; }
+    .incident-explanation { color:var(--muted); font-size:.78rem; margin:.65rem 0 0; }
+    .empty { border-top:1px solid var(--line); padding-top:1rem; color:var(--muted); font-size:.9rem; }
+    .footnote { color:var(--muted); font-size:.77rem; margin:1.5rem 0 0; } [hidden] { display:none !important; }
+    @media (max-width:760px) { .wrap { width:min(100% - 2rem, 1200px); } main { padding-top:2rem; } .page-header { align-items:start; flex-direction:column; gap:.35rem; } .overview { grid-template-columns:1fr; gap:1.2rem; padding:1.5rem; } .overview-side { border:0; border-top:1px solid #ffffff45; padding:1rem 0 0; } .layout { grid-template-columns:1fr; } .panel { padding:1.2rem; } .topbar-inner { min-height:68px; } }
+    @media (max-width:900px), (pointer:coarse) { .history-help { display:block; } .history { grid-template-columns:repeat(30,28px); gap:4px; overflow-x:auto; padding:5px 4px 7px; scroll-snap-type:x proximity; } .day { height:32px; scroll-snap-align:nearest; } }
+    @media (max-width:360px) { .top-label { font-size:.72rem; } }
+    @media (prefers-reduced-motion:reduce) { .day { transition:none; } .day:hover,.day:focus-visible,.day[aria-pressed="true"] { transform:none; } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="wrap topbar-inner"><a class="brand" href="https://palaciomental.com.br/"><img src="/palacio-logo.png" alt=""><span>Palácio Mental</span></a><span class="top-label">Status do serviço</span></div></header>
+  <main class="wrap">
+    <div class="page-header"><div><p class="eyebrow">Central de status</p><h1>Como está o Palácio Mental</h1><p class="intro">Acompanhe a disponibilidade dos principais acessos.</p></div><span class="period">Histórico de 30 dias</span></div>
+    <section class="overview" aria-labelledby="overview-title" aria-live="polite">
+      <div><p class="eyebrow">Visão geral</p><h2 id="overview-title">Consultando o status...</h2><p id="summary">Aguarde um instante.</p></div>
+      <div class="overview-side" id="overview-side" hidden><strong id="overview-count"></strong><span>acessos com coleta recente</span></div>
+    </section>
+    <div class="layout" id="content" hidden>
+      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count">30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Resposta normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha na verificação</span><span><i class="dot partial" aria-hidden="true"></i>Dados incompletos</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 5 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Cobertura: consultas registradas.</li></ul><div id="journeys"></div></section>
+      <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div id="incidents"></div></section>
+    </div>
+    <p class="footnote">Horários no fuso do seu navegador. Histórico diário em UTC.</p>
+    <noscript>Ative o JavaScript para consultar o status.</noscript>
+  </main>
+  <script>
+    const dateTime = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : 'Ainda não verificado';
+    const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Dados incompletos', sem_coleta:'Sem dados recentes' };
+    const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
+    fetch('/v1/status-publico', { cache:'no-store' }).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {
+      if (!data.disponivel) throw new Error();
+      const fresh = data.jornadas.filter(item => item.estado !== 'sem_coleta').length;
+      const failures = data.jornadas.filter(item => item.estado === 'falha').length;
+      const active = data.incidentes.filter(item => !item.fim).length;
+      document.querySelector('#overview-title').textContent = failures || active ? 'Atenção em alguns acessos' : !fresh ? 'Sem dados recentes' : fresh === data.jornadas.length ? 'Páginas respondendo' : 'Dados incompletos';
+      document.querySelector('#summary').textContent = failures || active ? 'Confira os acessos e incidentes abaixo.' : !fresh ? 'Ainda não há verificações recentes para mostrar.' : fresh === data.jornadas.length ? 'As páginas verificadas responderam como esperado.' : 'Algumas páginas estão sem verificações recentes.';
+      document.querySelector('#overview-count').textContent = fresh + '/' + data.jornadas.length;
+      document.querySelector('#overview-side').hidden = false; document.querySelector('#content').hidden = false;
+      const openJourneys = new Set(data.incidentes.filter(item => !item.fim).map(item => item.jornada));
+      for (const journey of data.jornadas) {
+        const item = node('article', '', 'journey'); const head = node('div', '', 'journey-head');
+        const recovering = journey.estado === 'funcionando' && openJourneys.has(journey.nome);
+        head.append(node('h3', journey.nome), node('span', recovering ? 'Em recuperação' : labels[journey.estado], 'badge ' + (recovering ? 'recuperando' : journey.estado))); item.append(head);
+        const history = node('div', '', 'history'); history.setAttribute('role', 'group'); history.setAttribute('aria-label', 'Histórico diário de ' + journey.nome);
+        const selection = node('p', 'Selecione um dia para ver detalhes.', 'day-detail'); selection.setAttribute('aria-live', 'polite');
+        for (const day of journey.dias) {
+          const dayLabel = day.estado === 'sem_coleta' ? 'Sem dados' : labels[day.estado];
+          const dayCoverage = day.esperadas ? Math.min(100, Math.floor(day.coletas / day.esperadas * 100)) : 0;
+          const text = day.data.split('-').reverse().join('/') + ': ' + dayLabel + ' · Cobertura das consultas desta página: ' + dayCoverage + '%';
+          const cell = node('button', '', 'day ' + day.estado); cell.type = 'button'; cell.title = text; cell.setAttribute('aria-label', text); cell.setAttribute('aria-pressed', 'false'); cell.tabIndex = -1;
+          cell.addEventListener('click', () => { history.querySelectorAll('button').forEach(button => { button.setAttribute('aria-pressed', 'false'); button.tabIndex = -1; }); cell.setAttribute('aria-pressed', 'true'); cell.tabIndex = 0; selection.textContent = text; });
+          history.append(cell);
+        }
+        history.addEventListener('keydown', event => { if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return; const buttons = Array.from(history.querySelectorAll('button')); const index = buttons.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); const next = buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]; buttons.forEach(button => { button.tabIndex = -1; }); next.tabIndex = 0; next.focus(); next.click(); });
+        if (history.lastElementChild) history.lastElementChild.tabIndex = 0;
+        item.append(node('p', 'Deslize para ver os dias anteriores.', 'history-help'), history);
+        const meta = node('div', '', 'history-meta'); meta.append(node('span', 'Há 30 dias'), node('span', 'Hoje')); item.append(meta);
+        const total = journey.dias.reduce((sum, day) => sum + day.coletas, 0); const expected = journey.dias.reduce((sum, day) => sum + day.esperadas, 0);
+        const coverage = expected ? Math.min(100, Math.floor(total / expected * 100)) : 0;
+        item.append(selection, node('p', 'Última verificação: ' + dateTime(journey.ultima_verificacao) + ' · Consultas registradas: ' + coverage + '% das previstas', 'journey-meta'));
+        document.querySelector('#journeys').append(item);
+        history.scrollLeft = history.scrollWidth;
+      }
+      document.querySelector('#incidents-count').textContent = data.incidentes.length + (data.incidentes.length === 1 ? ' registro' : ' registros');
+      const incidents = document.querySelector('#incidents');
+      if (!data.incidentes.length) incidents.append(node('p', 'Nenhum incidente registrado neste período.', 'empty'));
+      for (const incident of data.incidentes) {
+        const item = node('article', '', 'incident' + (incident.fim ? ' resolved' : '')); item.append(node('span', incident.fim ? 'Recuperado' : 'Aberto', 'incident-state' + (incident.fim ? ' resolved' : '')), node('h3', incident.jornada));
+        const fields = document.createElement('dl'); const addField = (label, value) => { const row = document.createElement('div'); row.append(node('dt', label), node('dd', value)); fields.append(row); };
+        addField('Primeira falha', dateTime(incident.inicio)); if (incident.fim) addField('Recuperação', dateTime(incident.fim)); item.append(fields);
+        if (!incident.fim) item.append(node('p', 'Aguardando duas respostas normais seguidas.', 'incident-explanation'));
+        incidents.append(item);
+      }
+    }).catch(() => { document.querySelector('#overview-title').textContent = 'Status indisponível'; document.querySelector('#summary').textContent = 'Não foi possível consultar os dados agora. Tente novamente mais tarde.'; });
+  </script>
+</body>
+</html>

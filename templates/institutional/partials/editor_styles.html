@@ -1,0 +1,18 @@
+<style>
+  .institutional-editor-page { width: 100%; max-width: 1120px; margin-inline: auto; }
+  .institutional-editor-page .programs-header { padding: clamp(24px, 3vw, 38px); }
+  .institutional-editor-layout { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); align-items: start; gap: 22px; }
+  .institutional-editor-layout .form-guide { border: 1px solid var(--tenant-border); border-top: 3px solid var(--tenant-accent); border-radius: 16px; background: color-mix(in srgb, var(--tenant-accent) 24%, var(--tenant-surface)); color: var(--tenant-surface-ink); }
+  .institutional-editor-layout .editor-guide-list { display: grid; gap: 16px; margin: 22px 0 0; }
+  .institutional-editor-layout .editor-guide-list > div { padding-top: 14px; border-top: 1px solid var(--tenant-border); }
+  .institutional-editor-layout .editor-guide-list dt { font-weight: 700; }
+  .institutional-editor-layout .editor-guide-list dd { margin: 4px 0 0; font-size: .82rem; line-height: 1.4; color: var(--tenant-muted); }
+  .institutional-editor-layout .program-form-panel { width: 100%; max-width: none; padding: clamp(22px, 3vw, 34px); }
+  .institutional-editor-layout .programs-form { gap: 20px; }
+  .institutional-editor-layout .field-block { gap: 8px; min-width: 0; }
+  .institutional-editor-layout .field-block label { color: var(--tenant-surface-ink); }
+  .institutional-editor-layout .field-block small { color: var(--tenant-muted); }
+  .institutional-editor-layout .program-actions { margin-top: 6px; padding-top: 18px; border-top: 1px solid var(--tenant-border); }
+  @media (max-width: 760px) { .institutional-editor-layout { grid-template-columns: 1fr; }.institutional-editor-layout .form-guide { padding: 20px; }.institutional-editor-layout .editor-guide-list { display: none; }.institutional-editor-layout .form-guide p { margin-bottom: 0; }.institutional-editor-layout .program-actions { display: flex; }.institutional-editor-layout .program-actions > * { width: auto; } }
+  @media (max-width: 520px) { .institutional-editor-layout .program-actions > * { width: 100%; }.institutional-editor-layout .program-actions { display: grid; grid-template-columns: 1fr; } }
+</style>

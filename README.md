@@ -22,7 +22,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-Django: `http://localhost:8000/`. API de status: `http://localhost:8080/v1/status`.
+Django: `http://localhost:8000/`. Documentação local da API Spring: `http://localhost:8080/docs`.
 
 O entrypoint aplica migrations antes de iniciar o servidor. Recarregar código com `runserver` não aplica migrations novas. Após alterações de schema:
 

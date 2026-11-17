@@ -1,0 +1,61 @@
+<details class="class-content-disclosure class-content-disclosure--references" name="conteudo-turma-{{ turma.pk }}">
+  <summary class="class-content-disclosure__summary">
+    <span class="class-content-disclosure__copy"><small>Consulta</small><strong>Materiais de apoio</strong></span>
+    <span class="class-content-disclosure__count"><strong>{{ turma.referencias_visiveis|length }}</strong><span>fonte{{ turma.referencias_visiveis|length|pluralize }}</span></span>
+    <span class="class-content-disclosure__chevron" aria-hidden="true">⌄</span>
+  </summary>
+  <div class="class-content-disclosure__body">
+  <section class="class-references" aria-label="Fontes e links de referência">
+    <header class="class-references__header">
+      <p>Fontes indicadas pelo professor.</p>
+      {% if turma.pode_editar_referencias %}
+        {% if turma.referencias_visiveis|length < 6 %}
+          <a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'plataforma:institutional_class_reference_create' turma.pk %}">Adicionar fonte</a>
+        {% else %}
+          <span class="program-status">6/6 fontes</span>
+        {% endif %}
+      {% endif %}
+    </header>
+
+    {% if turma.referencias_visiveis %}
+      <div class="class-reference-list">
+        {% for link in turma.referencias_visiveis %}
+          <article class="class-reference">
+            <span class="class-reference__icon" aria-hidden="true">{% if link.ameaca_ativa %}!{% else %}↗{% endif %}</span>
+            <div class="class-reference__body">
+              <strong class="class-reference__title">{{ link.label|upper }}</strong>
+              {% if link.ameaca_ativa %}
+                <span class="class-reference__url" title="{{ link.url }}">{{ link.url|truncatechars:64 }}</span>
+              {% else %}
+                <a class="class-reference__url" href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="Abrir {{ link.label }} em nova aba" title="{{ link.url }}">{{ link.url|truncatechars:64 }}</a>
+              {% endif %}
+              {% if link.descricao %}{% if link.descricao|length > 140 %}<details class="class-reference__note"><summary>Sobre esta fonte</summary><p class="class-reference__description">{{ link.descricao }}</p></details>{% else %}<p class="class-reference__description">{{ link.descricao }}</p>{% endif %}{% endif %}
+              <div class="class-reference__badges">
+                <span class="class-reference__badge class-reference__badge--{{ link.guardiao.tone|default:'neutral' }}">
+                  {% if link.guardiao %}{{ link.guardiao.label }}{% elif link.guardiao_indisponivel %}Verificação indisponível{% else %}Aguardando verificação{% endif %}
+                </span>
+                {% if link.ameaca_ativa %}<span class="class-reference__badge class-reference__badge--danger">Possível ameaça</span>
+                {% elif link.seguranca_nao_verificada %}<span class="class-reference__badge class-reference__badge--neutral">Segurança não verificada</span>{% endif %}
+              </div>
+              {% if link.guardiao %}<time class="class-reference__date" datetime="{{ link.guardiao.checked_at|date:'c' }}">Verificado em {{ link.guardiao.checked_at|date:"d/m/Y - H:i" }}</time>{% endif %}
+              {% if link.ameaca_ativa %}<p class="class-reference__warning">Aviso do Google Safe Browsing; a verificação pode falhar. <a href="https://developers.google.com/safe-browsing" target="_blank" rel="noopener noreferrer">Saiba mais</a>.</p>{% endif %}
+            </div>
+            {% if turma.pode_editar_referencias %}
+              <div class="class-reference__actions">
+                <a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'plataforma:institutional_class_reference_edit' turma.pk link.pk %}">Editar</a>
+                <form method="post" action="{% url 'plataforma:institutional_class_reference_delete' turma.pk link.pk %}" onsubmit="return confirm('Remover esta referência da turma?')">
+                  {% csrf_token %}<button class="camp-btn camp-btn--ghost camp-btn--xs" type="submit">Remover</button>
+                </form>
+              </div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% elif turma.pode_editar_referencias %}
+      <div class="class-references__empty"><strong>Esta turma ainda não tem fontes reunidas.</strong><span>Adicione um guia, documento ou outro material útil para os alunos.</span></div>
+    {% else %}
+      <div class="class-references__empty"><span>O professor ainda não adicionou referências a esta turma.</span></div>
+    {% endif %}
+  </section>
+  </div>
+</details>

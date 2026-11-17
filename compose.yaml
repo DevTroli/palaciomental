@@ -35,7 +35,9 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/1
-      STATUS_API_URL: http://status_api:8080/v1/status
+      STATUS_API_URL: http://status-api:8080/v1/status
+      GUARDIAO_API_URL: ""
+      GUARDIAO_LOCAL_HTTP: "true"
     ports:
       - "8000:8000"
     depends_on:
@@ -52,18 +54,68 @@ services:
     volumes:
       - .:/app
 
+  guardiao_migrate:
+    build:
+      context: ./status_api
+      target: migrate
+    env_file:
+      - .env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        export GUARDIAO_MIGRATION_JDBC_URL="jdbc:postgresql://database:5432/$${POSTGRES_DB}"
+        export GUARDIAO_MIGRATION_USER="$${POSTGRES_USER}"
+        export GUARDIAO_MIGRATION_PASSWORD="$${POSTGRES_PASSWORD}"
+        exec ./mvnw --batch-mode flyway:migrate flyway:validate
+    depends_on:
+      database:
+        condition: service_healthy
+
   status_api:
     build:
       context: ./status_api
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     env_file:
       - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: guardiao-local
+      SWAGGER_ENABLED: "true"
+    networks:
+      default:
+        aliases:
+          - status-api
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/v1/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     depends_on:
       database:
         condition: service_healthy
+      guardiao_migrate:
+        condition: service_completed_successfully
+
+  guardiao_worker:
+    build:
+      context: .
+    entrypoint: ["python", "-u"]
+    command: ["manage.py", "enviar_links_guardiao", "--continuo"]
+    env_file:
+      - .env
+    environment:
+      DJANGO_DEBUG: "true"
+      REDIS_URL: redis://redis:6379/1
+      STATUS_API_URL: http://status-api:8080/v1/status
+      GUARDIAO_API_URL: ""
+      GUARDIAO_LOCAL_HTTP: "true"
+    depends_on:
       django:
         condition: service_healthy
+      status_api:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   redisdata:

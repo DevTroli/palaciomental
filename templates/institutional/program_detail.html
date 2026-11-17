@@ -1,6 +1,67 @@
 {% extends "institutional/experience/base.html" %}{% load static %}
 {% block title %}{{ programa.nome }} · {{ organizacao.nome }}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tenant-programs.css' %}?v=20261115-turmas">
+<style>
+  .program-class-list { gap: 28px; }
+  .more-classes > summary { width: fit-content; margin: 4px 0 18px; padding: 12px 18px; border: 1px solid var(--tenant-border); border-radius: 10px; background: var(--tenant-surface); color: var(--tenant-surface-link); font-weight: 700; cursor: pointer; }
+  .more-classes > summary:focus-visible { outline: 3px solid var(--tenant-link); outline-offset: 3px; }
+  .more-classes > .program-class-list { display: grid; gap: 28px; }
+  .class-workspace { display: grid; grid-template-columns: minmax(340px, .38fr) minmax(0, 1fr); gap: 0; overflow: hidden; border: 1px solid var(--tenant-border); border-radius: 18px; background: var(--tenant-surface); }
+  .class-workspace .class-shell { padding: 28px; border: 0; border-right: 1px solid var(--tenant-border); border-radius: 0; background: color-mix(in srgb, var(--tenant-primary) 5%, var(--tenant-surface)); }
+  .class-workspace .class-header { display: grid; align-content: start; gap: 28px; height: 100%; }
+  .class-workspace .class-identity { gap: 14px; }
+  .class-workspace .class-identity, .class-workspace .class-identity *, .class-workspace .group-row, .class-workspace .group-row * { min-width: 0; overflow-wrap: anywhere; }
+  .class-workspace .class-description summary { width: fit-content; color: var(--tenant-surface-link); font-size: .82rem; font-weight: 700; cursor: pointer; }
+  .class-workspace .class-description p { margin: 12px 0 0; color: var(--tenant-muted); line-height: 1.6; }
+  .class-workspace .class-identity h3 { font-size: clamp(1.35rem, 2vw, 1.8rem); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  .class-workspace .class-teacher { display: grid; gap: 4px; margin-top: 12px !important; }
+  .class-workspace .class-teacher strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  .class-workspace .class-actions { justify-content: flex-start; align-self: end; max-width: none; }
+  .class-workspace .class-resources { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, 1fr); align-content: start; align-items: start; gap: 0 28px; min-width: 0; padding: 28px clamp(20px, 3vw, 40px); }
+  .class-workspace .class-resources::before { content: "ESPAÇO DA TURMA"; display: block; grid-column: 1 / -1; margin-bottom: 18px; color: var(--tenant-surface-link); font-size: .72rem; font-weight: 800; letter-spacing: .13em; }
+  .class-workspace .class-content-disclosure { border: 0; border-top: 1px solid var(--tenant-border); border-radius: 0; box-shadow: none; background: transparent; }
+  .class-workspace .class-content-disclosure > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 18px; list-style: none; cursor: pointer; }
+  .class-workspace .class-content-disclosure > summary::-webkit-details-marker { display: none; }
+  .class-workspace .groups-panel > header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .class-workspace .groups-panel { border-top: 0; margin: 0; padding: 0; }
+  .class-workspace .class-content-disclosure--references { padding-left: 28px; border-top: 0; border-left: 1px solid var(--tenant-border); }
+  .class-workspace .class-content-disclosure--references:last-child { border-bottom: 0; }
+  .class-workspace .class-content-disclosure--references .class-content-disclosure__summary { grid-template-columns: minmax(0, 1fr) auto; align-items: start; min-height: 0; padding-top: 0; }
+  .class-workspace .class-content-disclosure--references .class-content-disclosure__count { grid-column: 1; grid-row: 2; justify-self: start; }
+  .class-workspace .class-content-disclosure--references .class-content-disclosure__chevron { grid-column: 2; grid-row: 1; }
+  .class-workspace .groups-panel .class-content-disclosure__summary { padding-top: 0; min-height: 0; }
+  .class-workspace .class-content-disclosure:last-child { border-bottom: 1px solid var(--tenant-border); }
+  .class-workspace .class-content-disclosure__summary { min-height: 118px; padding: 22px 0; }
+  .class-workspace .class-content-disclosure__copy { display: grid; gap: 7px; min-width: 0; }
+  .class-workspace .class-content-disclosure__copy small { color: var(--tenant-surface-link); font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  .class-workspace .class-content-disclosure__copy strong { font-size: 1.16rem; }
+  .class-workspace .class-content-disclosure__copy > span { max-width: 52ch; color: var(--tenant-muted); font-size: .85rem; line-height: 1.5; }
+  .class-workspace .class-content-disclosure__count { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border: 1px solid var(--tenant-border); border-radius: 999px; white-space: nowrap; font-size: .75rem; }
+  .class-workspace .class-content-disclosure__chevron { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--tenant-primary) 10%, var(--tenant-surface)); color: var(--tenant-surface-link); }
+  .class-workspace .class-content-disclosure[open] > .class-content-disclosure__summary { border-bottom: 0; background: transparent; }
+  .class-workspace .class-content-disclosure__body { display: block; padding: 0 0 24px; }
+  .class-workspace .group-list, .class-workspace .class-reference-list { display: grid; gap: 10px; margin: 0; }
+  .class-workspace .group-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .class-workspace .group-row > div:first-child { display: grid; gap: 4px; }
+  .class-workspace .group-row strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  .class-workspace .class-more-groups { margin-top: 12px; }
+  .class-workspace .class-more-groups > summary { width: fit-content; padding: 8px 0; color: var(--tenant-surface-link); font-size: .84rem; font-weight: 700; cursor: pointer; }
+  .class-workspace .class-more-groups .group-list { padding-top: 10px; }
+  .class-workspace .class-reference, .class-workspace .class-reference__body, .class-workspace .class-reference__url { min-width: 0; overflow-wrap: anywhere; }
+  .class-workspace .class-reference__url { display: block; }
+  .class-workspace .class-content-disclosure--references[open] .class-content-disclosure__body { max-height: 560px; overflow-y: auto; scrollbar-gutter: stable; }
+  .class-workspace .class-reference__note summary { width: fit-content; color: var(--tenant-surface-link); font-size: .78rem; font-weight: 700; cursor: pointer; }
+  .class-workspace .class-reference__note p { margin: 8px 0 0; }
+  .class-workspace .class-references { display: grid; gap: 16px; }
+  .class-workspace .class-references__header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .class-workspace .class-references__header p { margin: 0; color: var(--tenant-muted); }
+  @media (max-width: 1180px) { .class-workspace { grid-template-columns: 1fr; }.class-workspace .class-shell { border-right: 0; border-bottom: 1px solid var(--tenant-border); }.class-workspace .class-resources { padding: 20px 24px; }.class-workspace .class-header { height: auto; } }
+  @media (max-width: 900px) { .class-workspace .class-resources { grid-template-columns: 1fr; gap: 18px; }.class-workspace .class-content-disclosure--references { padding: 18px 0 0; border-top: 1px solid var(--tenant-border); border-left: 0; } }
+  @media (max-width: 520px) { .class-workspace .group-row { grid-template-columns: 1fr; }.class-workspace .group-row .program-actions, .class-workspace .group-row .program-actions > * { width: 100%; }.class-workspace .class-reference__actions { display: flex; flex-wrap: wrap; } }
+  @media (max-width: 520px) { .class-workspace .class-content-disclosure__summary { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; min-height: 0; }.class-workspace .class-content-disclosure__count { font-size: .7rem; } }
+</style>
+{% endblock %}
 {% block content %}
 <div class="tenant-page-frame programs-page">
   <nav class="program-breadcrumb" aria-label="Você está aqui"><a href="{% url 'plataforma:institutional_programs' %}">Programas e turmas</a><span aria-hidden="true"> / </span><span aria-current="page">{{ programa.nome }}</span></nav>
@@ -10,13 +71,57 @@
   </header>
   <section class="flow-strip" aria-label="Fluxo de organização"><div><strong>Programa</strong><span>define o propósito</span></div><span class="flow-arrow" aria-hidden="true">→</span><div><strong>Turma</strong><span>organiza o ciclo</span></div><span class="flow-arrow" aria-hidden="true">→</span><div><strong>Grupo</strong><span>desenvolve o projeto</span></div></section>
   {% if solicitacoes %}<section class="program-section" aria-labelledby="pedidos-titulo"><div class="programs-heading"><div><p class="programs-eyebrow">Atenção da gestão</p><h2 id="pedidos-titulo">Solicitações de turma</h2><p>Pedidos pendentes aparecem aqui para uma decisão rápida.</p></div></div><div class="request-list">{% for solicitacao in solicitacoes %}<article class="request-row"><div><strong>{{ solicitacao.usuario.get_full_name|default:solicitacao.usuario.username }}</strong><span>{{ solicitacao.turma.nome }} · {{ solicitacao.mensagem|default:"Sem mensagem adicional." }}</span></div><form class="program-actions" method="post" action="{% url 'plataforma:institutional_class_request_decide' solicitacao.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--primary" name="acao" value="aprovar">Aprovar</button><button class="camp-btn camp-btn--ghost" name="acao" value="recusar">Recusar</button></form></article>{% endfor %}</div></section>{% endif %}
-  <section class="program-section" aria-labelledby="turmas-titulo"><div class="programs-heading"><div><p class="programs-eyebrow">Segundo nível</p><h2 id="turmas-titulo">Turmas deste programa</h2><p>Uma turma representa um ciclo de aprendizagem, orientação ou execução. Os grupos vivem dentro dela.</p></div><span class="programs-count">{{ turmas|length }} turma{{ turmas|length|pluralize }}</span></div>
+  <section class="program-section" aria-labelledby="turmas-titulo"><div class="programs-heading"><div><p class="programs-eyebrow">Neste programa</p><h2 id="turmas-titulo">Turmas</h2></div><span class="programs-count">{{ turmas|length }} turma{{ turmas|length|pluralize }}</span></div>
     <div class="program-class-list">
-    {% for turma in turmas %}<article class="program-class class-shell">
-      <header class="class-header"><div><div class="status-nav" aria-label="Estado da turma"><span class="status-label">Turma</span><span class="status-chip status-chip--{{ turma.status }}">{{ turma.get_status_display }}</span><span class="status-chip">{{ turma.get_politica_participacao_display }}</span></div><h3>{{ turma.nome }}</h3><p>{{ turma.descricao|default:"Esta turma ainda não tem descrição." }}</p>{% if turma.professor_responsavel %}<p class="program-meta">Orientação: {{ turma.professor_responsavel.get_full_name|default:turma.professor_responsavel.username }}</p>{% endif %}</div><div class="program-actions">{% if turma.e_membro %}<span class="program-status">Você participa</span>{% elif turma.pedido_pendente %}<span class="program-status">Solicitação pendente</span>{% elif aluno and programa.status == 'publicado' and turma.status == 'ativo' and turma.politica_participacao == 'aberta' %}<form method="post" action="{% url 'plataforma:institutional_class_participate' turma.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--primary">Entrar na turma</button></form>{% elif aluno and programa.status == 'publicado' and turma.status == 'ativo' and turma.politica_participacao == 'aprovacao' %}<form method="post" action="{% url 'plataforma:institutional_class_participate' turma.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--primary">Solicitar participação</button></form>{% endif %}{% if turma.pode_criar_grupo %}<a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_group_create_for_class' turma.pk %}">Criar grupo</a>{% endif %}{% if pode_gerenciar %}<a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_class_edit' turma.pk %}">Editar turma</a>{% endif %}</div></header>
-      <div class="groups-panel"><div class="groups-panel-head"><div><p class="programs-eyebrow">Terceiro nível</p><h4>Grupos da turma</h4><p>Espaços menores para transformar o aprendizado em projeto.</p></div><span class="programs-count">{{ turma.grupos.all|length }} grupo{{ turma.grupos.all|length|pluralize }}</span></div><div class="group-list">{% for grupo in turma.grupos.all %}<div class="group-row"><div><strong>{{ grupo.nome }}</strong><span>{{ grupo.get_status_display }}{% if grupo.aberto_para_entrada %} · Aceita pedidos{% else %} · Por convite{% endif %}</span></div><div class="program-actions">{% if grupo.pode_ver %}<a class="camp-btn camp-btn--ghost camp-btn--xs" href="{% url 'plataforma:institutional_group_members' grupo.pk %}">{% if grupo.e_membro %}Abrir workspace{% else %}Ver preview{% endif %}</a>{% elif grupo.pedido_pendente %}<span class="program-status">Pedido enviado</span>{% elif aluno and turma.e_membro and grupo.aberto_para_entrada and grupo.status == 'ativo' and turma.status == 'ativo' and programa.status == 'publicado' %}<form method="post" action="{% url 'plataforma:institutional_group_request_join' grupo.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--ghost camp-btn--xs">Solicitar entrada</button></form>{% endif %}</div></div>{% empty %}<p class="program-meta">Nenhum grupo criado ainda. Quando o ciclo começar, os grupos aparecerão aqui.</p>{% endfor %}</div></div>
-    </article>{% empty %}<div class="programs-empty"><h3>Nenhuma turma disponível</h3><p>{% if pode_gerenciar %}Crie a primeira turma para dar início ao fluxo.{% else %}As turmas disponíveis para você aparecerão aqui.{% endif %}</p></div>{% endfor %}
+    {% for turma in turmas %}
+    {% if forloop.counter == 4 %}<details class="more-classes"><summary>Ver mais turmas <span>+{{ turmas|length|add:'-3' }}</span></summary><div class="program-class-list">{% endif %}
+    <div class="class-workspace" id="turma-{{ turma.pk }}"><article class="program-class class-shell">
+      <header class="class-header">
+        <div class="class-identity">
+          <div class="status-nav" aria-label="Estado e participação da turma"><span class="status-label">Turma</span><span class="status-chip status-chip--{{ turma.status }}">{{ turma.get_status_display }}</span><span class="status-chip">{{ turma.get_politica_participacao_display }}</span></div>
+          <h3 title="{{ turma.nome }}">{{ turma.nome }}</h3>
+          {% if turma.descricao %}{% if turma.descricao|length > 120 %}<p>{{ turma.descricao|truncatechars:120 }}</p><details class="class-description"><summary>Ler descrição completa</summary><p>{{ turma.descricao }}</p></details>{% else %}<p>{{ turma.descricao }}</p>{% endif %}{% endif %}
+          {% if turma.professor_responsavel %}<p class="class-teacher"><span>Professor responsável</span><strong title="{{ turma.professor_responsavel.get_full_name|default:turma.professor_responsavel.username }}">{{ turma.professor_responsavel.get_full_name|default:turma.professor_responsavel.username }}</strong></p>{% endif %}
+        </div>
+        <div class="class-actions">
+          {% if turma.e_membro %}<span class="program-status">Você participa</span>{% elif turma.pedido_pendente %}<span class="program-status">Solicitação pendente</span>{% elif aluno and programa.status == 'publicado' and turma.status == 'ativo' and turma.politica_participacao == 'aberta' %}<form method="post" action="{% url 'plataforma:institutional_class_participate' turma.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--primary">Entrar na turma</button></form>{% elif aluno and programa.status == 'publicado' and turma.status == 'ativo' and turma.politica_participacao == 'aprovacao' %}<form method="post" action="{% url 'plataforma:institutional_class_participate' turma.pk %}">{% csrf_token %}<button class="camp-btn camp-btn--primary">Solicitar participação</button></form>{% endif %}
+          {% if turma.pode_criar_grupo %}<a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_group_create_for_class' turma.pk %}">Criar grupo</a>{% endif %}
+          {% if pode_gerenciar %}<a class="camp-btn camp-btn--ghost" href="{% url 'plataforma:institutional_class_edit' turma.pk %}">Editar turma</a>{% endif %}
+        </div>
+      </header>
+    </article>
+    <div class="class-resources" role="group" aria-label="Conteúdo da turma {{ turma.nome }}">
+      <section class="class-content-disclosure class-content-disclosure--groups groups-panel" aria-label="Grupos da turma">
+        <header class="class-content-disclosure__summary">
+          <span class="class-content-disclosure__copy"><small>Em atividade</small><strong>Grupos</strong></span>
+          <span class="class-content-disclosure__count"><strong>{{ turma.grupos.all|length }}</strong><span>grupo{{ turma.grupos.all|length|pluralize }}</span></span>
+        </header>
+        <div class="class-content-disclosure__body">
+          <div class="group-list">
+            {% for grupo in turma.grupos.all|slice:':3' %}{% include "institutional/partials/class_group_row.html" %}{% empty %}<p class="program-meta">Nenhum grupo nesta turma.</p>{% endfor %}
+          </div>
+          {% if turma.grupos.all|length > 3 %}
+            <details class="class-more-groups">
+              <summary>Ver mais grupos <span>+{{ turma.grupos.all|length|add:'-3' }}</span></summary>
+              <div class="group-list">{% for grupo in turma.grupos.all|slice:'3:' %}{% include "institutional/partials/class_group_row.html" %}{% endfor %}</div>
+            </details>
+          {% endif %}
+        </div>
+      </section>
+      {% if turma.pode_ver_referencias %}{% include "institutional/partials/class_references.html" %}{% endif %}
+    </div></div>{% empty %}<div class="programs-empty"><h3>Nenhuma turma disponível</h3><p>{% if pode_gerenciar %}Crie a primeira turma para dar início ao fluxo.{% else %}As turmas disponíveis para você aparecerão aqui.{% endif %}</p></div>{% endfor %}
+    {% if turmas|length > 3 %}</div></details>{% endif %}
     </div>
   </section>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  const turmaAlvo = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+  if (turmaAlvo) {
+    const listaRecolhida = turmaAlvo.closest('.more-classes');
+    if (listaRecolhida) listaRecolhida.open = true;
+    turmaAlvo.scrollIntoView({ block: 'start' });
+  }
+</script>
 {% endblock %}

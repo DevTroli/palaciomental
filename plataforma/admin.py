@@ -233,10 +233,10 @@ admin.site.register(Project, ProjetoAdmin)
 
 @admin.register(ProjectLink)
 class ProjectLinkAdmin(admin.ModelAdmin):
-    list_display = ("label", "project", "url", "created_at")
-    search_fields = ("label", "url", "project__title")
-    list_select_related = ("project",)
-    autocomplete_fields = ("project",)
+    list_display = ("label", "project", "turma", "url", "created_at")
+    search_fields = ("label", "url", "project__title", "turma__nome")
+    list_select_related = ("project", "turma")
+    autocomplete_fields = ("project", "turma")
     readonly_fields = ("id", "created_at")
 
 

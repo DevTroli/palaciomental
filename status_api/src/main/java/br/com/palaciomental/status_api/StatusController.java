@@ -1,6 +1,7 @@
 package br.com.palaciomental.status_api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-@Tag(name = "Health Check", description = "Endpoints de verificação de saúde do sistema")
+@Tag(name = "Diagnóstico", description = "Consulte o funcionamento dos serviços.")
 @RestController
 @RequestMapping("/v1")
 public class StatusController {
@@ -28,8 +29,9 @@ public class StatusController {
   }
 
   @Operation(
-      summary = "Readiness probe",
-      description = "Verifica saúde do banco de dados e da aplicação Django")
+      summary = "Consultar estado dos serviços",
+      description = "Verifica o banco de dados e a prontidão do Django no momento da consulta. Retorna detalhes técnicos para a operação.")
+  @SecurityRequirement(name = "serviceToken")
   @GetMapping("/status")
   public Map<String, Object> getStatus() {
     Map<String, Object> database = checkDatabase();
@@ -107,7 +109,7 @@ public class StatusController {
     }
   }
 
-  @Operation(summary = "Liveness probe", description = "Verifica se a aplicação está rodando")
+  @Operation(summary = "Verificar a API", description = "Retorna pong quando a API está ativa.")
   @GetMapping("/ping")
   public String ping() {
     return "pong";
