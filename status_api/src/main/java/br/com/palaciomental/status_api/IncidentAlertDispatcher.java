@@ -91,20 +91,33 @@ public class IncidentAlertDispatcher {
   }
 
   Outcome send(String channel, Delivery delivery) {
-    String journey = JOURNEYS.getOrDefault(delivery.journey(), "Serviço");
-    String state = delivery.type().equals("recovered") ? "Recuperado"
+    String state = incidentState(delivery);
+    String message = incidentMessage(delivery, state);
+    return deliver(channel, delivery, state, message);
+  }
+
+  private String incidentState(Delivery delivery) {
+    return delivery.type().equals("recovered") ? "Recuperado"
         : delivery.type().equals("extended") ? "Incidente prolongado" : "Incidente aberto";
-    String route = switch (delivery.journey()) {
+  }
+
+  private String incidentMessage(Delivery delivery, String state) {
+    String journeyId = delivery.journey().startsWith("organizacao:") ? "organizacao" : delivery.journey();
+    String journey = JOURNEYS.getOrDefault(journeyId, "Serviço");
+    String route = switch (journeyId) {
       case "inicio" -> "/";
       case "vitrine" -> "/projetos/";
       case "entrada" -> "/entrar/";
       case "cadastro" -> "/cadastrar/";
       default -> "entrada institucional monitorada";
     };
-    String message = "Palácio Mental · " + state + "\nJornada: " + journey
+    return "Palácio Mental · " + state + "\nJornada: " + journey
         + "\nCategoria: disponibilidade\nPrioridade: " + (delivery.type().equals("recovered") ? "informativa" : "alta")
         + "\nHorário: " + delivery.createdAt() + "\nReprodução: acesse " + route
         + "\nConsulte a página pública de status para acompanhar o acesso.";
+  }
+
+  private Outcome deliver(String channel, Delivery delivery, String state, String message) {
     try {
       if (channel.equals("discord") && !validDiscord(discordUrl)) return Outcome.REJECTED;
       Map<String, Object> body = channel.equals("discord")
