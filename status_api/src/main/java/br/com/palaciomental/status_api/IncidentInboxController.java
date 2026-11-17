@@ -57,7 +57,7 @@ public class IncidentInboxController {
     jdbc.update("UPDATE guardiao.incident_alert_deliveries d SET status = 'failed', last_error = 'TENANT_NOT_FOUND' "
         + "FROM guardiao.incident_alert_events e JOIN guardiao.service_incidents i ON i.id = e.incident_id "
         + "WHERE d.event_id = e.id AND d.event_id = ? AND d.channel = 'inbox' "
-        + "AND d.status = 'pending' AND i.journey = 'organizacao'", eventId);
+        + "AND d.status = 'pending' AND (i.journey = 'organizacao' OR i.journey LIKE 'organizacao:%')", eventId);
     return ResponseEntity.noContent().build();
   }
 

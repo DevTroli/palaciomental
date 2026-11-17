@@ -51,11 +51,12 @@ public class PublicStatusController {
           days.add(Map.of("data", date.toString(), "coletas", dayChecks.size(), "esperadas", expected, "estado", dayState));
         }
         Check latest = checks.isEmpty() ? null : checks.getFirst();
-        String state = latest == null || latest.at().isBefore(now.minusSeconds(600)) ? "sem_coleta" : latest.ok() ? "funcionando" : "falha";
+        String state = id.equals("organizacao") ? tenantHealth(now)
+            : latest == null || latest.at().isBefore(now.minusSeconds(600)) ? "sem_coleta" : latest.ok() ? "funcionando" : "falha";
         journeys.add(Map.of("nome", NAMES.get(id), "estado", state, "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", days));
       }
       var incidents = jdbc.query("SELECT i.journey, i.started_at, i.recovered_at FROM guardiao.service_incidents i "
-              + "WHERE EXISTS (SELECT 1 FROM guardiao.incident_alert_events e WHERE e.incident_id = i.id AND e.event_type = 'public') "
+              + "WHERE i.retired_at IS NULL AND EXISTS (SELECT 1 FROM guardiao.incident_alert_events e WHERE e.incident_id = i.id AND e.event_type = 'public') "
               + "AND (i.started_at >= ? OR i.recovered_at IS NULL OR i.recovered_at >= ?) ORDER BY i.started_at DESC LIMIT 100",
           (rs, row) -> Map.of("jornada", NAMES.getOrDefault(rs.getString(1).startsWith("organizacao:") ? "organizacao" : rs.getString(1), "Serviço"), "inicio", rs.getTimestamp(2).toInstant().toString(),
               "fim", rs.getTimestamp(3) == null ? "" : rs.getTimestamp(3).toInstant().toString()), java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
@@ -69,7 +70,22 @@ public class PublicStatusController {
     return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
   }
 
-  private record Check(Instant at, boolean ok) {}
+  private String tenantHealth(Instant now) {
+    var latest = jdbc.query("SELECT c.checked_at, c.successful FROM guardiao.monitored_tenants t "
+            + "LEFT JOIN LATERAL (SELECT checked_at, successful FROM guardiao.service_checks "
+            + "WHERE journey = 'organizacao:' || t.organization_id::text ORDER BY checked_at DESC LIMIT 1) c ON true "
+            + "WHERE t.synced_at >= now() - interval '10 minutes'",
+        (rs, row) -> new Check(rs.getTimestamp(1) == null ? null : rs.getTimestamp(1).toInstant(), rs.getBoolean(2)));
+    return currentTenantState(latest, now);
+  }
+
+  static String currentTenantState(List<Check> latest, Instant now) {
+    if (latest.stream().anyMatch(c -> c.at() != null && !c.at().isBefore(now.minusSeconds(600)) && !c.ok())) return "falha";
+    if (latest.isEmpty() || latest.stream().anyMatch(c -> c.at() == null || c.at().isBefore(now.minusSeconds(600)))) return "sem_coleta";
+    return "funcionando";
+  }
+
+  record Check(Instant at, boolean ok) {}
   private static final class DurationSeconds {
     static long sinceMidnight(Instant now) { return now.getEpochSecond() % 86400; }
   }

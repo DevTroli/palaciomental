@@ -19,6 +19,25 @@ import org.springframework.jdbc.core.RowMapper;
 
 class PublicStatusControllerTest {
   @Test
+  void currentHealthIncludesEveryTenantAcrossTimeBinBoundaries() {
+    Instant now = Instant.parse("2026-01-01T12:05:02Z");
+    var checks = List.of(new PublicStatusController.Check(now.minusSeconds(3), false),
+        new PublicStatusController.Check(now.minusSeconds(1), true));
+    assertThat(PublicStatusController.currentTenantState(checks, now)).isEqualTo("falha");
+  }
+
+  @Test
+  void missingOrStaleTenantChecksCannotReportHealthy() {
+    Instant now = Instant.parse("2026-01-01T12:05:02Z");
+    var healthy = new PublicStatusController.Check(now.minusSeconds(1), true);
+    assertThat(PublicStatusController.currentTenantState(List.of(healthy,
+        new PublicStatusController.Check(null, false)), now)).isEqualTo("sem_coleta");
+    assertThat(PublicStatusController.currentTenantState(List.of(healthy,
+        new PublicStatusController.Check(now.minusSeconds(601), true)), now)).isEqualTo("sem_coleta");
+    assertThat(PublicStatusController.currentTenantState(List.of(healthy), now)).isEqualTo("funcionando");
+  }
+
+  @Test
   void disabledMonitoringDoesNotExposeStoredData() {
     var jdbc = mock(JdbcTemplate.class);
     var monitor = mock(ServiceMonitoring.class);

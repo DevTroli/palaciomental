@@ -38,21 +38,27 @@ public final class GuardiaoAuthFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain chain) throws ServletException, IOException {
+    int bodyLimit = request.getRequestURI().equals(request.getContextPath() + "/v1/guardiao/tenants")
+        && request.getMethod().equals("PUT") ? 1024 * 1024 : MAX_BODY_BYTES;
     if (!token.matches(request.getHeader("Authorization"))) {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     } else if (!request.isSecure() && !localHttp) {
       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    } else if (request.getContentLengthLong() > MAX_BODY_BYTES) {
+    } else if (request.getContentLengthLong() > bodyLimit) {
       response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
     } else {
-      chain.doFilter(new LimitedRequest(request), response);
+      chain.doFilter(new LimitedRequest(request, bodyLimit), response);
     }
   }
 
   private static final class LimitedRequest extends HttpServletRequestWrapper {
     private ServletInputStream stream;
+    private final int bodyLimit;
 
-    LimitedRequest(HttpServletRequest request) { super(request); }
+    LimitedRequest(HttpServletRequest request, int bodyLimit) {
+      super(request);
+      this.bodyLimit = bodyLimit;
+    }
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
@@ -62,7 +68,7 @@ public final class GuardiaoAuthFilter extends OncePerRequestFilter {
           private int count;
           @Override public int read() throws IOException {
             int value = input.read();
-            if (value >= 0 && ++count > MAX_BODY_BYTES) throw new IOException("Corpo excede o limite");
+            if (value >= 0 && ++count > bodyLimit) throw new IOException("Corpo excede o limite");
             return value;
           }
           @Override public boolean isFinished() { return input.isFinished(); }
