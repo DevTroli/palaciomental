@@ -9,6 +9,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import close_old_connections, transaction
+from django.utils import timezone
 
 from plataforma.models import GuardiaoLinkPendente, ProjectLink
 from plataforma.rls import system_context
@@ -77,10 +78,10 @@ class Command(BaseCommand):
         total = 0
         attempted = set()
         # O lock mantém a ordem das alterações do mesmo link entre workers.
-        # Uma rejeição individual permanece na fila, mas não bloqueia os demais.
+        # Rejeições individuais aguardam correção ou reprocessamento explícito.
         for _ in range(100):
             with transaction.atomic(), system_context():
-                pending = (GuardiaoLinkPendente.objects.select_for_update()
+                pending = (GuardiaoLinkPendente.objects.select_for_update().filter(quarentena=False)
                            .exclude(link_id__in=attempted).order_by("atualizado_em", "link_id").first())
                 if pending is None:
                     break
@@ -102,8 +103,11 @@ class Command(BaseCommand):
                             raise CommandError("O Guardião não aceitou a operação.")
                 except HTTPError as exc:
                     if method == "POST" and exc.code in {400, 422}:
-                        pending.save(update_fields=["atualizado_em"])
-                        self.stderr.write(f"Link {pending.link_id} rejeitado pelo Guardião (HTTP {exc.code}); preservado para revisão.")
+                        pending.quarentena = True
+                        pending.rejeicao_http = exc.code
+                        pending.rejeitada_em = timezone.now()
+                        pending.save(update_fields=["quarentena", "rejeicao_http", "rejeitada_em", "atualizado_em"])
+                        self.stderr.write(f"Link {pending.link_id} em quarentena (HTTP {exc.code}); corrija a URL ou reprocese o ID.")
                         continue
                     raise CommandError("Não foi possível comunicar com o Guardião.") from exc
                 except (URLError, TimeoutError, OSError) as exc:
