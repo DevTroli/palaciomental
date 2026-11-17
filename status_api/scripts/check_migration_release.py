@@ -1,6 +1,7 @@
 """Confere o entrypoint de migração do JAR usando somente um banco de testes."""
 import os
 from pathlib import Path
+import re
 import subprocess
 
 
@@ -22,6 +23,8 @@ def main():
     assert "127.0.0.1" in environment["GUARDIAO_MIGRATION_JDBC_URL"], "Use somente banco local descartável"
     first = run_jar(environment, True)
     assert "histórico validado" in first
+    applied = re.search(r"Guardião: ([0-9]+) migration\(s\) aplicada\(s\); histórico validado\.", first)
+    assert applied and int(applied.group(1)) > 0, "Primeira execução deve aplicar migrations pendentes em banco vazio"
     repeated = run_jar(environment, True)
     assert "0 migration(s)" in repeated, "Reexecução reaplicou migrations"
     missing = dict(environment)
