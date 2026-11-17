@@ -3,6 +3,7 @@ package br.com.palaciomental.status_api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -38,6 +39,20 @@ class PublicStatusControllerTest {
     assertThat(history).hasSize(3);
     assertThat(history.get(1)).containsEntry("data", "2026-11-16").containsEntry("estado", "sem_coleta");
     assertThat(PublicStatusController.history(List.of(), null, Instant.now())).isEmpty();
+  }
+
+  @Test
+  void monitoringStartRemainsAvailableAfterSamplesExpire() {
+    Instant startedAt = Instant.parse("2026-10-01T11:00:00Z");
+    var jdbc = mock(JdbcTemplate.class);
+    when(jdbc.queryForObject(anyString(), eq(Timestamp.class), any(), any())).thenReturn(Timestamp.from(startedAt));
+
+    var controller = new PublicStatusController(jdbc, mock(ServiceMonitoring.class));
+    Instant persistedStart = controller.firstMonitoringStart("inicio", List.of());
+    var history = PublicStatusController.history(List.of(), persistedStart, Instant.parse("2026-11-17T11:00:00Z"));
+
+    assertThat(history).hasSize(30);
+    assertThat(history.getFirst()).containsEntry("data", "2026-10-19").containsEntry("estado", "sem_coleta");
   }
 
   @Test

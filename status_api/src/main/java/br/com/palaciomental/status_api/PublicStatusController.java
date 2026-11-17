@@ -42,7 +42,7 @@ public class PublicStatusController {
                 + "WHERE (journey = ? OR (? = 'organizacao' AND journey LIKE 'organizacao:%')) AND checked_at >= ? "
                 + "GROUP BY date_bin(interval '5 minutes', checked_at, timestamptz '2000-01-01') ORDER BY max(checked_at) DESC",
             (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), id, id, java.sql.Timestamp.from(start));
-        var days = history(checks, firstCheck(id, checks), now);
+        var days = history(checks, firstMonitoringStart(id, checks), now);
         Check latest = checks.isEmpty() ? null : checks.getFirst();
         String state = currentState(id, latest, now);
         journeys.add(Map.of("nome", NAMES.get(id), "estado", state, "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", days));
@@ -84,11 +84,10 @@ public class PublicStatusController {
   }
 
   record Check(Instant at, boolean ok) {}
-  private Instant firstCheck(String journey, List<Check> checks) {
-    var first = jdbc.query("SELECT min(checked_at) FROM guardiao.service_checks WHERE journey = ? "
-            + "OR (? = 'organizacao' AND journey LIKE 'organizacao:%')",
-        (rs, row) -> rs.getTimestamp(1) == null ? null : rs.getTimestamp(1).toInstant(), journey, journey);
-    if (!first.isEmpty()) return first.getFirst();
+  Instant firstMonitoringStart(String journey, List<Check> checks) {
+    java.sql.Timestamp startedAt = jdbc.queryForObject("SELECT min(started_at) FROM guardiao.service_journeys WHERE journey = ? "
+        + "OR (? = 'organizacao' AND journey LIKE 'organizacao:%')", java.sql.Timestamp.class, journey, journey);
+    if (startedAt != null) return startedAt.toInstant();
     return checks.isEmpty() ? null : checks.getLast().at();
   }
 
