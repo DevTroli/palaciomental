@@ -52,4 +52,32 @@ class CachedThreatTransportTest {
         new SafeBrowsingPrototype.Reply(List.of(match), Duration.ofMinutes(5)), clock);
     assertThat(transport.search(List.of(prefix)).cacheDuration()).isEqualTo(Duration.ofMinutes(5));
   }
+
+  @Test
+  void negativoAntigoNaoEnvelheceAmeacaRecente() throws Exception {
+    var clock = new MutableClock();
+    byte[] hash = new byte[32];
+    hash[0] = 5;
+    String negative = Base64.getEncoder().encodeToString(new byte[]{1, 2, 3, 4});
+    String positive = Base64.getEncoder().encodeToString(java.util.Arrays.copyOf(hash, 4));
+    var match = new ThreatHashMatcher.Match(hash, List.of(new ThreatHashMatcher.Detail("MALWARE", List.of())));
+    var requests = new java.util.ArrayList<List<String>>();
+    var transport = new CachedThreatTransport(prefixes -> {
+      requests.add(List.copyOf(prefixes));
+      return new SafeBrowsingPrototype.Reply(prefixes.contains(positive) ? List.of(match) : List.of(),
+          Duration.ofMinutes(5));
+    }, clock);
+    transport.search(List.of(negative));
+    clock.time = clock.time.plus(Duration.ofHours(1));
+    var reply = transport.search(List.of(negative, positive));
+    assertThat(requests).hasSize(3);
+    assertThat(requests.get(2)).containsExactly(negative, positive);
+    assertThat(reply.receivedAt()).isEqualTo(clock.instant());
+    var result = ThreatHashMatcher.evaluate(List.of(hash), reply.matches(), reply.receivedAt(), reply.cacheDuration());
+    assertThat(result.currentState(clock.instant())).isEqualTo(ThreatAssessment.State.THREAT);
+    assertThat(result.expiresAt()).isEqualTo(clock.instant().plus(Duration.ofMinutes(5)));
+    assertThat(result.currentState(result.expiresAt())).isEqualTo(ThreatAssessment.State.UNVERIFIED);
+    transport.search(List.of(negative, positive));
+    assertThat(requests).hasSize(3);
+  }
 }

@@ -31,6 +31,13 @@ final class CachedThreatTransport implements SafeBrowsingPrototype.Transport {
     if (!missing.isEmpty()) {
       cacheMissing(missing);
     }
+    var entries = prefixes.stream().distinct().map(cache::get).toList();
+    if (entries.stream().anyMatch(entry -> entry != null && !entry.matches().isEmpty())
+        && entries.stream().filter(java.util.Objects::nonNull).map(Entry::receivedAt).distinct().count() > 1) {
+      // O contrato possui um único horário: renove o conjunto, sem rejuvenescer dados locais.
+      cacheMissing(prefixes.stream().distinct().toList());
+    }
+    now = clock.instant();
     List<ThreatHashMatcher.Match> matches = new ArrayList<>();
     Instant oldest = now;
     Instant expiry = Instant.MAX;
@@ -45,7 +52,8 @@ final class CachedThreatTransport implements SafeBrowsingPrototype.Transport {
   }
 
   private void cacheMissing(List<String> missing) throws IOException {
-    if (cache.size() + missing.size() > MAX_PREFIXES) throw new IOException("Cache de consultas cheio.");
+    long newPrefixes = missing.stream().distinct().filter(prefix -> !cache.containsKey(prefix)).count();
+    if (cache.size() + newPrefixes > MAX_PREFIXES) throw new IOException("Cache de consultas cheio.");
     var reply = delegate.search(missing);
     Instant received = clock.instant();
     if (reply == null || reply.matches() == null || reply.cacheDuration() == null
