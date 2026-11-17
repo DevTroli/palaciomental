@@ -51,8 +51,7 @@ public class PublicStatusController {
           days.add(Map.of("data", date.toString(), "coletas", dayChecks.size(), "esperadas", expected, "estado", dayState));
         }
         Check latest = checks.isEmpty() ? null : checks.getFirst();
-        String state = id.equals("organizacao") ? tenantHealth(now)
-            : latest == null || latest.at().isBefore(now.minusSeconds(600)) ? "sem_coleta" : latest.ok() ? "funcionando" : "falha";
+        String state = currentState(id, latest, now);
         journeys.add(Map.of("nome", NAMES.get(id), "estado", state, "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", days));
       }
       var incidents = jdbc.query("SELECT i.journey, i.started_at, i.recovered_at FROM guardiao.service_incidents i "
@@ -77,6 +76,12 @@ public class PublicStatusController {
             + "WHERE t.synced_at >= now() - interval '10 minutes'",
         (rs, row) -> new Check(rs.getTimestamp(1) == null ? null : rs.getTimestamp(1).toInstant(), rs.getBoolean(2)));
     return currentTenantState(latest, now);
+  }
+
+  private String currentState(String journey, Check latest, Instant now) {
+    if (journey.equals("organizacao")) return tenantHealth(now);
+    if (latest == null || latest.at().isBefore(now.minusSeconds(600))) return "sem_coleta";
+    return latest.ok() ? "funcionando" : "falha";
   }
 
   static String currentTenantState(List<Check> latest, Instant now) {
