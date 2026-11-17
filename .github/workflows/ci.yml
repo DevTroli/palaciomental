@@ -21,6 +21,7 @@ jobs:
       GUARDIAO_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/guardiao_test
       GUARDIAO_TEST_USER: postgres
       GUARDIAO_TEST_PASSWORD: postgres
+      STATUS_TEST_DATABASE_URL: jdbc:postgresql://127.0.0.1:5432/guardiao_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -29,12 +30,47 @@ jobs:
           java-version: '21'
           cache: maven
           cache-dependency-path: status_api/pom.xml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Validar migration do Guardião em banco descartável
         working-directory: status_api
         run: ./mvnw --batch-mode flyway:migrate flyway:validate
+      - name: Preparar role restrita dos testes de monitoramento
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d guardiao_test <<'SQL'
+          CREATE ROLE gc05 LOGIN PASSWORD 'gc05-temporary' NOSUPERUSER NOBYPASSRLS;
+          GRANT CONNECT ON DATABASE guardiao_test TO gc05;
+          GRANT USAGE ON SCHEMA guardiao TO gc05;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA guardiao TO gc05;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA guardiao TO gc05;
+          SQL
       - name: Testes da API Spring
         working-directory: status_api
         run: ./mvnw --batch-mode test
+      - name: Confirmar execução das integrações PostgreSQL
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          reports = Path("status_api/target/surefire-reports")
+          required = ("ServiceMonitoringPostgresTest", "LinkCheckRepositoryPostgresTest")
+          for name in required:
+              matches = list(reports.glob(f"TEST-*.{name}.xml"))
+              if len(matches) != 1:
+                  raise SystemExit(f"Relatório obrigatório ausente ou ambíguo: {name}")
+              suite = ET.parse(matches[0]).getroot()
+              tests = int(suite.get("tests", "0"))
+              skipped = int(suite.get("skipped", "0"))
+              failures = int(suite.get("failures", "0")) + int(suite.get("errors", "0"))
+              if tests == 0 or skipped or failures:
+                  raise SystemExit(f"Integração incompleta: {name}; tests={tests}, skipped={skipped}, failures={failures}")
+              print(f"{name}: {tests} testes executados, sem skips ou falhas")
+          PY
   test:
     runs-on: ubuntu-latest
     services:
