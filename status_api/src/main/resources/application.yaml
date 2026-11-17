@@ -1,4 +1,6 @@
 spring:
+  flyway:
+    enabled: false
   application:
     name: status-api
   task:

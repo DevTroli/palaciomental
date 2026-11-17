@@ -50,6 +50,15 @@ jobs:
       - name: Testes da API Spring
         working-directory: status_api
         run: ./mvnw --batch-mode test
+      - name: Validar executor de migração empacotado
+        working-directory: status_api
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"
+          POSTGRES_DB: guardiao_test
+        run: |
+          ./mvnw --batch-mode -DskipTests package
+          python scripts/check_migration_release.py
       - name: Confirmar execução das integrações PostgreSQL
         if: always()
         run: |
