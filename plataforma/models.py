@@ -363,6 +363,9 @@ class GuardiaoLinkPendente(models.Model):
 
     link_id = models.BigIntegerField(primary_key=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+    quarentena = models.BooleanField(default=False, db_index=True)
+    rejeicao_http = models.PositiveSmallIntegerField(null=True, blank=True)
+    rejeitada_em = models.DateTimeField(null=True, blank=True)
 
 
 class ProjectMember(models.Model):
