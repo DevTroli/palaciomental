@@ -26,7 +26,7 @@ class ServiceMonitoringPostgresTest {
     var transactions = new TransactionTemplate(new DataSourceTransactionManager(source));
     var environment = mock(Environment.class);
     when(environment.acceptsProfiles(org.mockito.ArgumentMatchers.any(Profiles.class))).thenReturn(true);
-    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "", "");
+    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "");
     clearTestData(jdbc);
 
     transactions.executeWithoutResult(s -> monitor.record("inicio", false));
@@ -37,7 +37,7 @@ class ServiceMonitoringPostgresTest {
     ageLastCheck(jdbc);
     transactions.executeWithoutResult(s -> monitor.record("inicio", true));
     ageLastCheck(jdbc);
-    var restarted = new ServiceMonitoring(jdbc, transactions, environment, true, "", "");
+    var restarted = new ServiceMonitoring(jdbc, transactions, environment, true, "");
     transactions.executeWithoutResult(s -> restarted.record("inicio", true));
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.service_incidents WHERE journey = 'inicio' AND recovered_at IS NOT NULL", Integer.class)).isEqualTo(1);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM guardiao.service_checks WHERE journey = 'inicio'", Integer.class)).isEqualTo(4);
@@ -71,7 +71,7 @@ class ServiceMonitoringPostgresTest {
     var transactions = new TransactionTemplate(new DataSourceTransactionManager(source));
     var environment = mock(Environment.class);
     when(environment.acceptsProfiles(org.mockito.ArgumentMatchers.any(Profiles.class))).thenReturn(true);
-    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "", "");
+    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "");
     clearTestData(jdbc);
     var now = java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     jdbc.update("INSERT INTO guardiao.service_incidents (journey, started_at) VALUES ('vitrine', ?)", java.sql.Timestamp.from(now.minusSeconds(3900)));
@@ -139,7 +139,7 @@ class ServiceMonitoringPostgresTest {
     var transactions = new TransactionTemplate(new DataSourceTransactionManager(source));
     var environment = mock(Environment.class);
     when(environment.acceptsProfiles(org.mockito.ArgumentMatchers.any(Profiles.class))).thenReturn(true);
-    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "", "");
+    var monitor = new ServiceMonitoring(jdbc, transactions, environment, true, "");
     clearTestData(jdbc);
     long incidentId = jdbc.queryForObject("INSERT INTO guardiao.service_incidents (journey, started_at) VALUES ('inicio', now()) RETURNING id", Long.class);
     transactions.executeWithoutResult(s -> IncidentAlertEvents.enqueue(jdbc, incidentId, "opened", java.time.Instant.now()));

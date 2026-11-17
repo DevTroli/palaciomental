@@ -35,7 +35,7 @@ class PublicStatusControllerTest {
     var jdbc = mock(JdbcTemplate.class);
     var monitor = mock(ServiceMonitoring.class);
     when(monitor.enabled()).thenReturn(true);
-    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any()))
+    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any(), any()))
         .thenThrow(new DataAccessResourceFailureException("offline"));
 
     assertThat(new PublicStatusController(jdbc, monitor).status().getBody()).isEqualTo(Map.of("disponivel", false));
@@ -46,7 +46,7 @@ class PublicStatusControllerTest {
     var jdbc = mock(JdbcTemplate.class);
     var monitor = mock(ServiceMonitoring.class);
     when(monitor.enabled()).thenReturn(true);
-    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any()))
+    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any(), any()))
         .thenReturn(List.of());
 
     var body = new PublicStatusController(jdbc, monitor).status().getBody();
@@ -68,7 +68,7 @@ class PublicStatusControllerTest {
     var jdbc = mock(JdbcTemplate.class);
     var monitor = mock(ServiceMonitoring.class);
     when(monitor.enabled()).thenReturn(true);
-    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any()))
+    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any(), any()))
         .thenAnswer(invocation -> {
           if (((String) invocation.getArgument(0)).contains("service_incidents")) return List.of();
           RowMapper<?> mapper = invocation.getArgument(1);

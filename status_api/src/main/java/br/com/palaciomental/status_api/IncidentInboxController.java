@@ -35,7 +35,7 @@ public class IncidentInboxController {
             + "JOIN guardiao.service_incidents i ON i.id = e.incident_id "
             + "WHERE d.channel = 'inbox' AND d.status = 'pending' AND e.event_type = 'severe' "
             + "AND d.next_attempt_at <= now() AND e.created_at >= now() - interval '24 hours' ORDER BY e.id LIMIT 20",
-        (rs, row) -> new Alert(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getTimestamp(4).toInstant(),
+        (rs, row) -> new Alert(rs.getLong(1), rs.getString(2).startsWith("organizacao:") ? "organizacao" : rs.getString(2), rs.getString(3), rs.getTimestamp(4).toInstant(),
             rs.getTimestamp(5) == null ? null : rs.getTimestamp(5).toInstant(), rs.getTimestamp(6).toInstant()));
   }
 

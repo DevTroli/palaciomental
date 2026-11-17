@@ -20,22 +20,18 @@ public class ServiceMonitoring {
   private final TransactionTemplate transactions;
   private final boolean enabled;
   private final List<Journey> journeys;
-  private final String tenantHost;
 
   public ServiceMonitoring(JdbcTemplate jdbc, TransactionTemplate transactions, Environment environment,
       @Value("${monitor.enabled:false}") boolean enabled,
-      @Value("${monitor.global-url:}") String global,
-      @Value("${monitor.tenant-login-url:}") String tenant) {
+      @Value("${monitor.global-url:}") String global) {
     this.jdbc = jdbc;
     this.transactions = transactions;
     this.enabled = enabled && environment.acceptsProfiles(Profiles.of("production | prod"));
-    this.tenantHost = valid(tenant) ? URI.create(tenant).getHost().toLowerCase(java.util.Locale.ROOT) : null;
     String base = global.replaceAll("/+$", "");
     journeys = List.of(new Journey("inicio", base, "data-status-probe=\"inicio\""),
         new Journey("vitrine", base + "/projetos/", "data-status-probe=\"vitrine\""),
         new Journey("entrada", base + "/entrar/", "data-status-probe=\"entrada\""),
-        new Journey("cadastro", base + "/cadastrar/", "data-status-probe=\"cadastro\""),
-        new Journey("organizacao", tenant, "data-status-probe=\"organizacao\""));
+        new Journey("cadastro", base + "/cadastrar/", "data-status-probe=\"cadastro\""));
   }
 
   @Scheduled(fixedRateString = "${monitor.interval-ms:300000}", initialDelay = 30000)
@@ -45,6 +41,12 @@ public class ServiceMonitoring {
       if (!valid(journey.url())) continue;
       boolean success = probe(journey);
       transactions.executeWithoutResult(status -> record(journey.id(), success));
+    }
+    var tenants = jdbc.query("SELECT organization_id, hostname FROM guardiao.monitored_tenants WHERE synced_at >= now() - interval '10 minutes' ORDER BY organization_id",
+        (rs, row) -> new Journey("organizacao:" + rs.getString(1), "https://" + rs.getString(2) + "/entrar/", "data-status-probe=\"organizacao\""));
+    for (Journey tenant : tenants) {
+      boolean success = TenantLoginProbe.check(URI.create(tenant.url()), tenant.marker());
+      transactions.executeWithoutResult(status -> record(tenant.id(), success));
     }
   }
 
@@ -83,7 +85,7 @@ public class ServiceMonitoring {
       if (!successful) {
         var opened = jdbc.query("INSERT INTO guardiao.service_incidents (journey, started_at, tenant_host) VALUES (?, ?, ?) ON CONFLICT (journey) WHERE recovered_at IS NULL DO NOTHING RETURNING id",
             (rs, row) -> rs.getLong(1), journey, java.sql.Timestamp.from(previous.getFirst().at()),
-            journey.equals("organizacao") ? tenantHost : null);
+            tenantHost(journey));
         opened.forEach(id -> IncidentAlertEvents.enqueue(jdbc, id, "opened", now));
       } else {
         var recovered = jdbc.query("UPDATE guardiao.service_incidents SET recovered_at = ? WHERE journey = ? AND recovered_at IS NULL RETURNING id",
@@ -119,6 +121,13 @@ public class ServiceMonitoring {
   }
 
   private record Previous(boolean successful, Instant at) {}
+
+  private String tenantHost(String journey) {
+    if (!journey.startsWith("organizacao:")) return null;
+    var hosts = jdbc.query("SELECT hostname FROM guardiao.monitored_tenants WHERE organization_id = ?",
+        (rs, row) -> rs.getString(1), java.util.UUID.fromString(journey.substring("organizacao:".length())));
+    return hosts.isEmpty() ? null : hosts.getFirst();
+  }
 
   static boolean consecutive(boolean previous, Instant previousAt, boolean current, Instant now) {
     return previous == current && previousAt.isAfter(now.minusSeconds(600));

@@ -91,10 +91,11 @@ public class IncidentAlertDispatcher {
   }
 
   Outcome send(String channel, Delivery delivery) {
-    String journey = JOURNEYS.getOrDefault(delivery.journey(), "Serviço");
+    String journeyId = delivery.journey().startsWith("organizacao:") ? "organizacao" : delivery.journey();
+    String journey = JOURNEYS.getOrDefault(journeyId, "Serviço");
     String state = delivery.type().equals("recovered") ? "Recuperado"
         : delivery.type().equals("extended") ? "Incidente prolongado" : "Incidente aberto";
-    String route = switch (delivery.journey()) {
+    String route = switch (journeyId) {
       case "inicio" -> "/";
       case "vitrine" -> "/projetos/";
       case "entrada" -> "/entrar/";

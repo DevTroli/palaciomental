@@ -36,8 +36,10 @@ public class PublicStatusController {
       var start = today.minusDays(29).atStartOfDay().toInstant(ZoneOffset.UTC);
       var journeys = new ArrayList<Map<String, Object>>();
       for (String id : List.of("inicio", "vitrine", "entrada", "cadastro", "organizacao")) {
-        var checks = jdbc.query("SELECT checked_at, successful FROM guardiao.service_checks WHERE journey = ? AND checked_at >= ? ORDER BY checked_at DESC",
-            (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), id, java.sql.Timestamp.from(start));
+        var checks = jdbc.query("SELECT max(checked_at), bool_and(successful) FROM guardiao.service_checks "
+                + "WHERE (journey = ? OR (? = 'organizacao' AND journey LIKE 'organizacao:%')) AND checked_at >= ? "
+                + "GROUP BY date_bin(interval '5 minutes', checked_at, timestamptz '2000-01-01') ORDER BY max(checked_at) DESC",
+            (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), id, id, java.sql.Timestamp.from(start));
         var days = new ArrayList<Map<String, Object>>();
         for (int offset = 29; offset >= 0; offset--) {
           LocalDate date = today.minusDays(offset);
@@ -55,7 +57,7 @@ public class PublicStatusController {
       var incidents = jdbc.query("SELECT i.journey, i.started_at, i.recovered_at FROM guardiao.service_incidents i "
               + "WHERE EXISTS (SELECT 1 FROM guardiao.incident_alert_events e WHERE e.incident_id = i.id AND e.event_type = 'public') "
               + "AND (i.started_at >= ? OR i.recovered_at IS NULL OR i.recovered_at >= ?) ORDER BY i.started_at DESC LIMIT 100",
-          (rs, row) -> Map.of("jornada", NAMES.getOrDefault(rs.getString(1), "Serviço"), "inicio", rs.getTimestamp(2).toInstant().toString(),
+          (rs, row) -> Map.of("jornada", NAMES.getOrDefault(rs.getString(1).startsWith("organizacao:") ? "organizacao" : rs.getString(1), "Serviço"), "inicio", rs.getTimestamp(2).toInstant().toString(),
               "fim", rs.getTimestamp(3) == null ? "" : rs.getTimestamp(3).toInstant().toString()), java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
       return response(Map.of("disponivel", true, "jornadas", journeys, "incidentes", incidents));
     } catch (DataAccessException e) {

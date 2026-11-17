@@ -36,6 +36,11 @@ class Command(BaseCommand):
             return
         while True:
             try:
+                from plataforma.guardiao_tenants import sincronizar_tenants
+                sincronizar_tenants(endpoint, token, build_opener(_NoRedirect()))
+            except Exception:
+                self.stderr.write("Sincronização das organizações monitoradas falhou; nova tentativa no próximo ciclo.")
+            try:
                 close_old_connections()
                 self._sincronizar()
             except CommandError as exc:
