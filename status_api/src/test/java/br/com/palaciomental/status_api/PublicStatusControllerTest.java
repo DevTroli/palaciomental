@@ -19,6 +19,28 @@ import org.springframework.jdbc.core.RowMapper;
 
 class PublicStatusControllerTest {
   @Test
+  void firstDayStartsAtFirstRealCheckInsteadOfMidnight() {
+    Instant first = Instant.parse("2026-11-17T11:00:00Z");
+    Instant now = first.plusSeconds(600);
+    var history = PublicStatusController.history(List.of(new PublicStatusController.Check(first, true),
+        new PublicStatusController.Check(first.plusSeconds(300), true),
+        new PublicStatusController.Check(now, true)), first, now);
+    assertThat(history).hasSize(1);
+    assertThat(history.getFirst()).containsEntry("data", "2026-11-17")
+        .containsEntry("esperadas", 3).containsEntry("coletas", 3).containsEntry("estado", "funcionando");
+  }
+
+  @Test
+  void missingDaysAfterMonitoringStartsRemainVisible() {
+    Instant first = Instant.parse("2026-11-15T11:00:00Z");
+    var history = PublicStatusController.history(List.of(new PublicStatusController.Check(first, true)),
+        first, Instant.parse("2026-11-17T11:00:00Z"));
+    assertThat(history).hasSize(3);
+    assertThat(history.get(1)).containsEntry("data", "2026-11-16").containsEntry("estado", "sem_coleta");
+    assertThat(PublicStatusController.history(List.of(), null, Instant.now())).isEmpty();
+  }
+
+  @Test
   void currentHealthIncludesEveryTenantAcrossTimeBinBoundaries() {
     Instant now = Instant.parse("2026-01-01T12:05:02Z");
     var checks = List.of(new PublicStatusController.Check(now.minusSeconds(3), false),
