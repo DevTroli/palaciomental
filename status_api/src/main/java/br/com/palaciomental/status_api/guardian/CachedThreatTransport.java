@@ -37,9 +37,8 @@ final class CachedThreatTransport implements SafeBrowsingPrototype.Transport {
       // O contrato possui um único horário: renove o conjunto, sem rejuvenescer dados locais.
       cacheMissing(prefixes.stream().distinct().toList());
     }
-    now = clock.instant();
     List<ThreatHashMatcher.Match> matches = new ArrayList<>();
-    Instant oldest = now;
+    Instant oldest = clock.instant();
     Instant expiry = Instant.MAX;
     for (String prefix : prefixes) {
       Entry entry = cache.get(prefix);
