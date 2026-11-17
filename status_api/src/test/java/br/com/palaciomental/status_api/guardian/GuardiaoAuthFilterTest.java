@@ -11,6 +11,34 @@ import org.springframework.mock.env.MockEnvironment;
 
 class GuardiaoAuthFilterTest {
   @Test
+  void permitsCompleteTenantSnapshotButKeepsOtherRoutesAt64KiB() throws Exception {
+    var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
+    String item = "{\"organizationId\":\"" + java.util.UUID.randomUUID()
+        + "\",\"hostname\":\"" + "a".repeat(249) + ".org\"}";
+    byte[] body = ("{\"tenants\":[" + String.join(",", java.util.Collections.nCopies(1000, item)) + "]}")
+        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    var request = new MockHttpServletRequest("PUT", "/v1/guardiao/tenants");
+    request.setSecure(true);
+    request.addHeader("Authorization", "Bearer test-secret");
+    request.setContent(body);
+    var called = new AtomicBoolean();
+    filter.doFilter(request, new MockHttpServletResponse(), (req, res) -> {
+      assertEquals(body.length, req.getInputStream().readAllBytes().length);
+      called.set(true);
+    });
+    assertTrue(called.get());
+    request.setRequestURI("/v1/guardiao/links");
+    var response = new MockHttpServletResponse();
+    filter.doFilter(request, response, (req, res) -> { throw new AssertionError("Limite alterado em outra rota"); });
+    assertEquals(413, response.getStatus());
+    request.setRequestURI("/v1/guardiao/tenants");
+    request.setContent(new byte[1024 * 1024 + 1]);
+    response = new MockHttpServletResponse();
+    filter.doFilter(request, response, (req, res) -> { throw new AssertionError("Snapshot sem limite"); });
+    assertEquals(413, response.getStatus());
+  }
+
+  @Test
   void inboxAlertsRequireServiceAuthentication() throws Exception {
     var filter = new GuardiaoAuthFilter("test-secret", new MockEnvironment());
     var request = new MockHttpServletRequest("GET", "/v1/guardiao/alertas/inbox");
