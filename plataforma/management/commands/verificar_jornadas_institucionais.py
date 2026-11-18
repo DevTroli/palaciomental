@@ -46,14 +46,14 @@ class Command(BaseCommand):
         project = reverse("plataforma:project_detail", args=[options["projeto"]])
         program = reverse("plataforma:institutional_program_detail", args=[options["programa"]])
         try:
-            results = self.check(client, cookies, origin, login, project, program, username, password, options)
+            results = self.check_journeys(client, cookies, origin, login, project, program, username, password, options)
         except (URLError, TimeoutError, OSError):
             results = {"login": False, "projetos": False, "programas_e_turmas": False}
         self.stdout.write(json.dumps(results))
         if not all(results.values()):
             raise CommandError("Uma ou mais jornadas não responderam como esperado.")
 
-    def check(self, client, cookies, origin, login, project, program, username, password, options):
+    def check_journeys(self, client, cookies, origin, login, project, program, username, password, options):
         with client.open(origin + login, timeout=10) as response:
             page = response.read(512 * 1024)
         token = next((cookie.value for cookie in cookies if cookie.name == "csrftoken"), "")
