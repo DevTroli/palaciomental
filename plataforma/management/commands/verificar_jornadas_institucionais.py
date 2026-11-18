@@ -21,6 +21,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--origem", required=True)
+        parser.add_argument("--publicar-em", help="URL HTTPS de /v1/guardiao/sondagens no Spring.")
         parser.add_argument("--projeto", required=True, type=int)
         parser.add_argument("--titulo-projeto", required=True)
         parser.add_argument("--programa", required=True)
@@ -50,8 +51,29 @@ class Command(BaseCommand):
         except (URLError, TimeoutError, OSError):
             results = {"login": False, "projetos": False, "programas_e_turmas": False}
         self.stdout.write(json.dumps(results))
+        if options.get("publicar_em"):
+            self.publish(options["publicar_em"], origin, results)
         if not all(results.values()):
             raise CommandError("Uma ou mais jornadas não responderam como esperado.")
+
+    @staticmethod
+    def publish(endpoint, origin, results):
+        url = urlsplit(endpoint)
+        token = os.environ.get("GUARDIAO_SERVICE_TOKEN")
+        if (not token or url.scheme != "https" or not url.hostname or url.username is not None
+                or url.path != "/v1/guardiao/sondagens" or url.query or url.fragment):
+            raise CommandError("Informe o endpoint HTTPS de sondagens e configure GUARDIAO_SERVICE_TOKEN.")
+        request = Request(endpoint, data=json.dumps({"origin": origin, **results}).encode(), headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        })
+        try:
+            with build_opener(NoRedirects()).open(request, timeout=10) as response:
+                if response.status == 204:
+                    return
+        except (URLError, TimeoutError, OSError):
+            pass
+        raise CommandError("A API de status não confirmou o recebimento da sondagem.")
 
     def check_journeys(self, client, cookies, origin, login, project, program, username, password, options):
         with client.open(origin + login, timeout=10) as response:

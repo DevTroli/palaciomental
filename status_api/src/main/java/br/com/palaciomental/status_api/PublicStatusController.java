@@ -75,11 +75,12 @@ public class PublicStatusController {
       LocalDate today = LocalDate.now(DISPLAY_ZONE);
       var start = today.minusDays(29).atStartOfDay(DISPLAY_ZONE).toInstant();
       String journeyId = "organizacao:" + organization.id();
-      var checks = checks(journeyId, start);
-      Check latest = checks.isEmpty() ? null : checks.getFirst();
-      var journey = Map.of("nome", "Página de entrada", "estado", currentState(journeyId, latest, now),
-          "ultima_verificacao", latest == null ? "" : latest.at().toString(),
-          "dias", history(checks, firstMonitoringStart(journeyId, checks), now));
+      var journeys = new ArrayList<Map<String, Object>>();
+      journeys.add(tenantJourney(journeyId, "Página de entrada", start, now, true));
+      for (var probe : TenantProbeResults.JOURNEYS) {
+        var journey = tenantJourney(probe.id(organization.id()), probe.name(), start, now, false);
+        if (journey != null) journeys.add(journey);
+      }
       var incidents = jdbc.query("SELECT i.started_at, i.recovered_at FROM guardiao.service_incidents i "
               + "WHERE i.journey = ? AND i.retired_at IS NULL "
               + "AND EXISTS (SELECT 1 FROM guardiao.incident_alert_events e "
@@ -90,11 +91,20 @@ public class PublicStatusController {
               "fim", rs.getTimestamp(2) == null ? "" : rs.getTimestamp(2).toInstant().toString()),
           journeyId, java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
       return response(Map.of("disponivel", true, "organizacao", organization.name(), "slug", slug,
-          "jornadas", List.of(journey), "incidentes", incidents,
+          "jornadas", journeys, "incidentes", incidents,
           "cores", Map.of("principal", colorOrEmpty(organization.primary()), "destaque", colorOrEmpty(organization.accent()))));
     } catch (DataAccessException e) {
       return response(Map.of("disponivel", false));
     }
+  }
+
+  private Map<String, Object> tenantJourney(String id, String name, Instant start, Instant now, boolean required) {
+    var checks = checks(id, start);
+    Instant first = firstMonitoringStart(id, checks);
+    if (!required && first == null) return null;
+    Check latest = checks.isEmpty() ? null : checks.getFirst();
+    return Map.of("nome", name, "estado", currentState(id, latest, now),
+        "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", history(checks, first, now));
   }
 
   private List<Check> checks(String journey, Instant start) {

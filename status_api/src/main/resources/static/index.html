@@ -176,6 +176,9 @@
       if (!data.disponivel) throw new Error();
       if (tenantSlug) {
         document.querySelector('#page-title').textContent = 'Status de ' + data.organizacao;
+        if (data.jornadas.length > 1) {
+          document.querySelector('#page-intro').textContent = 'Acompanhe a disponibilidade da entrada e das consultas verificadas.';
+        }
         document.title = 'Status de ' + data.organizacao + ' | Palácio Mental';
         applyTenantColor('.overview', data.cores?.principal, '--tenant-status-primary', 'tenant-branded');
         applyTenantColor('.incident-tabs', data.cores?.destaque, '--tenant-status-accent', 'has-tenant-accent');
@@ -184,14 +187,14 @@
       const failures = data.jornadas.filter(item => item.estado === 'falha').length;
       const active = data.incidentes.filter(item => !item.fim).length;
       document.querySelector('#overview-title').textContent = failures || active
-        ? tenantSlug ? 'Atenção na entrada' : 'Atenção em alguns acessos'
+        ? tenantSlug && data.jornadas.length === 1 ? 'Atenção na entrada' : 'Atenção em alguns acessos'
         : !fresh ? 'Sem dados recentes'
-        : fresh === data.jornadas.length ? tenantSlug ? 'Página de entrada respondendo' : 'Páginas respondendo'
+        : fresh === data.jornadas.length ? tenantSlug && data.jornadas.length === 1 ? 'Página de entrada respondendo' : 'Acessos respondendo'
         : 'Dados incompletos';
       document.querySelector('#summary').textContent = failures || active
         ? tenantSlug ? 'Confira a verificação e os incidentes abaixo.' : 'Confira os acessos e incidentes abaixo.'
         : !fresh ? 'Ainda não há verificações recentes para mostrar.'
-        : fresh === data.jornadas.length ? tenantSlug ? 'A página de entrada respondeu como esperado.' : 'As páginas verificadas responderam como esperado.'
+        : fresh === data.jornadas.length ? tenantSlug && data.jornadas.length === 1 ? 'A página de entrada respondeu como esperado.' : 'As páginas verificadas responderam como esperado.'
         : 'Algumas páginas estão sem verificações recentes.';
       document.querySelector('#overview-count').textContent = fresh + '/' + data.jornadas.length;
       document.querySelector('#overview-side').hidden = false; document.querySelector('#content').hidden = false;

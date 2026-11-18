@@ -39,6 +39,10 @@ python manage.py verificar_jornadas_institucionais \
 
 A sondagem abre uma sessão pelo formulário normal e consulta o conteúdo esperado nas duas páginas. A saída JSON indica o resultado de cada jornada e o processo termina com código diferente de zero se uma delas falhar. O executor é separado da API pública e os resultados de homologação não alimentam o histórico de produção. Configure o agendador de homologação para executar o comando a cada cinco minutos, com uma execução por vez. Mantenha os três campos do JSON no log do agendador. Para confirmar recuperação, execute novamente depois de restaurar a conta ou o registro de teste e confira os três resultados.
 
+Para publicar os resultados no histórico, configure `STATUS_TENANT_PROBE_HOST` no Spring com o hostname HTTPS monitorado, sem protocolo. No executor, configure `GUARDIAO_SERVICE_TOKEN` e acrescente `--publicar-em https://api.exemplo.org/v1/guardiao/sondagens` ao comando. O destino aceita apenas o host configurado que consta no snapshot recente. Cada jornada tem seu próprio histórico, com uma amostra por janela de cinco minutos. O indicador aparece após a primeira publicação. As sondagens autenticadas não abrem incidentes automaticamente.
+
+Em produção, habilite a publicação somente depois de preparar uma conta comum dedicada, um projeto de teste visível a ela e um programa com turma de teste. Use um executor separado, o host e a API do próprio ambiente. A central já funciona com a coleta da página de entrada sem essa configuração.
+
 ## Alertas de incidentes
 
 O Discord recebe abertura, prolongamento e recuperação em um canal configurado por `STATUS_ALERT_DISCORD_WEBHOOK`. Um e-mail é enviado quando a falha contínua passa de uma hora ou quando a entrega ao Discord falha. O e-mail usa `RESEND_API_KEY` e `DEFAULT_FROM_EMAIL`, já adotados pelo Django, e um endereço da equipe em `STATUS_ALERT_EMAIL_TO`. Configure as variáveis também no serviço Spring. Sem um canal configurado, a entrega permanece pendente.
