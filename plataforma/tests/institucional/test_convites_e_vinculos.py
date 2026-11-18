@@ -6,6 +6,7 @@ from django.core.mail import EmailMultiAlternatives
 import hashlib
 from io import BytesIO
 import secrets
+from urllib.parse import urlsplit
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -257,6 +258,22 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         self.assertIn("Grupo de convite", mail.outbox[0].body)
         self.assertIn("camppg.palaciomental.com.br", html_alternative(mail.outbox[0]))
 
+        self.accept_delivered_invitation(destinatario, mail.outbox[0])
+        self.assertTrue(MembroGrupo.objects.filter(
+            grupo=grupo, usuario=destinatario, status=MembroGrupo.STATUS_ATIVO,
+        ).exists())
+
+    def accept_delivered_invitation(self, recipient, message):
+        links = [word for word in message.body.split() if word.startswith(("https://", "http://"))
+                 and "/aceitar/" in word]
+        self.assertEqual(len(links), 1)
+        url = urlsplit(links[0])
+        self.assertEqual(url.hostname, "camppg.palaciomental.com.br")
+        self.client.force_login(recipient)
+        response = self.client.post(url.path, {"action": "accept"}, HTTP_HOST=url.netloc)
+        self.assertEqual(response.status_code, 302)
+
+
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_owner_and_manager_invite_only_allowed_roles(self):
         owner = self.user
@@ -277,13 +294,20 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         manager = User.objects.create_user(username="gestor-convidado", email="gestor@example.com", password="Senha-forte-123")
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel=MembroOrganizacao.PAPEL_GESTOR)
         self.client.force_login(manager)
-        response = self.client.post(
-            reverse("plataforma:institutional_members"),
-            {"acao": "convidar", "email": "professor@example.com", "papel": MembroOrganizacao.PAPEL_PROFESSOR},
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
+        recipient = User.objects.create_user(username="aluno-convidado", email="aluno@example.com")
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("plataforma:institutional_members"),
+                {"acao": "convidar", "email": recipient.email, "papel": MembroOrganizacao.PAPEL_MEMBRO},
+                HTTP_HOST="camppg.palaciomental.com.br",
+            )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(ConviteOrganizacao.objects.filter(email="professor@example.com", papel=MembroOrganizacao.PAPEL_PROFESSOR).exists())
+        self.assertEqual(mail.outbox[-1].to, [recipient.email])
+        self.accept_delivered_invitation(recipient, mail.outbox[-1])
+        self.assertTrue(MembroOrganizacao.objects.filter(
+            organizacao=self.organization, usuario=recipient, papel=MembroOrganizacao.PAPEL_MEMBRO,
+            status=MembroOrganizacao.STATUS_ATIVA,
+        ).exists())
 
     def test_manager_cannot_invite_owner_and_member_cannot_use_tenant_invitation(self):
         manager = User.objects.create_user(username="gestor", email="gestor@example.com", password="Senha-forte-123")

@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @Hidden
@@ -29,9 +30,9 @@ public class PublicStatusController {
     this.monitor = monitor;
   }
 
-  @GetMapping("/v1/status-publico")
+  @GetMapping({"/v1/status/publico", "/v1/status-publico"})
   public ResponseEntity<Map<String, Object>> status() {
-    if (!monitor.enabled()) return response(Map.of("disponivel", false));
+    if (!monitor.enabled() && !monitor.localPreview()) return response(Map.of("disponivel", false));
     try {
       Instant now = Instant.now();
       LocalDate today = LocalDate.now(DISPLAY_ZONE);
@@ -57,6 +58,67 @@ public class PublicStatusController {
       return response(Map.of("disponivel", false));
     }
   }
+
+  @GetMapping("/v1/status/org/{slug}")
+  public ResponseEntity<Map<String, Object>> organizationStatus(@PathVariable String slug) {
+    if (slug.length() > 80 || !slug.matches("[A-Za-z0-9_-]+")) {
+      return ResponseEntity.notFound().build();
+    }
+    if (!monitor.enabled() && !monitor.localPreview()) return response(Map.of("disponivel", false));
+    try {
+      var organizations = jdbc.query("SELECT organization_id, display_name, primary_color, accent_color FROM guardiao.monitored_tenants "
+              + "WHERE slug = ? AND display_name IS NOT NULL AND synced_at >= now() - interval '10 minutes'",
+          (rs, row) -> new Organization(rs.getObject(1, java.util.UUID.class), rs.getString(2), rs.getString(3), rs.getString(4)), slug);
+      if (organizations.isEmpty()) return ResponseEntity.notFound().build();
+      Organization organization = organizations.getFirst();
+      Instant now = Instant.now();
+      LocalDate today = LocalDate.now(DISPLAY_ZONE);
+      var start = today.minusDays(29).atStartOfDay(DISPLAY_ZONE).toInstant();
+      String journeyId = "organizacao:" + organization.id();
+      var journeys = new ArrayList<Map<String, Object>>();
+      journeys.add(tenantJourney(journeyId, "Página de entrada", start, now, true));
+      for (var probe : TenantProbeResults.JOURNEYS) {
+        var journey = tenantJourney(probe.id(organization.id()), probe.name(), start, now, false);
+        if (journey != null) journeys.add(journey);
+      }
+      var incidents = jdbc.query("SELECT i.started_at, i.recovered_at FROM guardiao.service_incidents i "
+              + "WHERE i.journey = ? AND i.retired_at IS NULL "
+              + "AND EXISTS (SELECT 1 FROM guardiao.incident_alert_events e "
+              + "WHERE e.incident_id = i.id AND e.event_type = 'public') "
+              + "AND (i.started_at >= ? OR i.recovered_at IS NULL OR i.recovered_at >= ?) "
+              + "ORDER BY i.started_at DESC LIMIT 100",
+          (rs, row) -> Map.of("jornada", "Página de entrada", "inicio", rs.getTimestamp(1).toInstant().toString(),
+              "fim", rs.getTimestamp(2) == null ? "" : rs.getTimestamp(2).toInstant().toString()),
+          journeyId, java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
+      return response(Map.of("disponivel", true, "organizacao", organization.name(), "slug", slug,
+          "jornadas", journeys, "incidentes", incidents,
+          "cores", Map.of("principal", colorOrEmpty(organization.primary()), "destaque", colorOrEmpty(organization.accent()))));
+    } catch (DataAccessException e) {
+      return response(Map.of("disponivel", false));
+    }
+  }
+
+  private Map<String, Object> tenantJourney(String id, String name, Instant start, Instant now, boolean required) {
+    var checks = checks(id, start);
+    Instant first = firstMonitoringStart(id, checks);
+    if (!required && first == null) return null;
+    Check latest = checks.isEmpty() ? null : checks.getFirst();
+    return Map.of("nome", name, "estado", currentState(id, latest, now),
+        "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", history(checks, first, now));
+  }
+
+  private List<Check> checks(String journey, Instant start) {
+    return jdbc.query("SELECT max(checked_at), bool_and(successful) FROM guardiao.service_checks "
+            + "WHERE journey = ? AND checked_at >= ? "
+            + "GROUP BY date_bin(interval '5 minutes', checked_at, timestamptz '2000-01-01') "
+            + "ORDER BY max(checked_at) DESC",
+        (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), journey,
+        java.sql.Timestamp.from(start));
+  }
+
+  private static String colorOrEmpty(String value) { return value == null ? "" : value; }
+
+  private record Organization(java.util.UUID id, String name, String primary, String accent) {}
 
   private ResponseEntity<Map<String, Object>> response(Map<String, Object> body) {
     return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
