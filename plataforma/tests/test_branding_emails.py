@@ -36,7 +36,7 @@ class BrandingEmailTests(SimpleTestCase):
             cor_destaque="verde-institucional", cor_fundo="bege-claro",
             logo=SimpleNamespace(url="https://media.palaciomental.com.br/media/tenants/campus/logo.png"),
         )
-        self.organization = SimpleNamespace(nome="Campus", identidade=self.identity)
+        self.organization = SimpleNamespace(nome="Campus", slug="campus", identidade=self.identity)
         self.request.organizacao = self.organization
         self.invitation = SimpleNamespace(
             pk="test-invitation", organizacao=self.organization,
