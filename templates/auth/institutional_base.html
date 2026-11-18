@@ -31,7 +31,7 @@
       <div class="auth-access-note"><span aria-hidden="true">↳</span><p>Este acesso é exclusivo de <strong>{{ tenant_display_name }}</strong>. Sua conta e seus projetos pessoais continuam no Palácio Mental.</p></div>
     </section>
   </main>
-  <footer class="auth-footer"><a href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>Uma comunidade no <strong>Palácio Mental</strong></span></a><span>Projetos, pessoas e possibilidades.</span></footer>
+  <footer class="auth-footer"><a href="{{ global_home_url }}"><img src="{% static 'img/mind_palace_logo.png' %}" alt=""><span>Uma comunidade no <strong>Palácio Mental</strong></span></a><span>{% if tenant_status_url %}<a href="{{ tenant_status_url }}">Status do ambiente</a> · {% endif %}Projetos, pessoas e possibilidades.</span></footer>
   <script src="{% static 'js/tenant-auth.js' %}" defer></script>
 </body>
 </html>

@@ -14,7 +14,7 @@
     .topbar-inner { min-height:78px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem 1rem; padding:.5rem 0; }
     .brand { display:flex; align-items:center; gap:.75rem; color:var(--ink); text-decoration:none; font-weight:750; }
     .brand img { width:42px; height:42px; object-fit:contain; border-radius:10px; }
-    .top-label { color:var(--muted); font-size:.82rem; font-weight:650; }
+    .top-label { color:var(--muted); font-size:.82rem; font-weight:650; } .global-status-link { color:var(--purple); font-size:.82rem; font-weight:700; }
     main { padding:3rem 0 5rem; }
     .eyebrow { margin:0 0 .55rem; color:#685676; text-transform:uppercase; font-size:.72rem; font-weight:800; letter-spacing:.12em; }
     .page-header { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin-bottom:1.8rem; }
@@ -46,6 +46,15 @@
     .legend-notes { display:grid; gap:.2rem; list-style:none; padding:0; margin:0 0 1rem; color:var(--muted); font-size:.75rem; }
     .legend span { display:inline-flex; align-items:center; gap:.25rem; white-space:nowrap; } .legend .dot { flex:none; } .dot { width:.55rem; height:.55rem; border-radius:50%; background:#c0bbc1; }
     .dot.good { background:#238b60; } .dot.bad { background:#b34238; } .dot.partial { background:#bc7a1d; }
+    .incident-tabs, .incident-pages { display:flex; flex-wrap:wrap; gap:.5rem; }
+    .incident-tabs button, .incident-pages button { font:inherit; font-size:.8rem; color:var(--purple); background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:.55rem .65rem; cursor:pointer; }
+    .overview.tenant-branded { background:var(--tenant-status-primary); color:var(--tenant-status-primary-text); }
+    .overview.tenant-branded :is(.eyebrow, p:last-child, .overview-side span) { color:inherit; }
+    .overview.tenant-branded .overview-side { border-color:currentColor; }
+    .incident-tabs.has-tenant-accent [aria-selected="true"] { background:var(--tenant-status-accent); color:var(--tenant-status-accent-text); border-color:currentColor; font-weight:750; }
+    .incident-tabs [aria-selected="true"] { background:var(--purple); color:#fff; }
+    .incident-tabs button:focus-visible, .incident-pages button:focus-visible { outline:2px solid var(--purple); outline-offset:2px; }
+    .incident-pages { margin-top:1rem; align-items:center; justify-content:space-between; }
     .incident { margin-top:.8rem; padding:1rem; border:1px solid #ecd8d3; border-left:3px solid #b34238; border-radius:12px; background:#fffaf8; overflow-wrap:anywhere; }
     .incident.resolved { border-color:var(--line); border-left-color:#238b60; background:#fbfdfb; }
     .incident h3 { font-size:1rem; margin:.65rem 0 .8rem; } .incident dl { margin:0; display:grid; gap:.5rem; }
@@ -62,35 +71,132 @@
   </style>
 </head>
 <body>
-  <header class="topbar"><div class="wrap topbar-inner"><a class="brand" href="https://palaciomental.com.br/"><img src="/palacio-logo.png" alt=""><span>Palácio Mental</span></a><span class="top-label">Status do serviço</span></div></header>
+  <header class="topbar"><div class="wrap topbar-inner"><a class="brand" href="https://palaciomental.com.br/"><img src="/palacio-logo.png" alt=""><span>Palácio Mental</span></a><span class="top-label">Status do serviço</span><a class="global-status-link" id="global-status-link" href="/status" hidden>Status do Palácio Mental</a></div></header>
   <main class="wrap">
-    <div class="page-header"><div><p class="eyebrow">Central de status</p><h1>Como está o Palácio Mental</h1><p class="intro">Acompanhe a disponibilidade dos principais acessos.</p></div><span class="period">Histórico de até 30 dias</span></div>
+    <div class="page-header"><div><p class="eyebrow" id="page-eyebrow">Central de status</p><h1 id="page-title">Como está o Palácio Mental</h1><p class="intro" id="page-intro">Acompanhe a disponibilidade dos principais acessos.</p></div><span class="period">Histórico de até 30 dias</span></div>
     <section class="overview" aria-labelledby="overview-title" aria-live="polite">
       <div><p class="eyebrow">Visão geral</p><h2 id="overview-title">Consultando o status...</h2><p id="summary">Aguarde um instante.</p></div>
       <div class="overview-side" id="overview-side" hidden><strong id="overview-count"></strong><span>acessos com coleta recente</span></div>
     </section>
     <div class="layout" id="content" hidden>
       <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Parcial</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 5 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Cobertura: consultas registradas.</li></ul><div id="journeys"></div></section>
-      <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div id="incidents"></div></section>
+      <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div class="incident-tabs" role="tablist" aria-label="Estado do incidente">
+        <button type="button" id="incident-open" role="tab" aria-controls="incidents-open" aria-selected="true">Abertos</button>
+        <button type="button" id="incident-recovered" role="tab" aria-controls="incidents-recovered" aria-selected="false" tabindex="-1">Recuperados</button>
+      </div>
+      <div id="incidents-open" role="tabpanel" aria-labelledby="incident-open" tabindex="0"></div>
+      <div id="incidents-recovered" role="tabpanel" aria-labelledby="incident-recovered" tabindex="0" hidden></div></section>
     </div>
-    <p class="footnote">Horários no fuso do seu navegador. Histórico diário em UTC.</p>
+    <p class="footnote">Horários no fuso do seu navegador. Dias do histórico no horário de Brasília.</p>
     <noscript>Ative o JavaScript para consultar o status.</noscript>
   </main>
   <script>
     const dateTime = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : 'Ainda não verificado';
     const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Dados incompletos', sem_coleta:'Sem dados recentes' };
     const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
-    fetch('/v1/status-publico', { cache:'no-store' }).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {
+    const incidentTabs = Array.from(document.querySelectorAll('.incident-tabs [role="tab"]'));
+    function selectIncidentTab(selected) {
+      for (const tab of incidentTabs) {
+        const active = tab === selected;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
+      }
+    }
+    for (const tab of incidentTabs) {
+      tab.addEventListener('click', () => selectIncidentTab(tab));
+      tab.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : 1 - incidentTabs.indexOf(tab);
+        selectIncidentTab(incidentTabs[index]);
+        incidentTabs[index].focus();
+      });
+    }
+    function incidentCard(incident) {
+        const item = node('article', '', 'incident' + (incident.fim ? ' resolved' : '')); item.append(node('span', incident.fim ? 'Recuperado' : 'Aberto', 'incident-state' + (incident.fim ? ' resolved' : '')), node('h3', incident.jornada));
+        const fields = document.createElement('dl'); const addField = (label, value) => { const row = document.createElement('div'); row.append(node('dt', label), node('dd', value)); fields.append(row); };
+        addField('Primeira falha', dateTime(incident.inicio)); if (incident.fim) addField('Recuperação', dateTime(incident.fim)); item.append(fields);
+        if (!incident.fim) item.append(node('p', 'Aguardando duas respostas normais seguidas.', 'incident-explanation'));
+      return item;
+    }
+    function renderIncidentList(id, records, emptyMessage) {
+      const panel = document.getElementById(id);
+      if (!records.length) {
+        panel.append(node('p', emptyMessage, 'empty'));
+        return;
+      }
+      const pageSize = 5;
+      const list = node('div', '');
+      const pagination = node('div', '', 'incident-pages');
+      const range = node('span', '');
+      range.setAttribute('aria-live', 'polite');
+      const previous = node('button', 'Anteriores');
+      const next = node('button', 'Ver mais');
+      previous.type = next.type = 'button';
+      let start = 0;
+      function render() {
+        const end = Math.min(start + pageSize, records.length);
+        list.replaceChildren(...records.slice(start, end).map(incidentCard));
+        range.textContent = (start + 1) + '–' + end + ' de ' + records.length;
+        previous.disabled = start === 0;
+        next.disabled = end === records.length;
+      }
+      previous.addEventListener('click', () => { start -= pageSize; render(); panel.focus(); });
+      next.addEventListener('click', () => { start += pageSize; render(); panel.focus(); });
+      panel.append(list);
+      if (records.length > pageSize) {
+        pagination.append(previous, range, next);
+        panel.append(pagination);
+      }
+      render();
+    }
+    function applyTenantColor(selector, color, variable, className) {
+      if (typeof color !== 'string' || !/^#[0-9a-f]{6}$/i.test(color)) return;
+      const channels = color.slice(1).match(/../g).map(hex => parseInt(hex, 16) / 255);
+      const [red, green, blue] = channels.map(value =>
+        value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+      const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      const text = luminance > 0.179 ? '#000' : '#fff';
+      const target = document.querySelector(selector);
+      target.style.setProperty(variable, color);
+      target.style.setProperty(variable + '-text', text);
+      target.classList.add(className);
+    }
+    const tenantPath = location.pathname.match(/^\/status\/org\/([A-Za-z0-9_-]+)\/?$/);
+    const tenantSlug = tenantPath ? tenantPath[1] : null;
+    const statusEndpoint = tenantSlug ? '/v1/status/org/' + encodeURIComponent(tenantSlug) : '/v1/status/publico';
+    if (tenantSlug) {
+      document.querySelector('#page-eyebrow').textContent = 'Status da organização';
+      document.querySelector('#page-title').textContent = 'Consultando o ambiente';
+      document.querySelector('#page-intro').textContent = 'Veja se a página de entrada está respondendo. A verificação é feita sem iniciar sessão.';
+      document.querySelector('#global-status-link').hidden = false;
+    }
+    fetch(statusEndpoint, { cache:'no-store' }).then(response => { if (!response.ok) throw new Error(); return response.json(); }).then(data => {
       if (!data.disponivel) throw new Error();
+      if (tenantSlug) {
+        document.querySelector('#page-title').textContent = 'Status de ' + data.organizacao;
+        document.title = 'Status de ' + data.organizacao + ' | Palácio Mental';
+        applyTenantColor('.overview', data.cores?.principal, '--tenant-status-primary', 'tenant-branded');
+        applyTenantColor('.incident-tabs', data.cores?.destaque, '--tenant-status-accent', 'has-tenant-accent');
+      }
       const fresh = data.jornadas.filter(item => item.estado !== 'sem_coleta').length;
       const failures = data.jornadas.filter(item => item.estado === 'falha').length;
       const active = data.incidentes.filter(item => !item.fim).length;
-      document.querySelector('#overview-title').textContent = failures || active ? 'Atenção em alguns acessos' : !fresh ? 'Sem dados recentes' : fresh === data.jornadas.length ? 'Páginas respondendo' : 'Dados incompletos';
-      document.querySelector('#summary').textContent = failures || active ? 'Confira os acessos e incidentes abaixo.' : !fresh ? 'Ainda não há verificações recentes para mostrar.' : fresh === data.jornadas.length ? 'As páginas verificadas responderam como esperado.' : 'Algumas páginas estão sem verificações recentes.';
+      document.querySelector('#overview-title').textContent = failures || active
+        ? tenantSlug ? 'Atenção na entrada' : 'Atenção em alguns acessos'
+        : !fresh ? 'Sem dados recentes'
+        : fresh === data.jornadas.length ? tenantSlug ? 'Página de entrada respondendo' : 'Páginas respondendo'
+        : 'Dados incompletos';
+      document.querySelector('#summary').textContent = failures || active
+        ? tenantSlug ? 'Confira a verificação e os incidentes abaixo.' : 'Confira os acessos e incidentes abaixo.'
+        : !fresh ? 'Ainda não há verificações recentes para mostrar.'
+        : fresh === data.jornadas.length ? tenantSlug ? 'A página de entrada respondeu como esperado.' : 'As páginas verificadas responderam como esperado.'
+        : 'Algumas páginas estão sem verificações recentes.';
       document.querySelector('#overview-count').textContent = fresh + '/' + data.jornadas.length;
       document.querySelector('#overview-side').hidden = false; document.querySelector('#content').hidden = false;
       const historyDays = Math.max(0, ...data.jornadas.map(journey => journey.dias.length));
-      document.querySelector('#history-count').textContent = historyDays + (historyDays === 1 ? ' dia' : ' dias');
+      document.querySelector('#history-count').textContent = historyDays ? historyDays + (historyDays === 1 ? ' dia' : ' dias') : 'Sem histórico';
       const openJourneys = new Set(data.incidentes.filter(item => !item.fim).map(item => item.jornada));
       for (const journey of data.jornadas) {
         const item = node('article', '', 'journey'); const head = node('div', '', 'journey-head');
@@ -110,7 +216,7 @@
         history.addEventListener('keydown', event => { if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return; const buttons = Array.from(history.querySelectorAll('button')); const index = buttons.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); const next = buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]; buttons.forEach(button => { button.tabIndex = -1; }); next.tabIndex = 0; next.focus(); next.click(); });
         if (history.lastElementChild) history.lastElementChild.tabIndex = 0;
         if (journey.dias.length > 7) item.append(node('p', 'Deslize para ver os dias anteriores.', 'history-help')); item.append(history);
-        const meta = node('div', '', 'history-meta'); meta.append(node('span', journey.dias.length > 1 ? 'Desde ' + journey.dias[0].data.split('-').reverse().join('/') : 'Hoje'), node('span', journey.dias.length > 1 ? 'Hoje' : '')); item.append(meta);
+        const meta = node('div', '', 'history-meta'); meta.append(node('span', journey.dias.length > 1 ? 'Desde ' + journey.dias[0].data.split('-').reverse().join('/') : 'Hoje'), node('span', journey.dias.length > 1 ? 'Hoje' : '')); if (journey.dias.length) item.append(meta);
         const total = journey.dias.reduce((sum, day) => sum + day.coletas, 0); const expected = journey.dias.reduce((sum, day) => sum + day.esperadas, 0);
         const coverage = expected ? Math.min(100, Math.floor(total / expected * 100)) : 0;
         item.append(selection, node('p', 'Última verificação: ' + dateTime(journey.ultima_verificacao) + ' · Cobertura no período: ' + coverage + '%', 'journey-meta'));
@@ -118,16 +224,12 @@
         history.scrollLeft = history.scrollWidth;
       }
       document.querySelector('#incidents-count').textContent = data.incidentes.length + (data.incidentes.length === 1 ? ' registro' : ' registros');
-      const incidents = document.querySelector('#incidents');
-      if (!data.incidentes.length) incidents.append(node('p', 'Nenhum incidente registrado neste período.', 'empty'));
-      for (const incident of data.incidentes) {
-        const item = node('article', '', 'incident' + (incident.fim ? ' resolved' : '')); item.append(node('span', incident.fim ? 'Recuperado' : 'Aberto', 'incident-state' + (incident.fim ? ' resolved' : '')), node('h3', incident.jornada));
-        const fields = document.createElement('dl'); const addField = (label, value) => { const row = document.createElement('div'); row.append(node('dt', label), node('dd', value)); fields.append(row); };
-        addField('Primeira falha', dateTime(incident.inicio)); if (incident.fim) addField('Recuperação', dateTime(incident.fim)); item.append(fields);
-        if (!incident.fim) item.append(node('p', 'Aguardando duas respostas normais seguidas.', 'incident-explanation'));
-        incidents.append(item);
-      }
-    }).catch(() => { document.querySelector('#overview-title').textContent = 'Status indisponível'; document.querySelector('#summary').textContent = 'Não foi possível consultar os dados agora. Tente novamente mais tarde.'; });
+      const open = data.incidentes.filter(incident => !incident.fim);
+      const recovered = data.incidentes.filter(incident => incident.fim)
+        .sort((first, second) => new Date(second.fim) - new Date(first.fim));
+      renderIncidentList('incidents-open', open, 'Nenhum incidente aberto.');
+      renderIncidentList('incidents-recovered', recovered, 'Nenhum incidente recuperado no período.');
+    }).catch(() => { document.querySelector('#overview-title').textContent = 'Status indisponível'; document.querySelector('#summary').textContent = tenantSlug ? 'A organização não foi encontrada ou o status está temporariamente indisponível.' : 'Não foi possível consultar os dados agora. Tente novamente mais tarde.'; });
   </script>
 </body>
 </html>

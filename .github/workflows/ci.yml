@@ -67,7 +67,7 @@ jobs:
           import xml.etree.ElementTree as ET
 
           reports = Path("status_api/target/surefire-reports")
-          required = ("ServiceMonitoringPostgresTest", "LinkCheckRepositoryPostgresTest")
+          required = ("ServiceMonitoringPostgresTest", "LinkCheckRepositoryPostgresTest", "TenantMonitoringPostgresTest")
           for name in required:
               matches = list(reports.glob(f"TEST-*.{name}.xml"))
               if len(matches) != 1:

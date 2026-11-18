@@ -19,14 +19,16 @@ public class ServiceMonitoring {
   private final JdbcTemplate jdbc;
   private final TransactionTemplate transactions;
   private final boolean enabled;
+  private final boolean localPreview;
   private final List<Journey> journeys;
 
   public ServiceMonitoring(JdbcTemplate jdbc, TransactionTemplate transactions, Environment environment,
       @Value("${monitor.enabled:false}") boolean enabled,
-      @Value("${monitor.global-url:}") String global) {
+      @Value("${django.app.url:http://django:8000}") String global) {
     this.jdbc = jdbc;
     this.transactions = transactions;
     this.enabled = enabled && environment.acceptsProfiles(Profiles.of("production | prod"));
+    this.localPreview = environment.acceptsProfiles(Profiles.of("guardiao-local & !production & !prod"));
     String base = global.replaceAll("/+$", "");
     journeys = List.of(new Journey("inicio", base, "data-status-probe=\"inicio\""),
         new Journey("vitrine", base + "/projetos/", "data-status-probe=\"vitrine\""),
@@ -136,4 +138,5 @@ public class ServiceMonitoring {
   }
 
   boolean enabled() { return enabled; }
+  boolean localPreview() { return localPreview; }
 }

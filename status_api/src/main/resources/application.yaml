@@ -19,7 +19,6 @@ django:
 
 monitor:
   enabled: ${STATUS_MONITOR_ENABLED:false}
-  global-url: ${STATUS_MONITOR_GLOBAL_URL:}
 
 alerts:
   discord-webhook: ${STATUS_ALERT_DISCORD_WEBHOOK:}

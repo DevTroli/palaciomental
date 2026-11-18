@@ -23,7 +23,12 @@ public class MonitoredTenantsController {
     this.transactions = transactions;
   }
 
-  public record Tenant(UUID organizationId, String hostname) {}
+  public record Tenant(UUID organizationId, String hostname, String slug, String displayName,
+                       String primaryColor, String accentColor) {
+    public Tenant(UUID organizationId, String hostname) {
+      this(organizationId, hostname, null, null, null, null);
+    }
+  }
   public record Snapshot(List<Tenant> tenants) {}
 
   @PutMapping("/v1/guardiao/tenants")
@@ -34,10 +39,14 @@ public class MonitoredTenantsController {
     }
     var ids = new HashSet<UUID>();
     var hosts = new HashSet<String>();
+    var slugs = new HashSet<String>();
     for (Tenant tenant : snapshot.tenants()) {
       if (tenant == null || tenant.organizationId() == null || tenant.hostname() == null
           || tenant.hostname().length() > 253
           || !tenant.hostname().matches("[a-z0-9-]+(?:\\.[a-z0-9-]+)+")
+          || tenant.slug() != null && (tenant.slug().length() > 80
+              || !tenant.slug().matches("[A-Za-z0-9_-]+") || !slugs.add(tenant.slug()))
+          || tenant.displayName() != null && (tenant.displayName().isBlank() || tenant.displayName().length() > 160)
           || !ids.add(tenant.organizationId()) || !hosts.add(tenant.hostname())) {
         return ResponseEntity.badRequest().build();
       }
@@ -46,10 +55,14 @@ public class MonitoredTenantsController {
       jdbc.execute("LOCK TABLE guardiao.monitored_tenants IN EXCLUSIVE MODE");
       jdbc.update("DELETE FROM guardiao.monitored_tenants");
       for (Tenant tenant : snapshot.tenants()) {
-        jdbc.update("INSERT INTO guardiao.monitored_tenants(organization_id, hostname) VALUES (?, ?)",
-            tenant.organizationId(), tenant.hostname());
+        jdbc.update("INSERT INTO guardiao.monitored_tenants(organization_id, hostname, slug, display_name, primary_color, accent_color) VALUES (?, ?, ?, ?, ?, ?)",
+            tenant.organizationId(), tenant.hostname(), tenant.slug(), tenant.displayName(),
+            validColor(tenant.primaryColor()), validColor(tenant.accentColor()));
       }
     });
     return ResponseEntity.noContent().build();
+  }
+  private static String validColor(String value) {
+    return value != null && value.matches("#[0-9a-fA-F]{6}") ? value : null;
   }
 }
