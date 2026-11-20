@@ -38,6 +38,9 @@ services:
       STATUS_API_URL: http://status-api:8080/v1/status
       GUARDIAO_API_URL: ""
       GUARDIAO_LOCAL_HTTP: "true"
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      DEFAULT_FROM_EMAIL: dev@localhost
+      PM_RLS_STRICT: "true"
     ports:
       - "8000:8000"
     depends_on:
@@ -81,6 +84,13 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: guardiao-local
       SWAGGER_ENABLED: "true"
+      DJANGO_APP_URL: http://django:8000
+      POSTGRES_HOST: database
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      GUARDIAO_SAFE_BROWSING_KEY: ""
     networks:
       default:
         aliases:
@@ -110,6 +120,7 @@ services:
       STATUS_API_URL: http://status-api:8080/v1/status
       GUARDIAO_API_URL: ""
       GUARDIAO_LOCAL_HTTP: "true"
+      PM_RLS_STRICT: "true"
     depends_on:
       django:
         condition: service_healthy
