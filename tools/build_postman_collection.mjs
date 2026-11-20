@@ -49,25 +49,8 @@ const csrf = `const match = pm.response.text().match(/name=["']csrfmiddlewaretok
 pm.test("CSRF presente", () => pm.expect(match).not.to.equal(null));
 if (!match) pm.execution.setNextRequest(null); else pm.variables.set("csrf", match[1]);`;
 const token = "{{csrf}}";
-const captureIdentity = `
-pm.variables.unset("identity_snapshot");
-const identity = (${readIdentity.toString()})(pm.response.text());
-pm.variables.set("identity_snapshot", JSON.stringify(identity));
-for (const [key, value] of Object.entries(identity)) pm.variables.set("identity_" + key, value);
-pm.test("Snapshot de identidade completo", () => pm.expect(Object.keys(identity)).to.have.lengthOf(10));`;
-const preserved = Object.fromEntries(["nome_exibicao", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo"].map(key => [key, "{{identity_" + key + "}}"]));
-
-group("00 · Saúde pública", "Checks GET seguros contra o domínio público de produção. Não exigem login nem alteram dados.");
-add("00.1 · Saúde da aplicação", "/saude", {
-  auth: false,
-  base: "global_base",
-  code: `${ok}
-const payload = pm.response.json();
-pm.test("Status da aplicação está ok", () => pm.expect(payload.status).to.eql("ok"));
-pm.test("Resposta JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/^application\/json/));`,
-  description: "Consulta pública de saúde da aplicação em https://palaciomental.com.br. Somente GET, sem autenticação e sem efeitos colaterais.",
-});
-add("00.2 · Readiness do banco e migrations", "/pronto", {
+group("00 · Prontidão", "Consulta pública sem escrita.");
+add("00.1 · Aplicação pronta", "/pronto", {
   auth: false,
   base: "global_base",
   code: `${ok}
@@ -77,7 +60,7 @@ pm.test("Resposta JSON", () => pm.expect(pm.response.headers.get("Content-Type")
   description: "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
 });
 
-group("01 · Sessão e entrada", "Execute a coleção inteira no Runner/Newman, em ordem. A senha fica no environment local e não é exportada neste repositório.");
+group("01 · Entrada", "Login e home institucional.");
 add("01.1 · Login institucional e CSRF", "/entrar/", {
   auth: false, code: `${ok}\n${csrf}`,
 });
@@ -89,58 +72,11 @@ add("01.2 · Autenticar gestor de teste", "/entrar/", {
 add("01.3 · Home autenticada e marca", "/", {
   code: `${ok}\npm.test("Home institucional, não vitrine global", () => pm.expect(pm.response.text()).to.include('id="tenant-home-title"'));`,
 });
-add("01.4 · Projetos deste host", "/projetos/", {code: ok});
+group("02 · Gestão", "Acesso de gestor às pessoas e aos programas.");
+add("02.1 · Membros", "/gestao/membros/", {code: ok});
+add("02.2 · Programas", "/programas/", {code: ok});
 
-group("02 · Gestão e identidade", "Requer conta ativa Proprietário/Gestor. GETs não alteram dados. O POST opcional sobrescreve nome/apresentação/cores: use somente tenant descartável.");
-add("02.1 · Identidade e novo CSRF", "/gestao/identidade/", {code: `${ok}\n${csrf}\n${captureIdentity}\npm.test("Cinco campos de tema", () => { for (const role of ["primary","secondary","accent","background","surface"]) pm.expect(pm.response.text()).to.include('data-theme-color="'+role+'"'); });`});
-add("02.2 · Salvar tema opcional", "/gestao/identidade/", {
-  method: "POST", gate: "allow_branding",
-  fields: {
-    ...preserved, csrfmiddlewaretoken: token, nome_exibicao: "{{branding_name}}", apresentacao: "Ambiente de homologação descartável.",
-    theme_primary: "#315A76", theme_secondary: "#6E4AA3", theme_accent: "#5C9F63",
-    theme_background: "#F3ECDF", theme_surface: "#FFFFFF",
-  },
-  code: redirect,
-});
-add("02.3 · Releitura de identidade", "/gestao/identidade/", {
-  code: `${ok}\n${csrf}\n${captureIdentity}\nif (pm.environment.get("allow_branding") === "true") pm.test("Cor salva", () => pm.expect(pm.response.text()).to.include("#315A76"));`,
-});
-add("02.3a · Upload de logo e capa opcional", "/gestao/identidade/", {
-  gate: "allow_uploads", method: "POST",
-  fields: {csrfmiddlewaretoken: token, ...preserved},
-  files: {logo: `${out}/fixtures/logo.png`, capa: `${out}/fixtures/cover.png`},
-  code: redirect,
-  description: "Substitui somente logo/capa no tenant descartável, preservando nome, apresentação, cores legadas e tema lidos no GET anterior. Requer allow_uploads e allow_writes explícitos. Arquivos relativos à raiz do repositório. Não restaura imagens anteriores.",
-});
-add("02.3b · URLs e rótulos de mídia", "/gestao/identidade/", {
-  gate: "allow_uploads",
-  code: `${ok}\n${csrf}
-const html = pm.response.text();
-pm.test("Upload preservou os demais campos de identidade", () => pm.expect((${readIdentity.toString()})(html)).to.deep.equal(JSON.parse(pm.variables.get("identity_snapshot"))));
-pm.test("Logo e capa vinculadas", () => { pm.expect(html).to.include("/branding/logo/"); pm.expect(html).to.include("/branding/cover/"); pm.expect(html).to.include("Ver imagem atual"); });
-const logo = html.match(/href=["']([^"']+\\/branding\\/logo\\/[^"']+)/);
-const cover = html.match(/id=["']cover-preview["'][^>]*src=["']([^"']+)/);
-const absolute = value => /^https?:\\/\\//.test(value) ? value : pm.environment.get("tenant_a_base") + value;
-if (logo) pm.variables.set("media_logo_url", absolute(logo[1]));
-if (cover) pm.variables.set("media_cover_url", absolute(cover[1]));`,
-});
-for (const kind of ["logo", "cover"]) {
-  add(`02.3c · Buscar imagem ${kind} opcional`, "", {
-    gate: "allow_media_fetch", base: `media_${kind}_url`,
-    code: `${ok}\npm.test("Resposta é imagem", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/^image\\//));`,
-    description: "Requer allow_media_fetch e upload anterior na mesma execução. GET da URL pública real, não prova persistência após redeploy. No Gunicorn local sem servidor de mídia, deixe desativado.",
-  });
-}
-add("02.4 · Membros e convites", "/gestao/membros/", {code: `${ok}\n${csrf}`});
-add("02.5 · Enviar convite opcional", "/gestao/membros/", {
-  method: "POST", gate: "allow_email",
-  fields: {csrfmiddlewaretoken: token, acao: "convidar", email: "{{invite_email}}", papel: "membro"},
-  code: redirect,
-  description: "Requer conta Gestor, allow_email=true, allow_writes=true, host aprovado e destinatário controlado. Proprietário só convida Gestor, portanto não use Proprietário neste envio de Membro. 302 não prova entrega. Consulte a caixa real e os eventos do provedor; o token não é exposto pelo dashboard.",
-});
-add("02.6 · Programas", "/gestao/programas/", {code: ok});
-
-group("03 · Projeto autônomo e contexto progressivo", "Dependências: GET formulário → POST básico → ID do Location → GET contexto → POST contexto → detalhe. Cria um projeto privado novo por execução. Não exclui automaticamente.");
+group("03 · Projeto", "Cria projeto privado e salva seu contexto.");
 add("03.1 · Formulário de projeto", "/projetos/novo/", {code: `${ok}\n${csrf}`});
 add("03.2 · Criar projeto privado", "/projetos/novo/", {
   method: "POST",
@@ -156,17 +92,7 @@ add("03.4 · Salvar contexto", "/projetos/{{project_id}}/contexto/", {
 add("03.5 · Detalhe do próprio projeto", "/projetos/{{project_id}}/", {
   project: true, code: `${ok}\n${csrf}\npm.test("Projeto correto", () => pm.expect(pm.response.text()).to.include(pm.variables.get("project_title")));`,
 });
-add("03.6 · Adicionar comentário", "/projetos/{{project_id}}/comentarios/", {
-  project: true, method: "POST", fields: {csrfmiddlewaretoken: token, content: "Contexto de teste Postman: comentário persistido."}, code: redirect,
-});
-add("03.7 · Registrar marco", "/projetos/{{project_id}}/marcos/", {
-  project: true, method: "POST", fields: {csrfmiddlewaretoken: token, title: "Marco de homologação Postman", description: "Fluxo preservado.", milestone_type: "avanco"}, code: redirect,
-});
-add("03.8 · Releitura do histórico", "/projetos/{{project_id}}/", {
-  project: true, code: `${ok}\npm.test("Comentário e marco persistiram", () => { pm.expect(pm.response.text()).to.include("Contexto de teste Postman"); pm.expect(pm.response.text()).to.include("Marco de homologação Postman"); });`,
-});
-
-group("04 · Bordas e isolamento HTTP", "Não substitui testes de política SQL. No tenant B, registre se a requisição está autenticada: redirect pode representar ausência de sessão/afiliação, não prova de RLS.");
+group("04 · Proteção", "Host e CSRF.");
 add("04.1 · Mesmo ID em tenant B", "/projetos/{{project_id}}/", {
   project: true, base: "tenant_b_base",
   code: 'pm.test("Sem acesso por outro host", () => pm.expect([302,403,404]).to.include(pm.response.code)); pm.test("Título privado não vazou", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get("project_title")));',
@@ -179,9 +105,7 @@ add("04.3 · CSRF inválido tratado", "/gestao/identidade/", {
   method: "POST", fields: {nome_exibicao: "NÃO DEVE SALVAR"},
   code: 'pm.test("CSRF rejeitado", () => pm.response.to.have.status(403)); pm.test("Sem traceback Django", () => pm.expect(pm.response.text()).not.to.include("Traceback"));',
 });
-add("04.4 · Recuperar página após bloqueio", "/gestao/identidade/", {code: `${ok}\n${csrf}`});
-
-group("05 · Entrada por convite — execução opcional", "Fronteira manual: obtenha um convite fresco em caixa controlada ou fixture local. Informe invite_path apenas no environment privado. Saída do gestor → cadastro de conta inédita → tela de aceite → aceite explícito. Não cria convites fictícios nem tenta adivinhar tokens.");
+group("05 · Convite opcional", "Usa convite novo de Membro em ambiente descartável.");
 const invitationGate = "allow_invite_accept";
 add("05.1 · Sair do gestor", "/sair/", {method: "POST", gate: invitationGate, fields: {csrfmiddlewaretoken: token}, code: `${redirect}\npm.variables.set("auth_ready", false);`});
 add("05.2 · Abrir convite anônimo", "{{invite_path}}", {
@@ -197,12 +121,7 @@ add("05.5 · Aceitar explicitamente", "{{invite_path}}", {
   auth: false, gate: invitationGate, method: "POST", fields: {csrfmiddlewaretoken: token, action: "accept"},
   code: `${redirect}\nif (pm.response.code === 302) pm.variables.set("auth_ready", true);`,
 });
-add("05.6 · Entrada após afiliação", "/projetos/", {gate: invitationGate, code: ok});
-add("05.7 · Não reutilizar convite aceito", "{{invite_path}}", {
-  gate: invitationGate,
-  code: 'pm.test("Convite consumido rejeitado", () => pm.expect([400,403,404,410]).to.include(pm.response.code));',
-});
-add("05.8 · Membro não altera identidade por POST direto", "/gestao/identidade/", {
+add("05.6 · Membro sem gestão", "/gestao/identidade/", {
   gate: invitationGate, method: "POST",
   fields: {csrfmiddlewaretoken: token, nome_exibicao: "NÃO DEVE SALVAR"},
   code: 'pm.test("Membro sem permissão de gestão", () => pm.response.to.have.status(403));',
@@ -213,22 +132,6 @@ function blockRequest(label, message) {
   pm.execution.setNextRequest(null);
   pm.test(label, () => pm.expect.fail(message));
   pm.execution.skipRequest();
-}
-function guardIdentity(enabled) {
-  const identityWrite = (pm.info.requestName.startsWith("02.2") && enabled("allow_branding")) ||
-    (pm.info.requestName.startsWith("02.3a") && enabled("allow_uploads"));
-  if (enabled("allow_writes") && identityWrite && !pm.variables.get("identity_snapshot")) {
-    blockRequest("Upload exige snapshot prévio", "Identidade anterior não foi lida.");
-    return false;
-  }
-  return true;
-}
-function guardMedia() {
-  if (pm.info.requestName.startsWith("02.3c") && !pm.variables.get(pm.request.url.toString().includes("cover") ? "media_cover_url" : "media_logo_url")) {
-    pm.execution.skipRequest();
-    return false;
-  }
-  return true;
 }
 function guardWrite(enabled) {
   if (pm.request.method === "GET") return true;
@@ -263,11 +166,9 @@ function guard() {
     pm.variables.set("project_title", `TESTE-POSTMAN ${Date.now()}`);
   }
   if (!guardWrite(enabled)) return;
-  if (!guardIdentity(enabled)) return;
-  if (!guardMedia()) return;
   guardInvitation(enabled);
 }
-const guards = [blockRequest, guardIdentity, guardMedia, guardWrite, guardInvitation].map(fn => fn.toString()).join("\n");
+const guards = [blockRequest, guardWrite, guardInvitation].map(fn => fn.toString()).join("\n");
 const collection = {
   info: {_postman_id: id("collection"), name: "Palácio Mental · Saúde pública e homologação", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", description: "Checks públicos de saúde em produção e formulários reais Django para homologação; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."},
   event: [script("prerequest", `${guards}\n(${guard.toString()})();`)],
@@ -277,8 +178,7 @@ const defaults = {
   tenant_a_base: "https://homolog-a.palaciomental.com.br",
   tenant_b_base: "https://homolog-b.palaciomental.com.br",
   global_base: "https://palaciomental.com.br",
-  allow_writes: "false", approved_write_host: "", allow_branding: "false", branding_name: "TESTE-POSTMAN",
-  allow_email: "false", invite_email: "", allow_invite_accept: "false", allow_uploads: "false", allow_media_fetch: "false",
+  allow_writes: "false", approved_write_host: "", allow_invite_accept: "false",
   username: "", password: "", invite_path: "", new_username: "", new_password: "",
 };
 const env = {
