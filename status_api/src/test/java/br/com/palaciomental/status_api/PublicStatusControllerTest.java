@@ -22,9 +22,9 @@ class PublicStatusControllerTest {
   @Test
   void firstDayStartsAtFirstRealCheckInsteadOfMidnight() {
     Instant first = Instant.parse("2026-11-17T11:00:00Z");
-    Instant now = first.plusSeconds(600);
+    Instant now = first.plusSeconds(1800);
     var history = PublicStatusController.history(List.of(new PublicStatusController.Check(first, true),
-        new PublicStatusController.Check(first.plusSeconds(300), true),
+        new PublicStatusController.Check(first.plusSeconds(900), true),
         new PublicStatusController.Check(now, true)), first, now);
     assertThat(history).hasSize(1);
     assertThat(history.getFirst()).containsEntry("data", "2026-11-17")
@@ -70,7 +70,7 @@ class PublicStatusControllerTest {
     assertThat(PublicStatusController.currentTenantState(List.of(healthy,
         new PublicStatusController.Check(null, false)), now)).isEqualTo("sem_coleta");
     assertThat(PublicStatusController.currentTenantState(List.of(healthy,
-        new PublicStatusController.Check(now.minusSeconds(601), true)), now)).isEqualTo("sem_coleta");
+        new PublicStatusController.Check(now.minusSeconds(1801), true)), now)).isEqualTo("sem_coleta");
     assertThat(PublicStatusController.currentTenantState(List.of(healthy), now)).isEqualTo("funcionando");
   }
 

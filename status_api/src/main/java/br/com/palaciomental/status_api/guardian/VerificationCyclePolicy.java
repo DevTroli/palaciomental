@@ -7,7 +7,7 @@ import java.time.Instant;
 public final class VerificationCyclePolicy {
   public static final int MAX_ATTEMPTS_PER_CYCLE = 3;
   public static final int FAILED_CYCLES_TO_CONFIRM = 3;
-  public static final Duration CYCLE_INTERVAL = Duration.ofHours(48);
+  public static final Duration CYCLE_INTERVAL = Duration.ofHours(72);
   public static final Duration MAX_JITTER = Duration.ofHours(2);
 
   private VerificationCyclePolicy() {}

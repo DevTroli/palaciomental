@@ -79,7 +79,7 @@
       <div class="overview-side" id="overview-side" hidden><strong id="overview-count"></strong><span>acessos com coleta recente</span></div>
     </section>
     <div class="layout" id="content" hidden>
-      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Parcial</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 5 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Cobertura: consultas registradas.</li></ul><div id="journeys"></div></section>
+      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Incompleto</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 15 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Incompleto: algumas verificações previstas para o dia não foram realizadas.</li></ul><div id="journeys"></div></section>
       <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div class="incident-tabs" role="tablist" aria-label="Estado do incidente">
         <button type="button" id="incident-open" role="tab" aria-controls="incidents-open" aria-selected="true">Abertos</button>
         <button type="button" id="incident-recovered" role="tab" aria-controls="incidents-recovered" aria-selected="false" tabindex="-1">Recuperados</button>
@@ -92,7 +92,7 @@
   </main>
   <script>
     const dateTime = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : 'Ainda não verificado';
-    const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Dados incompletos', sem_coleta:'Sem dados recentes' };
+    const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Incompleto', sem_coleta:'Sem dados recentes' };
     const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
     const incidentTabs = Array.from(document.querySelectorAll('.incident-tabs [role="tab"]'));
     function selectIncidentTab(selected) {
@@ -211,7 +211,7 @@
         for (const day of journey.dias) {
           const dayLabel = day.estado === 'sem_coleta' ? 'Sem dados' : labels[day.estado];
           const dayCoverage = day.esperadas ? Math.min(100, Math.floor(day.coletas / day.esperadas * 100)) : 0;
-          const text = day.data.split('-').reverse().join('/') + ': ' + dayLabel + ' · Cobertura das consultas desta página: ' + dayCoverage + '%';
+          const text = day.data.split('-').reverse().join('/') + ': ' + dayLabel + ' · Consultas realizadas: ' + dayCoverage + '\u00a0%';
           const cell = node('button', '', 'day ' + day.estado); cell.type = 'button'; cell.title = text; cell.setAttribute('aria-label', text); cell.setAttribute('aria-pressed', 'false'); cell.tabIndex = -1;
           cell.addEventListener('click', () => { history.querySelectorAll('button').forEach(button => { button.setAttribute('aria-pressed', 'false'); button.tabIndex = -1; }); cell.setAttribute('aria-pressed', 'true'); cell.tabIndex = 0; selection.textContent = text; });
           history.append(cell);
@@ -220,9 +220,7 @@
         if (history.lastElementChild) history.lastElementChild.tabIndex = 0;
         if (journey.dias.length > 7) item.append(node('p', 'Deslize para ver os dias anteriores.', 'history-help')); item.append(history);
         const meta = node('div', '', 'history-meta'); meta.append(node('span', journey.dias.length > 1 ? 'Desde ' + journey.dias[0].data.split('-').reverse().join('/') : 'Hoje'), node('span', journey.dias.length > 1 ? 'Hoje' : '')); if (journey.dias.length) item.append(meta);
-        const total = journey.dias.reduce((sum, day) => sum + day.coletas, 0); const expected = journey.dias.reduce((sum, day) => sum + day.esperadas, 0);
-        const coverage = expected ? Math.min(100, Math.floor(total / expected * 100)) : 0;
-        item.append(selection, node('p', 'Última verificação: ' + dateTime(journey.ultima_verificacao) + ' · Cobertura no período: ' + coverage + '%', 'journey-meta'));
+        item.append(selection, node('p', 'Última verificação: ' + dateTime(journey.ultima_verificacao), 'journey-meta'));
         document.querySelector('#journeys').append(item);
         history.scrollLeft = history.scrollWidth;
       }

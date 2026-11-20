@@ -36,7 +36,7 @@ public class ServiceMonitoring {
         new Journey("cadastro", base + "/cadastrar/", "data-status-probe=\"cadastro\""));
   }
 
-  @Scheduled(fixedRateString = "${monitor.interval-ms:300000}", initialDelay = 30000)
+  @Scheduled(fixedRateString = "${monitor.interval-ms:900000}", initialDelay = 30000)
   public void collect() {
     if (!enabled) return;
     for (Journey journey : journeys) {
@@ -110,7 +110,7 @@ public class ServiceMonitoring {
     Instant start = now;
     Instant newer = now;
     for (Previous check : checks) {
-      if (check.successful() || Duration.between(check.at(), newer).compareTo(Duration.ofMinutes(10)) >= 0) break;
+      if (check.successful() || Duration.between(check.at(), newer).compareTo(Duration.ofMinutes(30)) >= 0) break;
       start = check.at();
       newer = check.at();
     }
@@ -134,7 +134,7 @@ public class ServiceMonitoring {
   }
 
   static boolean consecutive(boolean previous, Instant previousAt, boolean current, Instant now) {
-    return previous == current && previousAt.isAfter(now.minusSeconds(600));
+    return previous == current && previousAt.isAfter(now.minusSeconds(1800));
   }
 
   boolean enabled() { return enabled; }

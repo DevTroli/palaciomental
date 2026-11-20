@@ -12,6 +12,6 @@ class ServiceMonitoringTest {
     assertThat(ServiceMonitoring.consecutive(false, now.minusSeconds(300), false, now)).isTrue();
     assertThat(ServiceMonitoring.consecutive(true, now.minusSeconds(300), true, now)).isTrue();
     assertThat(ServiceMonitoring.consecutive(false, now.minusSeconds(300), true, now)).isFalse();
-    assertThat(ServiceMonitoring.consecutive(false, now.minusSeconds(601), false, now)).isFalse();
+    assertThat(ServiceMonitoring.consecutive(false, now.minusSeconds(1801), false, now)).isFalse();
   }
 }
