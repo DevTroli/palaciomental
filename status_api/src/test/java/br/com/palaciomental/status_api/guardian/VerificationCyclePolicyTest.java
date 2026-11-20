@@ -29,10 +29,10 @@ class VerificationCyclePolicyTest {
   }
 
   @Test
-  void agendaSomenteApos48HorasComJitterLimitado() {
+  void agendaSomenteApos72HorasComJitterLimitado() {
     Instant now = Instant.parse("2026-01-01T00:00:00Z");
     assertThat(VerificationCyclePolicy.nextCycleAt(now, Duration.ofMinutes(30)))
-        .isEqualTo(now.plus(Duration.ofHours(48)).plus(Duration.ofMinutes(30)));
+        .isEqualTo(now.plus(Duration.ofHours(72)).plus(Duration.ofMinutes(30)));
     assertThatThrownBy(() -> VerificationCyclePolicy.nextCycleAt(now, Duration.ofHours(3)))
         .isInstanceOf(IllegalArgumentException.class);
   }

@@ -41,7 +41,7 @@ public class PublicStatusController {
       for (String id : List.of("inicio", "vitrine", "entrada", "cadastro", "organizacao")) {
         var checks = jdbc.query("SELECT max(checked_at), bool_and(successful) FROM guardiao.service_checks "
                 + "WHERE (journey = ? OR (? = 'organizacao' AND journey LIKE 'organizacao:%')) AND checked_at >= ? "
-                + "GROUP BY date_bin(interval '5 minutes', checked_at, timestamptz '2000-01-01') ORDER BY max(checked_at) DESC",
+                + "GROUP BY date_bin(interval '15 minutes', checked_at, timestamptz '2000-01-01') ORDER BY max(checked_at) DESC",
             (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), id, id, java.sql.Timestamp.from(start));
         var days = history(checks, firstMonitoringStart(id, checks), now);
         Check latest = checks.isEmpty() ? null : checks.getFirst();
@@ -110,7 +110,7 @@ public class PublicStatusController {
   private List<Check> checks(String journey, Instant start) {
     return jdbc.query("SELECT max(checked_at), bool_and(successful) FROM guardiao.service_checks "
             + "WHERE journey = ? AND checked_at >= ? "
-            + "GROUP BY date_bin(interval '5 minutes', checked_at, timestamptz '2000-01-01') "
+            + "GROUP BY date_bin(interval '15 minutes', checked_at, timestamptz '2000-01-01') "
             + "ORDER BY max(checked_at) DESC",
         (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), journey,
         java.sql.Timestamp.from(start));
@@ -135,13 +135,13 @@ public class PublicStatusController {
 
   private String currentState(String journey, Check latest, Instant now) {
     if (journey.equals("organizacao")) return tenantHealth(now);
-    if (latest == null || latest.at().isBefore(now.minusSeconds(600))) return "sem_coleta";
+    if (latest == null || latest.at().isBefore(now.minusSeconds(1800))) return "sem_coleta";
     return latest.ok() ? "funcionando" : "falha";
   }
 
   static String currentTenantState(List<Check> latest, Instant now) {
-    if (latest.stream().anyMatch(c -> c.at() != null && !c.at().isBefore(now.minusSeconds(600)) && !c.ok())) return "falha";
-    if (latest.isEmpty() || latest.stream().anyMatch(c -> c.at() == null || c.at().isBefore(now.minusSeconds(600)))) return "sem_coleta";
+    if (latest.stream().anyMatch(c -> c.at() != null && !c.at().isBefore(now.minusSeconds(1800)) && !c.ok())) return "falha";
+    if (latest.isEmpty() || latest.stream().anyMatch(c -> c.at() == null || c.at().isBefore(now.minusSeconds(1800)))) return "sem_coleta";
     return "funcionando";
   }
 
@@ -171,7 +171,7 @@ public class PublicStatusController {
     if (first.isAfter(start)) start = first;
     boolean currentDay = now.isBefore(end);
     if (currentDay) end = now;
-    int expected = (int) ((Duration.between(start, end).getSeconds() + (currentDay ? 0 : -1)) / 300) + 1;
+    int expected = (int) ((Duration.between(start, end).getSeconds() + (currentDay ? 0 : -1)) / 900) + 1;
     var dayChecks = checks.stream().filter(c -> c.at().atZone(DISPLAY_ZONE).toLocalDate().equals(date)).toList();
     String state = dayChecks.isEmpty() ? "sem_coleta"
         : dayChecks.stream().anyMatch(c -> !c.ok()) ? "falha"
