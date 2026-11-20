@@ -1,63 +1,49 @@
-# Jornadas do MVP no Postman
+# Postman: documentação executável do MVP
 
-Documentação executável do que o MVP faz, contra formulários reais do Django. Cada pasta responde a uma pergunta; cada negativa declara quem pede, onde e qual resposta a regra produz. Não substitui a suíte Django nem comprova RLS em SQL.
+Duas coleções geradas por `node tools/build_postman_collection.mjs` e `node tools/build_postman_collaboration.mjs`. Falam com formulários reais do Django e não substituem a suíte Django nem comprovam RLS em SQL.
 
-| Pasta | Pergunta | Identidade |
-|---|---|---|
-| 00 · Pré-condições | O ambiente responde e o tenant A é o esperado? | Nenhuma |
-| 10 · Público e pessoal | Autor cria projeto privado, salva contexto e a releitura confirma? | Conta pessoal, host global |
-| 20 · Organização | Membro cria projeto vinculado a turma e orientador, e não acessa a gestão? | Membro do tenant A |
-| 30 · Privacidade | Tenant inexistente, host errado, conta sem afiliação e outro tenant recebem a negativa prevista? | Conta pessoal e membro do tenant B |
+## Jornadas do MVP (`palacio-mental`)
 
-Persistência é comprovada pelo título do projeto e pelo marco automático "Contexto atualizado" na releitura, não apenas por status HTTP.
-
-## Resultados esperados nas negativas
-
-| Pedido | Resposta |
+| Pasta | O que comprova |
 |---|---|
-| Subdomínio sem organização | 404 |
-| Projeto institucional pelo host global | 404 |
-| Conta autenticada sem afiliação no tenant A (login e projeto) | 403 |
-| Membro do tenant B pedindo projeto do tenant A | 404 |
-| Membro pedindo `/gestao/identidade/` | 403 |
+| 10 · Público e pessoal | Autor cria projeto privado, salva contexto e a releitura mostra título e marco "Contexto atualizado". |
+| 20 · Organização e privacidade | Membro cria projeto vinculado a turma e orientador. Membro recebe 403 na gestão. Projeto institucional dá 404 no host global e no tenant B. Tenant inexistente dá 404. Conta sem afiliação dá 403. |
 
-## Preparação (uma vez, fora da coleção)
+Os itens do tenant B (20.10 a 20.14) só rodam com `allow_isolation=true`. Cada pasta exclui no fim o projeto que criou, pelo ID devolvido na criação.
 
-Use somente tenants e contas de teste. As contas não têm acesso ao Admin interno.
+## Colaboração pública (`palacio-mental-colaboracao`)
 
-1. Tenants A e B de teste. Domínios ativos e cadastrados.
-2. Em A: Gestor cria programa publicado e turma ativa com professor responsável (afiliação ativa de Professor).
-3. Em A: Membro de teste entra na turma (política aberta, ou solicitação aprovada). O grupo, se usado, é criado por esse Membro, porque só Membro ativo da turma cria grupo.
-4. Em B: Membro de teste com afiliação ativa.
-5. Conta pessoal global sem afiliação em A nem em B.
+Execute só quando quiser verificar este fluxo. Duas contas pessoais: autor publica projeto público, não comenta nem vota no próprio projeto (403); o colaborador acha o projeto na busca, comenta, reconhece a relevância e pede para colaborar; o autor aceita e o colaborador passa a integrar o projeto.
 
-Preencha em cópia privada do environment: `pessoal_*`, `membro_*`, `membro_b_*` (apenas se `allow_isolation=true`), `turma_id`, `orientador_id` (ID do usuário professor), `grupo_id` (opcional) e `turma_nome` (opcional, confirma o vínculo no detalhe).
+O projeto de teste fica público e visível na lista do site durante a execução (segundos). Se algum passo falhar, a coleção salta para o encerramento, refaz o login do autor e o exclui. Se a execução for interrompida à força, remova-o pelo título `QA-PM-colab`.
+
+## Preparação (fora da coleção)
+
+1. Tenants A e B de teste, com domínios ativos.
+2. Em A: Gestor cria programa publicado e turma ativa com professor responsável. O Membro entra na turma. O grupo, se usado, é criado por esse Membro (só Membro ativo da turma cria grupo).
+3. Em B: Membro com afiliação ativa.
+4. Contas pessoais sem afiliação em A nem em B: uma para as jornadas e a de colaboração (autor), outra para o colaborador.
+
+Preencha uma cópia privada de cada environment. Senhas são `secret`. Não publique environments preenchidos, cookies nem relatórios com corpos de autenticação.
 
 ## Segurança
 
-- `allow_writes` vem `false`. Sem ele, todo POST é pulado e a execução faz somente GETs.
-- Com `allow_writes=true`, cada POST só sai se o host estiver em `approved_write_hosts` (lista separada por vírgula, host exato). Fora da lista a execução para antes do POST.
-- Cada execução cria no máximo um projeto privado pessoal e um institucional, com título `QA-PM ... <timestamp>`. Nada é excluído automaticamente.
-- Senhas são `secret` no environment. Não publique environments preenchidos, cookies, relatórios com corpos de autenticação.
-- Itens pulados não são aprovados. A execução sem sessão ou sem ID de projeto pula os dependentes.
+- `allow_writes=false` por padrão: todo POST é pulado.
+- Com `allow_writes=true`, cada POST só sai para hosts em `approved_write_hosts` (lista separada por vírgula); fora dela a execução para antes do POST.
+- Itens pulados não são aprovados.
+- Se uma pasta falhar, ela salta para o próprio encerramento. Se parar à força, os projetos `QA-PM-...` ficam e devem ser removidos manualmente.
 
-## Executar
-
-```sh
-newman run docs/testing/postman/palacio-mental.postman_collection.json \
-  -e /caminho/privado/pm-qa.json
-```
-
-Não ative redirects automáticos: os itens os desligam para que um POST inválido que reabre o formulário (200) não pareça sucesso. Execute a coleção inteira em ordem; o Runner interrompe quando um pré-requisito essencial falha.
-
-## O que fica fora desta versão
-
-Descoberta de projeto público (exige projeto público sintético fixo), comentário e marco de outro autor, participação em turma e grupo, convites, identidade visual e mídia. Entram quando houver regra e massa de teste definidas. Convite de grupo: vale a regra do código (somente Membro ativo do grupo emite).
-
-## Verificação local
+## Executar e verificar
 
 ```sh
-node tools/build_postman_collection.mjs
+newman run docs/testing/postman/palacio-mental.postman_collection.json -e /caminho/privado/pm.json
+node tools/build_postman_collection.mjs && node tools/build_postman_collaboration.mjs
 node --test tools/test_postman_guards.mjs
 python manage.py test tools.postman_contract
 ```
+
+Não ative redirects automáticos: os itens os desligam para que um POST inválido que reabre o formulário (200) não pareça sucesso.
+
+## Ainda sem prova
+
+Contador de relevância, rejeição de pedido, marco de colaborador, convites, identidade visual e mídia. Convite de grupo: vale a regra do código (somente Membro ativo do grupo emite).
