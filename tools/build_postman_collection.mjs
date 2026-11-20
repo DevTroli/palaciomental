@@ -1,7 +1,6 @@
 // Geração determinística. Execute: node tools/build_postman_collection.mjs
 import {createHash} from "node:crypto";
 import {mkdirSync, writeFileSync} from "node:fs";
-import {readIdentity} from "./postman_identity.mjs";
 
 const out = "docs/testing/postman";
 mkdirSync(out, {recursive: true});
@@ -16,116 +15,151 @@ function group(name, description) {
   folder = {name, description, item: []};
   folders.push(folder);
 }
-function add(name, path, {method = "GET", fields, files, code = "", gate = "", auth = true, project = false, base = "tenant_a_base", description = ""} = {}) {
+// auth: variável de sessão exigida; need: variável de projeto exigida; gate: flag opcional do environment.
+function add(name, path, {method = "GET", fields, code = "", gate = "", auth = "", need = "", base = "tenant_a_base"} = {}) {
   const pre = [
     gate ? `if (pm.environment.get("${gate}") !== "true") pm.execution.skipRequest();` : "",
-    auth ? 'if (pm.variables.get("auth_ready") !== true) pm.execution.skipRequest();' : "",
-    project ? 'if (!pm.variables.get("project_id")) pm.execution.skipRequest();' : "",
+    auth ? `if (pm.variables.get("${auth}") !== true) pm.execution.skipRequest();` : "",
+    need ? `if (!pm.variables.get("${need}")) pm.execution.skipRequest();` : "",
   ].filter(Boolean).join("\n");
   folder.item.push({
     id: id(name), name,
-    description: description || name,
     request: {
       method, url: `{{${base}}}${path}`,
-      description: description || name,
       header: method === "POST" ? [
         {key: "Origin", value: `{{${base}}}`},
         {key: "Referer", value: `{{${base}}}/`},
       ] : [],
-      ...(fields ? {body: files
-        ? {mode: "formdata", formdata: [
-          ...Object.entries(fields).map(([key, value]) => ({key, value, type: "text"})),
-          ...Object.entries(files).map(([key, src]) => ({key, src, type: "file"})),
-        ]}
-        : {mode: "urlencoded", urlencoded: Object.entries(fields).map(([key, value]) => ({key, value, type: "text"}))}} : {}),
+      ...(fields ? {body: {mode: "urlencoded", urlencoded: Object.entries(fields).map(([key, value]) => ({key, value, type: "text"}))}} : {}),
     },
     protocolProfileBehavior: {followRedirects: false},
     event: [script("prerequest", pre), script("test", code)],
   });
 }
-const ok = 'pm.test("HTTP 200", () => pm.response.to.have.status(200));';
-const redirect = 'pm.test("Redireciona após POST válido", () => pm.response.to.have.status(302)); if (pm.response.code !== 302) pm.execution.setNextRequest(null);';
+
+// Blocos reutilizados nas asserções.
+const status = (code, label) => `pm.test("${label}", () => pm.response.to.have.status(${code}));`;
+const where = 'const path = (pm.response.headers.get("Location") || "").replace(/^https?:\\/\\/[^/]+/, "");';
+const redirect = (label, check = "") => `${where}
+pm.test("${label}", () => { pm.expect(pm.response.code).to.eql(302); ${check} });
+if (pm.response.code !== 302) pm.execution.setNextRequest(null);`;
 const csrf = `const match = pm.response.text().match(/name=["']csrfmiddlewaretoken["'][^>]*value=["']([^"']+)/);
 pm.test("CSRF presente", () => pm.expect(match).not.to.equal(null));
 if (!match) pm.execution.setNextRequest(null); else pm.variables.set("csrf", match[1]);`;
 const token = "{{csrf}}";
-group("00 · Prontidão", "Consulta pública sem escrita.");
+const login = (user, pass) => ({csrfmiddlewaretoken: token, username: `{{${user}}}`, password: `{{${pass}}}`});
+const projectId = target => `${redirect("Projeto criado e destino de contexto correto", 'pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/);')}
+const created = path.match(/^\\/projetos\\/(\\d+)\\/contexto\\/$/);
+if (created) pm.variables.set("${target}", created[1]); else pm.execution.setNextRequest(null);`;
+const contextFields = {
+  csrfmiddlewaretoken: token, category: "QA-PM", tags: "qa,postman", visibility: "privado",
+  "links-TOTAL_FORMS": "0", "links-INITIAL_FORMS": "0", "links-MIN_NUM_FORMS": "0", "links-MAX_NUM_FORMS": "1000",
+};
+const persisted = (titleVar, extra = "") => `${status(200, "Detalhe abre")}
+const html = pm.response.text();
+pm.test("Título do projeto presente", () => pm.expect(html).to.include(pm.variables.get("${titleVar}")));
+pm.test("Marco automático do contexto presente", () => pm.expect(html).to.include("Contexto atualizado"));${extra}`;
+
+group("00 · Pré-condições", "Destino acessível e tenant de teste identificado. Sem login.");
 add("00.1 · Aplicação pronta", "/pronto", {
-  auth: false,
   base: "global_base",
-  code: `${ok}
-const payload = pm.response.json();
-pm.test("Readiness está ok", () => pm.expect(payload.status).to.eql("ok"));
-pm.test("Resposta JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/^application\/json/));`,
-  description: "Valida banco e migrations pelo endpoint público de produção. Deve responder 200 apenas quando o schema está pronto.",
+  code: `${status(200, "Prontidão responde 200")}
+pm.test("Banco e migrations ok", () => pm.expect(pm.response.json().status).to.eql("ok"));`,
+});
+add("00.2 · Tenant A identificado", "/entrar/", {
+  code: `${status(200, "Login do tenant A abre")}
+pm.test("Marca de login institucional", () => pm.expect(pm.response.text()).to.include('data-status-probe="organizacao"'));`,
 });
 
-group("01 · Entrada", "Login e home institucional.");
-add("01.1 · Login institucional e CSRF", "/entrar/", {
-  auth: false, code: `${ok}\n${csrf}`,
+group("10 · Público e pessoal", "Autor pessoal cria projeto privado, salva contexto e relê. Host global.");
+add("10.1 · Formulário de login", "/entrar/", {base: "global_base", code: `${status(200, "Login global abre")}\n${csrf}`});
+add("10.2 · Entrar como autor pessoal", "/entrar/", {
+  base: "global_base", method: "POST", fields: login("pessoal_username", "pessoal_password"),
+  code: `${redirect("Login redireciona para a lista de projetos", 'pm.expect(path).to.eql("/projetos/");')}
+pm.variables.set("auth_pessoal", pm.response.code === 302 && path === "/projetos/");`,
 });
-add("01.2 · Autenticar gestor de teste", "/entrar/", {
-  auth: false, method: "POST",
-  fields: {csrfmiddlewaretoken: token, username: "{{username}}", password: "{{password}}", next: "/"},
-  code: `${redirect}\npm.variables.set("auth_ready", pm.response.code === 302);`,
+add("10.3 · Formulário de projeto", "/projetos/novo/", {base: "global_base", auth: "auth_pessoal", code: `${status(200, "Formulário abre")}\n${csrf}`});
+add("10.4 · Criar projeto privado", "/projetos/novo/", {
+  base: "global_base", auth: "auth_pessoal", method: "POST",
+  fields: {csrfmiddlewaretoken: token, title: "{{titulo_pessoal}}", direction: "Verificar criação e contexto de projeto pessoal.", status: "ideia", visibility: "privado"},
+  code: projectId("project_pessoal_id"),
 });
-add("01.3 · Home autenticada e marca", "/", {
-  code: `${ok}\npm.test("Home institucional, não vitrine global", () => pm.expect(pm.response.text()).to.include('id="tenant-home-title"'));`,
+add("10.5 · Formulário de contexto", "/projetos/{{project_pessoal_id}}/contexto/", {base: "global_base", auth: "auth_pessoal", need: "project_pessoal_id", code: `${status(200, "Contexto abre")}\n${csrf}`});
+add("10.6 · Salvar contexto", "/projetos/{{project_pessoal_id}}/contexto/", {
+  base: "global_base", auth: "auth_pessoal", need: "project_pessoal_id", method: "POST", fields: contextFields,
+  code: redirect("Contexto salvo e retorno ao detalhe", 'pm.expect(path).to.eql("/projetos/" + pm.variables.get("project_pessoal_id") + "/");'),
 });
-group("02 · Gestão", "Acesso de gestor às pessoas e aos programas.");
-add("02.1 · Membros", "/gestao/membros/", {code: ok});
-add("02.2 · Programas", "/programas/", {code: ok});
+add("10.7 · Contexto persistido", "/projetos/{{project_pessoal_id}}/", {base: "global_base", auth: "auth_pessoal", need: "project_pessoal_id", code: persisted("titulo_pessoal")});
 
-group("03 · Projeto", "Cria projeto privado e salva seu contexto.");
-add("03.1 · Formulário de projeto", "/projetos/novo/", {code: `${ok}\n${csrf}`});
-add("03.2 · Criar projeto privado", "/projetos/novo/", {
-  method: "POST",
-  fields: {csrfmiddlewaretoken: token, title: "{{project_title}}", direction: "Validar continuidade do fluxo institucional com dados descartáveis.", status: "ideia", visibility: "privado", tipo_projeto: "autonomo"},
-  code: `${redirect}\nconst target = pm.response.headers.get("Location") || ""; const m = target.match(/\\/projetos\\/(\\d+)\\/contexto\\/$/); pm.test("ID e destino de contexto válidos", () => pm.expect(m).not.to.equal(null)); if (!m) pm.execution.setNextRequest(null); else pm.variables.set("project_id", m[1]);`,
+group("20 · Organização", "Membro do tenant A cria projeto vinculado a turma e orientador. Exige a preparação descrita no README.");
+add("20.1 · Formulário de login", "/entrar/", {code: `${status(200, "Login do tenant A abre")}\n${csrf}`});
+add("20.2 · Entrar como membro", "/entrar/", {
+  method: "POST", fields: login("membro_username", "membro_password"),
+  code: `${redirect("Login de membro não vai à gestão nem volta ao login", 'pm.expect(path).to.not.match(/^\\/(gestao|entrar)\\//);')}
+pm.variables.set("auth_membro", pm.response.code === 302 && !/^\\/(gestao|entrar)\\//.test(path));`,
 });
-add("03.3 · Abrir contexto sem 4xx", "/projetos/{{project_id}}/contexto/", {project: true, code: `${ok}\n${csrf}`});
-add("03.4 · Salvar contexto", "/projetos/{{project_id}}/contexto/", {
-  project: true, method: "POST",
-  fields: {csrfmiddlewaretoken: token, category: "Homologação", tags: "postman,qa", visibility: "privado", "links-TOTAL_FORMS": "0", "links-INITIAL_FORMS": "0", "links-MIN_NUM_FORMS": "0", "links-MAX_NUM_FORMS": "1000"},
-  code: redirect,
+add("20.3 · Membro sem acesso à gestão", "/gestao/identidade/", {
+  auth: "auth_membro",
+  code: `${status(403, "Membro recebe 403 na identidade institucional")}
+pm.test("Resposta explica a restrição", () => pm.expect(pm.response.json().detail).to.be.a("string"));`,
 });
-add("03.5 · Detalhe do próprio projeto", "/projetos/{{project_id}}/", {
-  project: true, code: `${ok}\n${csrf}\npm.test("Projeto correto", () => pm.expect(pm.response.text()).to.include(pm.variables.get("project_title")));`,
+add("20.4 · Formulário de projeto institucional", "/projetos/novo/", {
+  auth: "auth_membro",
+  code: `${status(200, "Formulário abre")}
+pm.test("Formulário oferece vínculo com turma", () => pm.expect(pm.response.text()).to.include('name="tipo_projeto"'));
+${csrf}`,
 });
-group("04 · Proteção", "Host e CSRF.");
-add("04.1 · Mesmo ID em tenant B", "/projetos/{{project_id}}/", {
-  project: true, base: "tenant_b_base",
-  code: 'pm.test("Sem acesso por outro host", () => pm.expect([302,403,404]).to.include(pm.response.code)); pm.test("Título privado não vazou", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get("project_title")));',
+add("20.5 · Criar projeto vinculado", "/projetos/novo/", {
+  auth: "auth_membro", method: "POST",
+  fields: {
+    csrfmiddlewaretoken: token, title: "{{titulo_inst}}", direction: "Verificar projeto vinculado a turma e orientador.", status: "ideia", visibility: "privado",
+    tipo_projeto: "programa", turma: "{{turma_id}}", orientador: "{{orientador_id}}", grupo: "{{grupo_id}}",
+  },
+  code: projectId("project_inst_id"),
 });
-add("04.2 · Mesmo ID no global", "/projetos/{{project_id}}/", {
-  project: true, base: "global_base",
-  code: 'pm.test("Projeto institucional ausente no global", () => pm.expect([302,403,404]).to.include(pm.response.code));',
+add("20.6 · Formulário de contexto", "/projetos/{{project_inst_id}}/contexto/", {auth: "auth_membro", need: "project_inst_id", code: `${status(200, "Contexto abre")}\n${csrf}`});
+add("20.7 · Salvar contexto", "/projetos/{{project_inst_id}}/contexto/", {
+  auth: "auth_membro", need: "project_inst_id", method: "POST", fields: contextFields,
+  code: redirect("Contexto salvo e retorno ao detalhe", 'pm.expect(path).to.eql("/projetos/" + pm.variables.get("project_inst_id") + "/");'),
 });
-add("04.3 · CSRF inválido tratado", "/gestao/identidade/", {
-  method: "POST", fields: {nome_exibicao: "NÃO DEVE SALVAR"},
-  code: 'pm.test("CSRF rejeitado", () => pm.response.to.have.status(403)); pm.test("Sem traceback Django", () => pm.expect(pm.response.text()).not.to.include("Traceback"));',
+add("20.8 · Projeto vinculado persistido", "/projetos/{{project_inst_id}}/", {
+  auth: "auth_membro", need: "project_inst_id",
+  code: persisted("titulo_inst", `
+if (pm.environment.get("turma_nome")) pm.test("Turma vinculada aparece no detalhe", () => pm.expect(html).to.include(pm.environment.get("turma_nome")));`),
 });
-group("05 · Convite opcional", "Usa convite novo de Membro em ambiente descartável.");
-const invitationGate = "allow_invite_accept";
-add("05.1 · Sair do gestor", "/sair/", {method: "POST", gate: invitationGate, fields: {csrfmiddlewaretoken: token}, code: `${redirect}\npm.variables.set("auth_ready", false);`});
-add("05.2 · Abrir convite anônimo", "{{invite_path}}", {
-  auth: false, gate: invitationGate, code: `${ok}\n${csrf}\npm.test("Referrer não vaza token", () => pm.expect(pm.response.headers.get("Referrer-Policy")).to.eql("strict-origin"));`,
+
+group("30 · Privacidade", "Cada negativa declara quem pede, onde e qual resposta a regra produz.");
+add("30.1 · Tenant inexistente", "/entrar/", {
+  base: "missing_tenant_base",
+  code: `${status(404, "Subdomínio sem organização responde 404")}
+pm.test("Sem queda para o ambiente global", () => pm.expect(pm.response.text()).to.include("Ambiente institucional não encontrado"));`,
 });
-add("05.3 · Cadastro mínimo por convite", "{{invite_path}}", {
-  auth: false, gate: invitationGate, method: "POST",
-  fields: {csrfmiddlewaretoken: token, action: "register", username: "{{new_username}}", password1: "{{new_password}}", password2: "{{new_password}}"},
-  code: redirect,
+add("30.2 · Projeto institucional no host global", "/projetos/{{project_inst_id}}/", {
+  base: "global_base", auth: "auth_pessoal", need: "project_inst_id",
+  code: `${status(404, "Projeto institucional não existe no escopo global")}
+pm.test("Título não vazou", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get("titulo_inst")));`,
 });
-add("05.4 · Tela de aceite e CSRF renovado", "{{invite_path}}", {auth: false, gate: invitationGate, code: `${ok}\n${csrf}`});
-add("05.5 · Aceitar explicitamente", "{{invite_path}}", {
-  auth: false, gate: invitationGate, method: "POST", fields: {csrfmiddlewaretoken: token, action: "accept"},
-  code: `${redirect}\nif (pm.response.code === 302) pm.variables.set("auth_ready", true);`,
+add("30.3 · Formulário de login para conta sem afiliação", "/entrar/", {need: "project_inst_id", code: `${status(200, "Login do tenant A abre")}\n${csrf}`});
+add("30.4 · Conta autenticada sem afiliação", "/entrar/", {
+  need: "project_inst_id", method: "POST", fields: login("pessoal_username", "pessoal_password"),
+  code: `${status(403, "Autenticação sem afiliação ativa recebe 403")}
+pm.variables.set("auth_membro", false);`,
 });
-add("05.6 · Membro sem gestão", "/gestao/identidade/", {
-  gate: invitationGate, method: "POST",
-  fields: {csrfmiddlewaretoken: token, nome_exibicao: "NÃO DEVE SALVAR"},
-  code: 'pm.test("Membro sem permissão de gestão", () => pm.response.to.have.status(403));',
-  description: "Use convite novo de papel membro. Para convite de Gestor, esta asserção não se aplica: não execute esta pasta com papel diferente.",
+add("30.5 · Projeto institucional sem afiliação", "/projetos/{{project_inst_id}}/", {
+  need: "project_inst_id",
+  code: `${status(403, "Conta sem afiliação não abre o projeto")}
+pm.test("Título não vazou", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get("titulo_inst")));`,
+});
+add("30.6 · Formulário de login no tenant B", "/entrar/", {base: "tenant_b_base", gate: "allow_isolation", need: "project_inst_id", code: `${status(200, "Login do tenant B abre")}\n${csrf}`});
+add("30.7 · Entrar como membro do tenant B", "/entrar/", {
+  base: "tenant_b_base", gate: "allow_isolation", need: "project_inst_id", method: "POST", fields: login("membro_b_username", "membro_b_password"),
+  code: `${redirect("Login do membro B conclui", 'pm.expect(path).to.not.match(/^\\/entrar\\//);')}
+pm.variables.set("auth_b", pm.response.code === 302);`,
+});
+add("30.8 · Projeto do tenant A no tenant B", "/projetos/{{project_inst_id}}/", {
+  base: "tenant_b_base", gate: "allow_isolation", auth: "auth_b", need: "project_inst_id",
+  code: `${status(404, "Afiliado de B não encontra projeto de A")}
+pm.test("Título não vazou", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get("titulo_inst")));`,
 });
 
 function blockRequest(label, message) {
@@ -140,50 +174,50 @@ function guardWrite(enabled) {
     return false;
   }
   const target = pm.variables.replaceIn(pm.request.url.toString());
-  const host = (target.match(/^https?:\/\/([^/]+)/i) || [])[1];
-  const approved = pm.environment.get("approved_write_host");
-  if (!host || !approved || host.toLowerCase() !== approved.toLowerCase()) {
+  const host = ((target.match(/^https?:\/\/([^/]+)/i) || [])[1] || "").toLowerCase();
+  const approved = (pm.environment.get("approved_write_hosts") || "").toLowerCase().split(",").map(item => item.trim()).filter(Boolean);
+  if (!host || !approved.includes(host)) {
     blockRequest("Host de escrita aprovado", "Escrita bloqueada: host não aprovado explicitamente.");
     return false;
   }
   return true;
 }
-function guardInvitation(enabled) {
-  if (pm.info.requestName.startsWith("05.") && enabled("allow_invite_accept")) {
-    const path = pm.environment.get("invite_path") || "";
-    if (!/^\/convites\/organizacao\/[A-Za-z0-9_-]+\/aceitar\/$/.test(path)) {
-      blockRequest("Caminho de convite válido", "Convite opcional exige caminho válido de organização.");
-      return false;
-    }
-  }
-  return true;
-}
 function guard() {
   const enabled = name => pm.environment.get(name) === "true";
-  if (pm.info.requestName === "01.1 · Login institucional e CSRF") {
-    pm.variables.set("auth_ready", false);
-    pm.variables.set("project_id", "");
-    pm.variables.set("project_title", `TESTE-POSTMAN ${Date.now()}`);
+  if (pm.info.requestName.startsWith("00.1")) {
+    for (const key of ["auth_pessoal", "auth_membro", "auth_b"]) pm.variables.set(key, false);
+    for (const key of ["project_pessoal_id", "project_inst_id"]) pm.variables.set(key, "");
+    const run = Date.now();
+    pm.variables.set("titulo_pessoal", `QA-PM pessoal ${run}`);
+    pm.variables.set("titulo_inst", `QA-PM institucional ${run}`);
   }
-  if (!guardWrite(enabled)) return;
-  guardInvitation(enabled);
+  guardWrite(enabled);
 }
-const guards = [blockRequest, guardWrite, guardInvitation].map(fn => fn.toString()).join("\n");
+const guards = [blockRequest, guardWrite].map(fn => fn.toString()).join("\n");
 const collection = {
-  info: {_postman_id: id("collection"), name: "Palácio Mental · Saúde pública e homologação", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", description: "Checks públicos de saúde em produção e formulários reais Django para homologação; execução ordenada, CSRF, host e mutações protegidos. Leia README.md. Não há credenciais, cookies ou tokens reais neste arquivo."},
+  info: {
+    _postman_id: id("collection"), name: "Palácio Mental · Jornadas do MVP",
+    schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    description: "Jornadas HTTP do MVP contra formulários reais do Django. Escritas desligadas por padrão e limitadas a hosts aprovados. Leia README.md. Sem credenciais, cookies ou tokens neste arquivo.",
+  },
   event: [script("prerequest", `${guards}\n(${guard.toString()})();`)],
   item: folders,
 };
 const defaults = {
+  global_base: "https://palaciomental.com.br",
   tenant_a_base: "https://homolog-a.palaciomental.com.br",
   tenant_b_base: "https://homolog-b.palaciomental.com.br",
-  global_base: "https://palaciomental.com.br",
-  allow_writes: "false", approved_write_host: "", allow_invite_accept: "false",
-  username: "", password: "", invite_path: "", new_username: "", new_password: "",
+  missing_tenant_base: "https://qa-inexistente.palaciomental.com.br",
+  allow_writes: "false", approved_write_hosts: "", allow_isolation: "false",
+  pessoal_username: "", pessoal_password: "",
+  membro_username: "", membro_password: "",
+  membro_b_username: "", membro_b_password: "",
+  turma_id: "", orientador_id: "", grupo_id: "", turma_nome: "",
 };
+const secrets = new Set(["pessoal_password", "membro_password", "membro_b_password"]);
 const env = {
-  id: id("environment"), name: "Palácio Mental · Produção segura por padrão", _postman_variable_scope: "environment",
-  values: Object.entries(defaults).map(([key, value]) => ({key, value, enabled: true, type: ["password", "new_password", "invite_path"].includes(key) ? "secret" : "default"})),
+  id: id("environment"), name: "Palácio Mental · Seguro por padrão", _postman_variable_scope: "environment",
+  values: Object.entries(defaults).map(([key, value]) => ({key, value, enabled: true, type: secrets.has(key) ? "secret" : "default"})),
 };
 writeFileSync(`${out}/palacio-mental.postman_collection.json`, JSON.stringify(collection, null, 2) + "\n");
 writeFileSync(`${out}/palacio-mental.postman_environment.json`, JSON.stringify(env, null, 2) + "\n");
