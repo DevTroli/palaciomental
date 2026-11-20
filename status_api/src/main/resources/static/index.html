@@ -79,7 +79,7 @@
       <div class="overview-side" id="overview-side" hidden><strong id="overview-count"></strong><span>acessos com coleta recente</span></div>
     </section>
     <div class="layout" id="content" hidden>
-      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Coletas incompletas</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 15 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Coletas incompletas: faltam verificações previstas para o dia.</li></ul><div id="journeys"></div></section>
+      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Incompleto</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 15 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Incompleto: algumas verificações previstas para o dia não foram realizadas.</li></ul><div id="journeys"></div></section>
       <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div class="incident-tabs" role="tablist" aria-label="Estado do incidente">
         <button type="button" id="incident-open" role="tab" aria-controls="incidents-open" aria-selected="true">Abertos</button>
         <button type="button" id="incident-recovered" role="tab" aria-controls="incidents-recovered" aria-selected="false" tabindex="-1">Recuperados</button>
@@ -92,7 +92,7 @@
   </main>
   <script>
     const dateTime = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : 'Ainda não verificado';
-    const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Coletas incompletas', sem_coleta:'Sem dados recentes' };
+    const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Incompleto', sem_coleta:'Sem dados recentes' };
     const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
     const incidentTabs = Array.from(document.querySelectorAll('.incident-tabs [role="tab"]'));
     function selectIncidentTab(selected) {
