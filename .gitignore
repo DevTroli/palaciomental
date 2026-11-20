@@ -1,29 +1,33 @@
-*.log
-.env 
-.venv 
+# Environment secrets
+.env
+.env.*
+!.env.example
 
-# Byte-compiled / optimized / DLL files
+# Python
+.venv/
+venv/
+env/
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Django
-*.log
+# Django local data
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
+db.sqlite3*
 media/
-
-# Staticfiles
 staticfiles/
 
-# Virtual env
-.venv/
-venv/
-env/
+# Java build output
+target/
 
-# IDE
+# Logs, caches and editor files
+*.log
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.aws/
+.codex/
+.agents/
 .vscode/
 .idea/
 *.swp
-.env
