@@ -67,7 +67,7 @@ Os itens de mídia validam HTTP 200 e Content-Type de imagem. Isso não comprova
 
 ## Inventário e reprodução
 
-`../django-test-inventory.json` lista individualmente os testes descobertos na base deste PR. A coleção não afirma converter todos eles em HTTP. Grupos relevantes:
+A coleção cobre fluxos HTTP selecionados e não substitui a suíte Django. Grupos relevantes:
 
 - `plataforma.tests.institucional`: acesso, convites, CSRF, formulários, marca, capa, hierarquia e projetos.
 - Testes de RLS/isolamento: executar no PostgreSQL com role comum, conforme o CI.
@@ -92,12 +92,11 @@ Regeneração, sem tokens nem banco de produção:
 node tools/build_postman_collection.mjs
 python tools/build_branding_fixtures.py
 python manage.py shell --no-imports \
-  -c 'exec(open("tools/export_test_inventory.py").read())' \
-  > docs/testing/django-test-inventory.json
+  -c 'exec(open("tools/export_test_inventory.py").read())'
 ```
 
 ## Evidência local desta entrega
 
 Com Newman 6.2.1 e fixtures descartáveis: fluxo funcional executou 31 requests e 55 asserções sem falhas; envio real e GET externo de mídia ficaram desativados. O cenário com uploads e `allow_branding=false` passou com 30 requests/53 asserções, preservando nome, apresentação e cores. Modo padrão fez somente um GET e duas asserções. Host não aprovado produziu a falha esperada de proteção e nenhum POST: apenas o GET inicial foi enviado.
 
-Esses resultados são de homologação local, não de produção. Não reutilize o convite consumido nem interprete itens pulados como cobertura executada. O inventário e os resultados completos de regressão estão resumidos em `../auditoria-bifurcacao.md`.
+Esses resultados são de homologação local, não de produção. Não reutilize o convite consumido nem interprete itens pulados como cobertura executada.
