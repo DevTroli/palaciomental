@@ -1,0 +1,1263 @@
+{
+  "info": {
+    "_postman_id": "d3460444-1e8b-4e3d-a2f5-fe45549c3aac",
+    "name": "Palácio Mental · Colaboração pública",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Descoberta, comentário, relevância e colaboração entre duas contas pessoais. Cria um projeto público de teste e o remove ao final. Leia README.md."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function blockRequest(label, message) {",
+          "  pm.execution.setNextRequest(null);",
+          "  pm.test(label, () => pm.expect.fail(message));",
+          "  pm.execution.skipRequest();",
+          "}",
+          "function guardWrite(enabled) {",
+          "  if (pm.request.method === \"GET\") return true;",
+          "  if (!enabled(\"allow_writes\")) { pm.execution.skipRequest(); return false; }",
+          "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+          "  const host = ((target.match(/^https?:\\/\\/([^/]+)/i) || [])[1] || \"\").toLowerCase();",
+          "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(item => item.trim()).filter(Boolean);",
+          "  if (!host || !approved.includes(host)) {",
+          "    blockRequest(\"Host de escrita aprovado\", \"Escrita bloqueada: host não aprovado explicitamente.\");",
+          "    return false;",
+          "  }",
+          "  return true;",
+          "}",
+          "(() => {",
+          "      const cfg = {\"first\":\"10.1\",\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\"}};",
+          "      if (pm.info.requestName.startsWith(cfg.first)) {",
+          "        for (const key of cfg.flags) pm.variables.set(key, false);",
+          "        for (const key of cfg.ids) pm.variables.set(key, \"\");",
+          "        const run = Date.now();",
+          "        for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
+          "      }",
+          "      guardWrite(name => pm.environment.get(name) === \"true\");",
+          "    })();"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "10 · Publicação",
+      "description": "Autor publica projeto público buscando colaboradores; não comenta nem vota no próprio projeto.",
+      "item": [
+        {
+          "id": "16e4a3e6-e601-43df-abd7-9bcd331a8208",
+          "name": "10.1 · Formulário de login",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "fa7c9417-1e87-4e29-ab9e-076b4a72412e",
+          "name": "10.2 · Entrar",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/entrar/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{autor_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{autor_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const ok = pm.response.code === 302 && path === \"/projetos/\";",
+                  "pm.variables.set(\"auth_autor\", ok); if (ok) pm.variables.set(\"auth_colab\", false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "de2f4324-e1ad-4bfb-a09a-5175c1f4f33e",
+          "name": "10.3 · Formulário de projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/novo/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Formulário abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b519252f-d6eb-4c1c-a075-43fa172dd230",
+          "name": "10.4 · Criar projeto",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/novo/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "{{titulo}}",
+                  "type": "text"
+                },
+                {
+                  "key": "direction",
+                  "value": "Verificar descoberta e colaboração.",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "ideia",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "privado",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Projeto criado e destino de contexto correto\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const created = path.match(/^\\/projetos\\/(\\d+)\\/contexto\\/$/);",
+                  "if (created) pm.variables.set(\"project_pub_id\", created[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "997431ab-fe28-43e0-a048-af10630edced",
+          "name": "10.5 · Publicar buscando colaboradores",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/contexto/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "QA-PM",
+                  "type": "text"
+                },
+                {
+                  "key": "tags",
+                  "value": "qa",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "publico",
+                  "type": "text"
+                },
+                {
+                  "key": "links-TOTAL_FORMS",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "links-INITIAL_FORMS",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "links-MIN_NUM_FORMS",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "links-MAX_NUM_FORMS",
+                  "value": "1000",
+                  "type": "text"
+                },
+                {
+                  "key": "seeking_collaborators",
+                  "value": "on",
+                  "type": "text"
+                },
+                {
+                  "key": "collaboration_description",
+                  "value": "Projeto de teste.",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Contexto salvo e retorno ao detalhe\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b79b28bd-0e6e-4843-ae97-21a00af11880",
+          "name": "10.6 · Autor não comenta o próprio projeto",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/comentarios/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "Comentário do autor",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Autor recebe 403 ao comentar o próprio projeto\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1620fb4d-b441-47af-a03b-2d7e1651c2e6",
+          "name": "10.7 · Autor não vota no próprio projeto",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/relevancia/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Autor recebe 403 ao reconhecer o próprio projeto\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "20 · Colaborador",
+      "description": "Outra conta descobre o projeto, comenta, reconhece a relevância e pede para colaborar.",
+      "item": [
+        {
+          "id": "d1c44f6e-7c10-41b1-a14f-fbe36da914f3",
+          "name": "20.1 · Formulário de login",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8010ca28-d723-44f1-a5c8-f6548a804cac",
+          "name": "20.2 · Entrar",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/entrar/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{colab_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{colab_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const ok = pm.response.code === 302 && path === \"/projetos/\";",
+                  "pm.variables.set(\"auth_colab\", ok); if (ok) pm.variables.set(\"auth_autor\", false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "4e4431a0-b668-49e5-ac8b-28e36dddfe5a",
+          "name": "20.3 · Descobrir na lista pública",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/?q={{titulo}}",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Lista pública abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Projeto público aparece na busca\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"titulo\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8827ce23-7ea8-4da2-a478-7c26e2ca0001",
+          "name": "20.4 · Abrir o projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Detalhe abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Título presente\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"titulo\")));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "7633ce99-c2f3-4c09-a59a-bae26caad78d",
+          "name": "20.5 · Comentar",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/comentarios/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "{{comentario}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Comentário aceito\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1e77d262-b5a9-4c7c-a93d-0f68247fcd2a",
+          "name": "20.6 · Reconhecer relevância",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/relevancia/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Relevância aceita\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "252e526a-4de6-4b52-aec0-2eadd7e83d19",
+          "name": "20.7 · Pedir para colaborar",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/colaboracao/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "message",
+                  "value": "Posso ajudar com testes.",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Pedido aceito\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "30 · Decisão do autor",
+      "description": "Autor vê o pedido pendente e o comentário, aceita, e o colaborador passa a integrar o projeto.",
+      "item": [
+        {
+          "id": "8ac21881-87d2-4a16-a856-fd113f50f6cb",
+          "name": "30.1 · Formulário de login",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e36bcc16-8395-4ab9-a259-fd6323c81659",
+          "name": "30.2 · Entrar",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/entrar/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{autor_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{autor_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const ok = pm.response.code === 302 && path === \"/projetos/\";",
+                  "pm.variables.set(\"auth_autor\", ok); if (ok) pm.variables.set(\"auth_colab\", false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e87f6770-39b0-4b46-a60e-32cdaf87e995",
+          "name": "30.3 · Ver pedido pendente",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Detalhe do autor abre\", () => pm.response.to.have.status(200));",
+                  "const html = pm.response.text();",
+                  "pm.test(\"Contexto persistido\", () => pm.expect(html).to.include(\"Contexto atualizado\"));",
+                  "pm.test(\"Comentário do colaborador aparece\", () => pm.expect(html).to.include(pm.variables.get(\"comentario\")));",
+                  "pm.test(\"Pedido do colaborador aparece\", () => pm.expect(html).to.include(pm.environment.get(\"colab_username\")));",
+                  "const request = html.match(/\\/colaboracoes\\/(\\d+)\\/decidir\\//);",
+                  "pm.test(\"Decisão disponível para o autor\", () => pm.expect(request).not.to.equal(null));",
+                  "if (request) pm.variables.set(\"request_id\", request[1]); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e0f8726e-3c4c-4e37-ac8b-2e8b1424e984",
+          "name": "30.4 · Aceitar o pedido",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/colaboracoes/{{request_id}}/decidir/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "decision",
+                  "value": "aceita",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"request_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Decisão registrada\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "98720e62-2f43-441c-adca-95c120d7bc9e",
+          "name": "30.5 · Colaborador integrado",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"request_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Detalhe abre\", () => pm.response.to.have.status(200));",
+                  "const html = pm.response.text();",
+                  "pm.test(\"Colaborador aparece no projeto\", () => pm.expect(html).to.include(pm.environment.get(\"colab_username\")));",
+                  "pm.test(\"Pedido deixou de estar pendente\", () => pm.expect(html).not.to.include(\"/colaboracoes/\" + pm.variables.get(\"request_id\") + \"/decidir/\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "40 · Encerramento",
+      "description": "Remove o projeto público desta execução. Também roda quando a jornada falha antes.",
+      "item": [
+        {
+          "id": "72b30b94-8f18-45cc-a99c-c6ab073de5a9",
+          "name": "40.1 · Formulário de login",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "dcbd5b8f-e1b9-4b52-a9c6-4f41778b3862",
+          "name": "40.2 · Entrar",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/entrar/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{autor_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{autor_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "pm.variables.set(\"auth_autor\", pm.response.code === 302);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "998ea2d0-8dfe-454e-a191-eb18bd390198",
+          "name": "40.3 · Formulário de edição",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/editar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Edição abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_global\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "85cc5fa7-25b9-4e66-a380-e1a0f1c2f2f5",
+          "name": "40.4 · Excluir projeto de teste",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pub_id}}/excluir/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Exclusão redireciona ao perfil\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/perfil\\//); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

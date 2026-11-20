@@ -3,7 +3,7 @@
     "_postman_id": "ffa217cd-d204-4584-a931-e43e523ffa3e",
     "name": "Palácio Mental · Jornadas do MVP",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Jornadas HTTP do MVP contra formulários reais do Django. Escritas desligadas por padrão e limitadas a hosts aprovados. Leia README.md. Sem credenciais, cookies ou tokens neste arquivo."
+    "description": "Jornadas HTTP do MVP contra formulários reais do Django. Escritas desligadas por padrão e limitadas a hosts aprovados. Leia README.md."
   },
   "event": [
     {
@@ -18,10 +18,7 @@
           "}",
           "function guardWrite(enabled) {",
           "  if (pm.request.method === \"GET\") return true;",
-          "  if (!enabled(\"allow_writes\")) {",
-          "    pm.execution.skipRequest();",
-          "    return false;",
-          "  }",
+          "  if (!enabled(\"allow_writes\")) { pm.execution.skipRequest(); return false; }",
           "  const target = pm.variables.replaceIn(pm.request.url.toString());",
           "  const host = ((target.match(/^https?:\\/\\/([^/]+)/i) || [])[1] || \"\").toLowerCase();",
           "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(item => item.trim()).filter(Boolean);",
@@ -31,97 +28,24 @@
           "  }",
           "  return true;",
           "}",
-          "(function guard() {",
-          "  const enabled = name => pm.environment.get(name) === \"true\";",
-          "  if (pm.info.requestName.startsWith(\"00.1\")) {",
-          "    for (const key of [\"auth_pessoal\", \"auth_membro\", \"auth_b\"]) pm.variables.set(key, false);",
-          "    for (const key of [\"project_pessoal_id\", \"project_inst_id\"]) pm.variables.set(key, \"\");",
-          "    const run = Date.now();",
-          "    pm.variables.set(\"titulo_pessoal\", `QA-PM pessoal ${run}`);",
-          "    pm.variables.set(\"titulo_inst\", `QA-PM institucional ${run}`);",
-          "  }",
-          "  guardWrite(enabled);",
-          "})();"
+          "(() => {",
+          "      const cfg = {\"first\":\"10.1\",\"flags\":[\"auth_pessoal\",\"auth_membro\",\"auth_b\"],\"ids\":[\"project_pessoal_id\",\"project_inst_id\"],\"titles\":{\"titulo_pessoal\":\"pessoal\",\"titulo_inst\":\"inst\"}};",
+          "      if (pm.info.requestName.startsWith(cfg.first)) {",
+          "        for (const key of cfg.flags) pm.variables.set(key, false);",
+          "        for (const key of cfg.ids) pm.variables.set(key, \"\");",
+          "        const run = Date.now();",
+          "        for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
+          "      }",
+          "      guardWrite(name => pm.environment.get(name) === \"true\");",
+          "    })();"
         ]
       }
     }
   ],
   "item": [
     {
-      "name": "00 · Pré-condições",
-      "description": "Destino acessível e tenant de teste identificado. Sem login.",
-      "item": [
-        {
-          "id": "ca5df2a7-076a-4926-adbd-34afae6dd1bf",
-          "name": "00.1 · Aplicação pronta",
-          "request": {
-            "method": "GET",
-            "url": "{{global_base}}/pronto",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Prontidão responde 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Banco e migrations ok\", () => pm.expect(pm.response.json().status).to.eql(\"ok\"));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "66e118a1-de64-4d3b-a3a0-d8b79ce075cd",
-          "name": "00.2 · Tenant A identificado",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/entrar/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Login do tenant A abre\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Marca de login institucional\", () => pm.expect(pm.response.text()).to.include('data-status-probe=\"organizacao\"'));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "10 · Público e pessoal",
-      "description": "Autor pessoal cria projeto privado, salva contexto e relê. Host global.",
+      "description": "Autor pessoal cria projeto privado, salva contexto, relê e remove.",
       "item": [
         {
           "id": "b6d48792-7f19-4e6e-a7b9-5b18b5cd0fc3",
@@ -149,18 +73,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Login global abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"10.7 · Excluir projeto de teste\"); else pm.variables.set(\"csrf_global\", match[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "81ee75a9-26e5-4bff-a20b-b04bbcdc44e5",
-          "name": "10.2 · Entrar como autor pessoal",
+          "id": "56ec2e77-2079-4889-a21e-22a7d4c1002d",
+          "name": "10.2 · Entrar",
           "request": {
             "method": "POST",
             "url": "{{global_base}}/entrar/",
@@ -179,7 +103,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_global}}",
                   "type": "text"
                 },
                 {
@@ -215,7 +139,7 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"10.7 · Excluir projeto de teste\");",
                   "pm.variables.set(\"auth_pessoal\", pm.response.code === 302 && path === \"/projetos/\");"
                 ]
               }
@@ -251,7 +175,7 @@
                   "pm.test(\"Formulário abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"10.7 · Excluir projeto de teste\"); else pm.variables.set(\"csrf_global\", match[1]);"
                 ]
               }
             }
@@ -278,7 +202,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_global}}",
                   "type": "text"
                 },
                 {
@@ -288,7 +212,7 @@
                 },
                 {
                   "key": "direction",
-                  "value": "Verificar criação e contexto de projeto pessoal.",
+                  "value": "Verificar criação e contexto.",
                   "type": "text"
                 },
                 {
@@ -324,53 +248,17 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Projeto criado e destino de contexto correto\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"10.7 · Excluir projeto de teste\");",
                   "const created = path.match(/^\\/projetos\\/(\\d+)\\/contexto\\/$/);",
-                  "if (created) pm.variables.set(\"project_pessoal_id\", created[1]); else pm.execution.setNextRequest(null);"
+                  "if (created) pm.variables.set(\"project_pessoal_id\", created[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "24d8f667-a8f1-46eb-af7e-6486d0424cdf",
-          "name": "10.5 · Formulário de contexto",
-          "request": {
-            "method": "GET",
-            "url": "{{global_base}}/projetos/{{project_pessoal_id}}/contexto/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.variables.get(\"auth_pessoal\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pessoal_id\")) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Contexto abre\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "5f3fac81-53b5-4dfb-aa64-0b312b8e0758",
-          "name": "10.6 · Salvar contexto",
+          "id": "8d8b9fc0-4c6f-4fec-a938-5190b0034f93",
+          "name": "10.5 · Salvar contexto",
           "request": {
             "method": "POST",
             "url": "{{global_base}}/projetos/{{project_pessoal_id}}/contexto/",
@@ -389,7 +277,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_global}}",
                   "type": "text"
                 },
                 {
@@ -399,7 +287,7 @@
                 },
                 {
                   "key": "tags",
-                  "value": "qa,postman",
+                  "value": "qa",
                   "type": "text"
                 },
                 {
@@ -451,15 +339,15 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Contexto salvo e retorno ao detalhe\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pessoal_id\") + \"/\"); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"10.7 · Excluir projeto de teste\");"
                 ]
               }
             }
           ]
         },
         {
-          "id": "923f99d3-70a1-48c1-af00-be0a5e902704",
-          "name": "10.7 · Contexto persistido",
+          "id": "96b2f447-ddc3-46a1-a188-397a35891e35",
+          "name": "10.6 · Contexto persistido",
           "request": {
             "method": "GET",
             "url": "{{global_base}}/projetos/{{project_pessoal_id}}/",
@@ -492,12 +380,66 @@
               }
             }
           ]
+        },
+        {
+          "id": "46c128fb-1703-486e-af41-35a56b76d990",
+          "name": "10.7 · Excluir projeto de teste",
+          "request": {
+            "method": "POST",
+            "url": "{{global_base}}/projetos/{{project_pessoal_id}}/excluir/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{global_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{global_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_global}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_pessoal\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_pessoal_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Exclusão redireciona ao perfil\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/perfil\\//); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "20 · Organização",
-      "description": "Membro do tenant A cria projeto vinculado a turma e orientador. Exige a preparação descrita no README.",
+      "name": "20 · Organização e privacidade",
+      "description": "Membro do tenant A cria projeto vinculado a turma e orientador; negativas de gestão, host e afiliação. Itens do tenant B exigem allow_isolation.",
       "item": [
         {
           "id": "1be3caca-2f19-4298-a30f-b75209e5153e",
@@ -525,18 +467,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Login do tenant A abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "75d471b6-5fc7-41dc-ada4-67b5fa8201c1",
-          "name": "20.2 · Entrar como membro",
+          "id": "23e047e9-4983-4cea-a34c-0475014896e8",
+          "name": "20.2 · Entrar",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/entrar/",
@@ -555,7 +497,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -591,7 +533,7 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Login de membro não vai à gestão nem volta ao login\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.not.match(/^\\/(gestao|entrar)\\//); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\");",
                   "pm.variables.set(\"auth_membro\", pm.response.code === 302 && !/^\\/(gestao|entrar)\\//.test(path));"
                 ]
               }
@@ -599,8 +541,44 @@
           ]
         },
         {
-          "id": "919d07b5-f272-4d71-aac3-57728851f424",
-          "name": "20.3 · Membro sem acesso à gestão",
+          "id": "446d32fe-c9b5-4890-ae6f-4f5c008492ff",
+          "name": "20.3 · Formulário de projeto institucional",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/novo/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_membro\") !== true) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Formulário abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Formulário oferece vínculo com turma\", () => pm.expect(pm.response.text()).to.include('name=\"tipo_projeto\"'));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "5e13da5d-cd97-43ba-a2ff-948a8b11478d",
+          "name": "20.4 · Membro sem acesso à gestão",
           "request": {
             "method": "GET",
             "url": "{{tenant_a_base}}/gestao/identidade/",
@@ -632,42 +610,6 @@
           ]
         },
         {
-          "id": "4c253fd4-e197-4bf6-a8b9-f9a7fa6a7d88",
-          "name": "20.4 · Formulário de projeto institucional",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/projetos/novo/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.variables.get(\"auth_membro\") !== true) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Formulário abre\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Formulário oferece vínculo com turma\", () => pm.expect(pm.response.text()).to.include('name=\"tipo_projeto\"'));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "id": "e1205abf-5b16-4ec1-a131-a5d5d71265ba",
           "name": "20.5 · Criar projeto vinculado",
           "request": {
@@ -688,7 +630,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -698,7 +640,7 @@
                 },
                 {
                   "key": "direction",
-                  "value": "Verificar projeto vinculado a turma e orientador.",
+                  "value": "Verificar vínculo com turma.",
                   "type": "text"
                 },
                 {
@@ -754,53 +696,17 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Projeto criado e destino de contexto correto\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\");",
                   "const created = path.match(/^\\/projetos\\/(\\d+)\\/contexto\\/$/);",
-                  "if (created) pm.variables.set(\"project_inst_id\", created[1]); else pm.execution.setNextRequest(null);"
+                  "if (created) pm.variables.set(\"project_inst_id\", created[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "5a8d8296-e1c3-49fd-a3dd-3d9450b3319b",
-          "name": "20.6 · Formulário de contexto",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/projetos/{{project_inst_id}}/contexto/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.variables.get(\"auth_membro\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Contexto abre\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "94c2d0db-cbf2-49ee-aef6-c776d181e9a9",
-          "name": "20.7 · Salvar contexto",
+          "id": "bd106f11-e8de-4333-a139-5e0cead3910c",
+          "name": "20.6 · Salvar contexto",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/projetos/{{project_inst_id}}/contexto/",
@@ -819,7 +725,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -829,7 +735,7 @@
                 },
                 {
                   "key": "tags",
-                  "value": "qa,postman",
+                  "value": "qa",
                   "type": "text"
                 },
                 {
@@ -881,15 +787,15 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Contexto salvo e retorno ao detalhe\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_inst_id\") + \"/\"); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\");"
                 ]
               }
             }
           ]
         },
         {
-          "id": "76a41da0-ee7d-4b0d-af68-16705496736f",
-          "name": "20.8 · Projeto vinculado persistido",
+          "id": "1daed864-44b0-4a0b-a0ab-62a24eaa842e",
+          "name": "20.7 · Projeto vinculado persistido",
           "request": {
             "method": "GET",
             "url": "{{tenant_a_base}}/projetos/{{project_inst_id}}/",
@@ -923,16 +829,43 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "30 · Privacidade",
-      "description": "Cada negativa declara quem pede, onde e qual resposta a regra produz.",
-      "item": [
+        },
         {
-          "id": "95e960fc-3aad-4847-aca3-8e0f8a457eb7",
-          "name": "30.1 · Tenant inexistente",
+          "id": "dd247bc0-870d-4fe2-a756-786c1dae1a69",
+          "name": "20.8 · Projeto institucional no host global",
+          "request": {
+            "method": "GET",
+            "url": "{{global_base}}/projetos/{{project_inst_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Projeto institucional não existe no escopo global\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Título não vazou\", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get(\"titulo_inst\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "692c5d9a-05bd-4048-a9e0-d054aada55ff",
+          "name": "20.9 · Tenant inexistente",
           "request": {
             "method": "GET",
             "url": "{{missing_tenant_base}}/entrar/",
@@ -964,172 +897,8 @@
           ]
         },
         {
-          "id": "bfa35ed3-3a0b-4176-aca5-098a975714b4",
-          "name": "30.2 · Projeto institucional no host global",
-          "request": {
-            "method": "GET",
-            "url": "{{global_base}}/projetos/{{project_inst_id}}/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.variables.get(\"auth_pessoal\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Projeto institucional não existe no escopo global\", () => pm.response.to.have.status(404));",
-                  "pm.test(\"Título não vazou\", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get(\"titulo_inst\")));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "434f7fd9-aa97-467d-aa9f-ed008720fdcf",
-          "name": "30.3 · Formulário de login para conta sem afiliação",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/entrar/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Login do tenant A abre\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "adc37207-1707-4cb6-a93a-c6807941792d",
-          "name": "30.4 · Conta autenticada sem afiliação",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/entrar/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
-                  "type": "text"
-                },
-                {
-                  "key": "username",
-                  "value": "{{pessoal_username}}",
-                  "type": "text"
-                },
-                {
-                  "key": "password",
-                  "value": "{{pessoal_password}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Autenticação sem afiliação ativa recebe 403\", () => pm.response.to.have.status(403));",
-                  "pm.variables.set(\"auth_membro\", false);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "a574ad5b-6a1d-4181-abbc-2b02c0dcdf15",
-          "name": "30.5 · Projeto institucional sem afiliação",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/projetos/{{project_inst_id}}/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Conta sem afiliação não abre o projeto\", () => pm.response.to.have.status(403));",
-                  "pm.test(\"Título não vazou\", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get(\"titulo_inst\")));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "5b839f5b-4528-41f5-ad7b-0347d0bcca8c",
-          "name": "30.6 · Formulário de login no tenant B",
+          "id": "8281a094-d36e-4866-af24-916d59563627",
+          "name": "20.10 · Formulário de login no tenant B",
           "request": {
             "method": "GET",
             "url": "{{tenant_b_base}}/entrar/",
@@ -1157,15 +926,15 @@
                   "pm.test(\"Login do tenant B abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\"); else pm.variables.set(\"csrf_tenant_b\", match[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "10bddaf0-9e36-4c90-a71b-e8b4f9e96c6e",
-          "name": "30.7 · Entrar como membro do tenant B",
+          "id": "5787622a-640f-45cf-a921-967668e70634",
+          "name": "20.11 · Entrar como membro do tenant B",
           "request": {
             "method": "POST",
             "url": "{{tenant_b_base}}/entrar/",
@@ -1184,7 +953,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf}}",
+                  "value": "{{csrf_tenant_b}}",
                   "type": "text"
                 },
                 {
@@ -1221,7 +990,7 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Login do membro B conclui\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.not.match(/^\\/entrar\\//); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\");",
                   "pm.variables.set(\"auth_b\", pm.response.code === 302);"
                 ]
               }
@@ -1229,8 +998,8 @@
           ]
         },
         {
-          "id": "2a9e074f-21e6-4524-ad9c-6a5d030301a6",
-          "name": "30.8 · Projeto do tenant A no tenant B",
+          "id": "187a4a3f-b43c-469a-a290-cd8058724801",
+          "name": "20.12 · Projeto do tenant A no tenant B",
           "request": {
             "method": "GET",
             "url": "{{tenant_b_base}}/projetos/{{project_inst_id}}/",
@@ -1258,6 +1027,158 @@
                 "exec": [
                   "pm.test(\"Afiliado de B não encontra projeto de A\", () => pm.response.to.have.status(404));",
                   "pm.test(\"Título não vazou\", () => pm.expect(pm.response.text()).not.to.include(pm.variables.get(\"titulo_inst\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "7e813455-47ba-406e-a8dd-46bfaaf01901",
+          "name": "20.13 · Formulário de login para conta sem afiliação",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_b_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_isolation\") !== \"true\") pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login do tenant B abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"20.15 · Excluir projeto de teste\"); else pm.variables.set(\"csrf_tenant_b\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e417772d-5ebf-410b-a294-38bae363feb7",
+          "name": "20.14 · Conta sem afiliação",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_b_base}}/entrar/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_b_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_b_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_b}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{pessoal_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{pessoal_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get(\"allow_isolation\") !== \"true\") pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Autenticação sem afiliação ativa recebe 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cc651e60-95ed-482a-a921-b1e468270ba6",
+          "name": "20.15 · Excluir projeto de teste",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_inst_id}}/excluir/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.variables.get(\"auth_membro\") !== true) pm.execution.skipRequest();",
+                  "if (!pm.variables.get(\"project_inst_id\")) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Exclusão redireciona ao perfil\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/perfil\\//); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
                 ]
               }
             }
