@@ -19,11 +19,16 @@ function requestGuard(cfg) {
   const local = key => pm.variables.get(key);
   const enabled = key => pm.environment.get(key) === "true";
   const skip = () => { pm.execution.skipRequest(); return false; };
-  if (cfg.personal && !enabled("allow_personal")) return skip();
-  if (cfg.gate && !enabled(cfg.gate)) return skip();
-  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();
-  if (cfg.auth && local(cfg.auth) !== true) return skip();
-  if (cfg.need && !local(cfg.need)) return skip();
+  function scenarioAllowed() {
+    if (cfg.personal && !enabled("allow_personal")) return false;
+    if (cfg.gate && !enabled(cfg.gate)) return false;
+    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;
+    if (cfg.auth && local(cfg.auth) !== true) return false;
+    if (cfg.need && !local(cfg.need)) return false;
+    return true;
+  }
+
+  if (!scenarioAllowed()) return skip();
   if (pm.request.method === "GET") return true;
   if (!enabled("allow_writes")) return skip();
   const target = pm.variables.replaceIn(pm.request.url.toString());
