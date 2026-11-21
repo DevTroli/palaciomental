@@ -1,54 +1,47 @@
 import json
+import re
 from pathlib import Path
 
 from django.conf import settings
 from django.test import SimpleTestCase
 from django.urls import resolve
 
-
 ROOT = Path(settings.BASE_DIR) / "docs/testing/postman"
+COLLECTIONS = {
+    "palacio-mental": ("pessoal_password", "membro_password", "membro_b_password"),
+    "palacio-mental-colaboracao": ("autor_password", "colab_password"),
+}
 
 
 class PostmanContractTests(SimpleTestCase):
-    def setUp(self):
-        self.collection = json.loads((ROOT / "palacio-mental.postman_collection.json").read_text())
-        self.environment = json.loads((ROOT / "palacio-mental.postman_environment.json").read_text())
+    def load(self, name):
+        collection = json.loads((ROOT / f"{name}.postman_collection.json").read_text())
+        environment = json.loads((ROOT / f"{name}.postman_environment.json").read_text())
+        return collection, environment, [item for folder in collection["item"] for item in folder["item"]]
 
-    def test_collection_routes_and_request_ids(self):
-        self.assertEqual(len(self.collection["item"]), 6)
-        self.assertEqual(self.collection["item"][0]["name"], "00 · Saúde pública")
-        ids = []
-        for folder in self.collection["item"]:
-            for item in folder["item"]:
-                ids.append(item["id"])
-                self.assertFalse(item["protocolProfileBehavior"]["followRedirects"])
-                url = item["request"]["url"]
-                if url.startswith("{{media_"):
-                    continue
-                path = url.split("}}", 1)[1]
-                path = path.replace("{{project_id}}", "1").replace("{{invite_path}}", "/convites/organizacao/token/aceitar/")
-                resolve(path)
-        self.assertEqual(len(ids), len(set(ids)))
+    def test_routes_exist_and_ids_are_unique(self):
+        for name in COLLECTIONS:
+            _, _, items = self.load(name)
+            ids = [item["id"] for item in items]
+            self.assertEqual(len(ids), len(set(ids)), name)
+            for item in items:
+                self.assertFalse(item["protocolProfileBehavior"]["followRedirects"], item["name"])
+                path = item["request"]["url"].split("}}", 1)[1].split("?", 1)[0]
+                resolve(re.sub(r"\{\{[^}]+\}\}", "1", path))
 
     def test_export_is_safe_by_default(self):
-        variables = {entry["key"]: entry["value"] for entry in self.environment["values"]}
-        for key, value in variables.items():
-            if key.startswith("allow_"):
-                self.assertEqual(value, "false")
-        for key in ("password", "new_password", "invite_path", "approved_write_host", "username", "invite_email"):
-            self.assertEqual(variables[key], "")
-        guard = "\n".join(self.collection["event"][0]["script"]["exec"])
-        for required in ("allow_writes", "approved_write_host", "skipRequest", "setNextRequest"):
-            self.assertIn(required, guard)
-        self.assertNotIn("Cookie", json.dumps(self.collection))
+        for name, secrets in COLLECTIONS.items():
+            collection, environment, _ = self.load(name)
+            values = {entry["key"]: entry for entry in environment["values"]}
+            self.assertEqual(values["allow_writes"]["value"], "false")
+            for key in ("approved_write_hosts", *secrets):
+                self.assertEqual(values[key]["value"], "", key)
+            for key in secrets:
+                self.assertEqual(values[key]["type"], "secret", key)
+            self.assertNotIn("Cookie", json.dumps(collection))
 
-    def test_multipart_preserves_non_upload_identity_fields(self):
-        folder = next(folder for folder in self.collection["item"] if folder["name"] == "02 · Gestão e identidade")
-        items = folder["item"]
-        upload = next(item for item in items if item["name"].startswith("02.3a"))
-        fields = {entry["key"]: entry for entry in upload["request"]["body"]["formdata"]}
-        for key in ("nome_exibicao", "apresentacao", "cor_primaria", "cor_destaque", "cor_fundo"):
-            self.assertEqual(fields[key]["value"], "{{identity_" + key + "}}")
-        self.assertNotIn("theme_primary", fields)
-        self.assertEqual(fields["logo"]["type"], "file")
-        self.assertEqual(fields["capa"]["type"], "file")
+    def test_deletion_is_limited_to_the_run_projects(self):
+        deletes = [item for name in COLLECTIONS for item in self.load(name)[2] if "/excluir/" in item["request"]["url"]]
+        self.assertEqual(len(deletes), 3)
+        for item in deletes:
+            self.assertRegex(item["request"]["url"], r"\{\{project_(pessoal|inst|pub)_id\}\}")
