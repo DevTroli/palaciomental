@@ -32,6 +32,20 @@ newman run docs/testing/postman/palacio-mental.postman_collection.json \
   --folder "20 · Organização e privacidade" --delay-request 300
 ```
 
+## Postman CLI
+
+```sh
+postman collection run docs/testing/postman/palacio-mental.postman_collection.json \
+  -e /caminho/privado/pm.json \
+  -i "20 · Organização e privacidade" --delay-request 300 --no-report-events
+```
+
+No Postman CLI, a seleção de pasta usa `-i`; no Newman, usa `--folder`.
+HTTP 200 no POST de login indica formulário com erro, não autenticação concluída.
+Consulte os IDs da turma e do professor responsável no ambiente testado. Os nomes
+de usuário diferenciam maiúsculas de minúsculas. Não use a conta Gestor no cenário
+que exige a negativa de acesso de Membro.
+
 ## Interface web
 
 Importe coleção e environment gerados, selecione uma cópia privada do environment e abra Run. Execute a pasta 20 em ordem, uma iteração. Comece com o cookie jar limpo, sem reutilizar sua sessão de trabalho. Não use Send isoladamente para validar a jornada.
