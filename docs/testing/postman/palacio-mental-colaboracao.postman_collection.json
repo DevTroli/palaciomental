@@ -11,33 +11,14 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "function blockRequest(label, message) {",
-          "  pm.execution.setNextRequest(null);",
-          "  pm.test(label, () => pm.expect.fail(message));",
-          "  pm.execution.skipRequest();",
-          "}",
-          "function guardWrite(enabled) {",
-          "  if (pm.request.method === \"GET\") return true;",
-          "  if (!enabled(\"allow_writes\")) { pm.execution.skipRequest(); return false; }",
-          "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-          "  const host = ((target.match(/^https?:\\/\\/([^/]+)/i) || [])[1] || \"\").toLowerCase();",
-          "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(item => item.trim()).filter(Boolean);",
-          "  if (!host || !approved.includes(host)) {",
-          "    blockRequest(\"Host de escrita aprovado\", \"Escrita bloqueada: host não aprovado explicitamente.\");",
-          "    return false;",
-          "  }",
-          "  return true;",
-          "}",
-          "(() => {",
-          "      const cfg = {\"first\":\"10.1\",\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\"}};",
-          "      if (pm.info.requestName.startsWith(cfg.first)) {",
-          "        for (const key of cfg.flags) pm.variables.set(key, false);",
-          "        for (const key of cfg.ids) pm.variables.set(key, \"\");",
-          "        const run = Date.now();",
-          "        for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
-          "      }",
-          "      guardWrite(name => pm.environment.get(name) === \"true\");",
-          "    })();"
+          "(cfg => {",
+          "      if (pm.variables.get(\"pm_run_namespace\") === cfg.namespace) return;",
+          "      pm.variables.set(\"pm_run_namespace\", cfg.namespace);",
+          "      for (const key of cfg.flags) pm.variables.set(key, false);",
+          "      for (const key of cfg.ids) pm.variables.set(key, \"\");",
+          "      const run = Date.now();",
+          "      for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
+          "    })({\"first\":\"10.1\",\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\"},\"namespace\":\"palacio-mental-colaboracao\"});"
         ]
       }
     }
@@ -64,7 +45,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  ""
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -128,7 +135,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  ""
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -164,7 +197,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -238,7 +297,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -248,10 +333,10 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Projeto criado e destino de contexto correto\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/); });",
+                  "pm.test(\"Projeto criado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
                   "const created = path.match(/^\\/projetos\\/(\\d+)\\/contexto\\/$/);",
-                  "if (created) pm.variables.set(\"project_pub_id\", created[1]);"
+                  "if (pm.response.code === 302 && created) pm.variables.set(\"project_pub_id\", created[1]); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
@@ -338,8 +423,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -397,8 +507,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -449,8 +584,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -488,7 +648,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -552,7 +738,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -588,8 +800,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -622,8 +859,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -683,8 +945,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -737,8 +1024,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -796,8 +1108,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_colab\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -837,8 +1174,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
                 ]
               }
             },
@@ -902,8 +1264,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
                 ]
               }
             },
@@ -939,8 +1326,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1006,8 +1418,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"request_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"request_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1041,8 +1478,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"request_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"request_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1083,8 +1545,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
                 ]
               }
             },
@@ -1148,8 +1635,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") === true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
                 ]
               }
             },
@@ -1184,8 +1696,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1239,8 +1776,33 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.variables.get(\"auth_autor\") !== true) pm.execution.skipRequest();",
-                  "if (!pm.variables.get(\"project_pub_id\")) pm.execution.skipRequest();"
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
+                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
+                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
+                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
+                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
