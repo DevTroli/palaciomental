@@ -5,6 +5,7 @@ import {runInNewContext} from "node:vm";
 
 const main = JSON.parse(readFileSync("docs/testing/postman/palacio-mental.postman_collection.json", "utf8"));
 const collab = JSON.parse(readFileSync("docs/testing/postman/palacio-mental-colaboracao.postman_collection.json", "utf8"));
+const institutional = JSON.parse(readFileSync("docs/testing/postman/palacio-mental-institucional.postman_collection.json", "utf8"));
 const items = c => c.item.flatMap(f => f.item);
 const find = prefix => items(main).find(i => i.name.startsWith(prefix + " "));
 function guard(prefix, {env = {}, local = {}, method = "POST", url = "https://camppg.palaciomental.com.br/x/"} = {}) {
@@ -15,7 +16,7 @@ function guard(prefix, {env = {}, local = {}, method = "POST", url = "https://ca
 const approved = {allow_writes: "true", approved_write_hosts: "camppg.palaciomental.com.br"};
 test("todos os scripts compilam; tenant é primeiro e contexto é relido", () => {
   assert.match(main.item[0].name, /^20/);
-  for (const c of [main, collab]) for (const item of items(c)) for (const event of item.event) new Function(event.script.exec.join("\n"));
+  for (const c of [main, collab, institutional]) for (const item of items(c)) for (const event of item.event) new Function(event.script.exec.join("\n"));
   assert.match(find("20.7").request.url, /\/contexto\/$/);
   assert.match(find("10.6").request.url, /\/contexto\/$/);
 });

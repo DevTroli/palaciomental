@@ -8,6 +8,7 @@ from django.urls import resolve
 
 ROOT = Path(settings.BASE_DIR) / "docs/testing/postman"
 COLLECTIONS = {
+    "palacio-mental-institucional": ("gestor_password", "aluno_password"),
     "palacio-mental": ("pessoal_password", "membro_password", "membro_b_password"),
     "palacio-mental-colaboracao": ("autor_password", "colab_password"),
 }
@@ -27,6 +28,7 @@ class PostmanContractTests(SimpleTestCase):
             for item in items:
                 self.assertFalse(item["protocolProfileBehavior"]["followRedirects"], item["name"])
                 path = item["request"]["url"].split("}}", 1)[1].split("?", 1)[0]
+                path = re.sub(r"\{\{(program|class|group)_id\}\}", "00000000-0000-4000-8000-000000000001", path)
                 resolve(re.sub(r"\{\{[^}]+\}\}", "1", path))
 
     def test_export_is_safe_by_default(self):
@@ -42,6 +44,6 @@ class PostmanContractTests(SimpleTestCase):
 
     def test_deletion_is_limited_to_the_run_projects(self):
         deletes = [item for name in COLLECTIONS for item in self.load(name)[2] if "/excluir/" in item["request"]["url"]]
-        self.assertEqual(len(deletes), 3)
+        self.assertEqual(len(deletes), 7)
         for item in deletes:
-            self.assertRegex(item["request"]["url"], r"\{\{project_(pessoal|inst|pub)_id\}\}")
+            self.assertRegex(item["request"]["url"], r"\{\{(project_(pessoal|inst|pub)_id|project_id|group_id|class_id|program_id)\}\}")

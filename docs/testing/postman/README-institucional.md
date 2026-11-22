@@ -3,7 +3,7 @@
 Gere com `node tools/build_postman_institutional.mjs` e importe os dois arquivos
 `palacio-mental-institucional.*.json`.
 
-A coleção tem 20 requisições: gestor entra, consulta membros, publica programa,
+A coleção tem 29 requisições: gestor entra, consulta membros, publica programa,
 cria turma com professor e confirma que não pode criar grupo. O aluno entra,
 participa da turma aberta, cria grupo, vincula projeto, salva contexto e confirma
 o vínculo. O aluno também precisa receber 403 ao acessar a gestão.
@@ -18,15 +18,14 @@ newman run docs/testing/postman/palacio-mental-institucional.postman_collection.
 postman collection run docs/testing/postman/palacio-mental-institucional.postman_collection.json -e /caminho/privado/institucional.json --no-report-events
 ```
 
-Esta jornada deixa programa, turma, grupo e projeto privados de teste para
-conferência manual; o programa publicado fica visível aos afiliados. Identifique
-os IDs e os títulos únicos desta execução antes de remover os dados.
+A limpeza remove projeto, grupo, turma e programa, nessa ordem. A última
+requisição confirma HTTP 404 para o programa. Uma falha pode deixar resíduos;
+confira somente os IDs criados pela rodada antes de qualquer remoção manual.
 
 A consulta de membros não comprova envio ou aceite de convite. Envio real exige
 destinatário controlado; o aceite exige um convite novo. Esses passos e a atuação
 do professor ainda precisam de cenários próprios. Colaboração e isolamento
 continuam nas coleções existentes.
 
-Estado: geração e sintaxe verificadas. Esta nova jornada ainda não foi executada
-contra o servidor; os resultados anteriores de Newman e Postman CLI correspondem
-à coleção que usa turma já existente.
+Validada em 22/11/2026 com Newman e Postman CLI: 29 requisições e 50
+asserções por ferramenta, sem falhas. Consulte os relatórios no README principal.

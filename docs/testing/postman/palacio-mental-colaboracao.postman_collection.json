@@ -1,9 +1,9 @@
 {
   "info": {
     "_postman_id": "d3460444-1e8b-4e3d-a2f5-fe45549c3aac",
-    "name": "Palácio Mental · Colaboração pública",
+    "name": "Palácio Mental · Colaboração entre alunos no CAMPPG",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Descoberta, comentário, relevância e colaboração entre duas contas pessoais. Cria um projeto público de teste e o remove ao final. Leia README.md."
+    "description": "Jornada institucional com dois alunos afiliados: publicação, comentário, relevância, pedido, aceite e limpeza. Leia README-colaboracao.md."
   },
   "event": [
     {
@@ -18,7 +18,7 @@
           "      for (const key of cfg.ids) pm.variables.set(key, \"\");",
           "      const run = Date.now();",
           "      for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
-          "    })({\"first\":\"10.1\",\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\"},\"namespace\":\"palacio-mental-colaboracao\"});"
+          "    })({\"first\":\"10.1\",\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\",\"delete_pub_ok\",\"vote_before\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\",\"pedido\":\"pedido\"},\"namespace\":\"palacio-mental-colaboracao\"});"
         ]
       }
     }
@@ -26,14 +26,14 @@
   "item": [
     {
       "name": "10 · Publicação",
-      "description": "Autor publica projeto público buscando colaboradores; não comenta nem vota no próprio projeto.",
+      "description": "Autor publica conteúdo sintético; autor não comenta nem vota no próprio projeto.",
       "item": [
         {
           "id": "16e4a3e6-e601-43df-abd7-9bcd331a8208",
           "name": "10.1 · Formulário de login",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -49,11 +49,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -83,7 +88,7 @@
                   "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -94,15 +99,15 @@
           "name": "10.2 · Entrar",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -110,7 +115,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -139,11 +144,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -171,10 +181,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
-                  "const ok = pm.response.code === 302 && path === \"/projetos/\";",
-                  "pm.variables.set(\"auth_autor\", ok); if (ok) pm.variables.set(\"auth_colab\", false);"
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && true);",
+                  "pm.variables.set(\"auth_colab\", authenticated && false);",
+                  "if (!authenticated) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
@@ -185,7 +197,7 @@
           "name": "10.3 · Formulário de projeto",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/projetos/novo/",
+            "url": "{{tenant_a_base}}/projetos/novo/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -201,11 +213,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -235,7 +252,7 @@
                   "pm.test(\"Formulário abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -246,15 +263,15 @@
           "name": "10.4 · Criar projeto",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/novo/",
+            "url": "{{tenant_a_base}}/projetos/novo/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -262,7 +279,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -272,7 +289,7 @@
                 },
                 {
                   "key": "direction",
-                  "value": "Verificar descoberta e colaboração.",
+                  "value": "Jornada de colaboração entre alunos do CAMPPG.",
                   "type": "text"
                 },
                 {
@@ -301,11 +318,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -347,15 +369,15 @@
           "name": "10.5 · Publicar buscando colaboradores",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/contexto/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/contexto/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -363,7 +385,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -408,7 +430,7 @@
                 },
                 {
                   "key": "collaboration_description",
-                  "value": "Projeto de teste.",
+                  "value": "Projeto institucional de teste, aberto somente durante a execução.",
                   "type": "text"
                 }
               ]
@@ -427,11 +449,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -459,7 +486,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Contexto salvo e retorno ao detalhe\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "pm.test(\"Publicação aceita\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
@@ -471,15 +498,15 @@
           "name": "10.6 · Autor não comenta o próprio projeto",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/comentarios/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/comentarios/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -487,12 +514,12 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
                   "key": "content",
-                  "value": "Comentário do autor",
+                  "value": "Comentário proibido do autor",
                   "type": "text"
                 }
               ]
@@ -511,11 +538,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -542,7 +574,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Autor recebe 403 ao comentar o próprio projeto\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Autor não comenta o próprio projeto\", () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -553,15 +585,15 @@
           "name": "10.7 · Autor não vota no próprio projeto",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/relevancia/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/relevancia/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -569,7 +601,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 }
               ]
@@ -588,11 +620,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -619,7 +656,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Autor recebe 403 ao reconhecer o próprio projeto\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Autor não vota no próprio projeto\", () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -629,14 +666,14 @@
     },
     {
       "name": "20 · Colaborador",
-      "description": "Outra conta descobre o projeto, comenta, reconhece a relevância e pede para colaborar.",
+      "description": "Outra conta encontra o projeto, comenta, vota e solicita colaboração.",
       "item": [
         {
           "id": "d1c44f6e-7c10-41b1-a14f-fbe36da914f3",
           "name": "20.1 · Formulário de login",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -652,11 +689,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -686,7 +728,7 @@
                   "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -697,15 +739,15 @@
           "name": "20.2 · Entrar",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -713,7 +755,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -742,11 +784,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -774,10 +821,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
-                  "const ok = pm.response.code === 302 && path === \"/projetos/\";",
-                  "pm.variables.set(\"auth_colab\", ok); if (ok) pm.variables.set(\"auth_autor\", false);"
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && false);",
+                  "pm.variables.set(\"auth_colab\", authenticated && true);",
+                  "if (!authenticated) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
@@ -788,7 +837,7 @@
           "name": "20.3 · Descobrir na lista pública",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/projetos/?q={{titulo}}",
+            "url": "{{tenant_a_base}}/projetos/?q={{titulo}}",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -804,11 +853,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -835,8 +889,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Lista pública abre\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Projeto público aparece na busca\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"titulo\")));"
+                  "pm.test(\"Busca abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Projeto encontrado\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"titulo\")));"
                 ]
               }
             }
@@ -847,7 +901,7 @@
           "name": "20.4 · Abrir o projeto",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -863,11 +917,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -895,10 +954,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Detalhe abre\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Título presente\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"titulo\")));",
+                  "const html = pm.response.text();",
+                  "pm.test(\"Projeto correto\", () => pm.expect(html).to.include(pm.variables.get(\"titulo\")));",
+                  "const count = html.match(/class=[\"'][^\"']*relevance-count[^\"']*[\"'][^>]*>\\s*(\\d+)/);",
+                  "pm.test(\"Contador disponível e projeto novo sem votos\", () => pm.expect(count && Number(count[1])).to.eql(0));",
+                  "if (count) pm.variables.set(\"vote_before\", Number(count[1])); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -909,15 +972,15 @@
           "name": "20.5 · Comentar",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/comentarios/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/comentarios/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -925,7 +988,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -949,11 +1012,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -981,7 +1049,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Comentário aceito\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "pm.test(\"Comentar\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
@@ -993,15 +1061,15 @@
           "name": "20.6 · Reconhecer relevância",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/relevancia/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/relevancia/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -1009,7 +1077,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 }
               ]
@@ -1028,11 +1096,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1060,7 +1133,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Relevância aceita\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "pm.test(\"Reconhecer relevância\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
@@ -1072,15 +1145,15 @@
           "name": "20.7 · Pedir para colaborar",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/colaboracao/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/colaboracao/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -1088,12 +1161,12 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
                   "key": "message",
-                  "value": "Posso ajudar com testes.",
+                  "value": "{{pedido}}",
                   "type": "text"
                 }
               ]
@@ -1112,11 +1185,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1144,7 +1222,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Pedido aceito\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "pm.test(\"Pedir para colaborar\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
@@ -1155,14 +1233,14 @@
     },
     {
       "name": "30 · Decisão do autor",
-      "description": "Autor vê o pedido pendente e o comentário, aceita, e o colaborador passa a integrar o projeto.",
+      "description": "Releitura comprova comentário, incremento do voto e pedido exato; aceite deve aparecer na equipe.",
       "item": [
         {
           "id": "8ac21881-87d2-4a16-a856-fd113f50f6cb",
           "name": "30.1 · Formulário de login",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -1178,11 +1256,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1212,7 +1295,7 @@
                   "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -1223,15 +1306,15 @@
           "name": "30.2 · Entrar",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -1239,7 +1322,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -1268,11 +1351,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1300,10 +1388,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
-                  "const ok = pm.response.code === 302 && path === \"/projetos/\";",
-                  "pm.variables.set(\"auth_autor\", ok); if (ok) pm.variables.set(\"auth_colab\", false);"
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && true);",
+                  "pm.variables.set(\"auth_colab\", authenticated && false);",
+                  "if (!authenticated) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
@@ -1314,7 +1404,7 @@
           "name": "30.3 · Ver pedido pendente",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -1330,11 +1420,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1363,15 +1458,17 @@
                 "exec": [
                   "pm.test(\"Detalhe do autor abre\", () => pm.response.to.have.status(200));",
                   "const html = pm.response.text();",
-                  "pm.test(\"Contexto persistido\", () => pm.expect(html).to.include(\"Contexto atualizado\"));",
-                  "pm.test(\"Comentário do colaborador aparece\", () => pm.expect(html).to.include(pm.variables.get(\"comentario\")));",
-                  "pm.test(\"Pedido do colaborador aparece\", () => pm.expect(html).to.include(pm.environment.get(\"colab_username\")));",
-                  "const request = html.match(/\\/colaboracoes\\/(\\d+)\\/decidir\\//);",
-                  "pm.test(\"Decisão disponível para o autor\", () => pm.expect(request).not.to.equal(null));",
-                  "if (request) pm.variables.set(\"request_id\", request[1]); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "pm.test(\"Comentário persistido\", () => pm.expect(html).to.include(pm.variables.get(\"comentario\")));",
+                  "const count = html.match(/class=[\"'][^\"']*relevance-count[^\"']*[\"'][^>]*>\\s*(\\d+)/);",
+                  "pm.test(\"Voto incrementou o contador\", () => pm.expect(count && Number(count[1])).to.eql(Number(pm.variables.get(\"vote_before\")) + 1));",
+                  "const requests = html.match(/<div\\b[^>]*class=[\"'][^\"']*request-item[^\"']*[\"'][^>]*>[\\s\\S]*?<\\/form>/gi) || [];",
+                  "const own = requests.find(block => block.includes(pm.variables.get(\"pedido\")) && block.includes(\"@\" + pm.environment.get(\"colab_username\")));",
+                  "const requestMatch = own && own.match(/\\/colaboracoes\\/(\\d+)\\/decidir\\//);",
+                  "pm.test(\"Pedido pertence ao colaborador desta execução\", () => pm.expect(Boolean(requestMatch)).to.eql(true));",
+                  "if (requestMatch) pm.variables.set(\"request_id\", requestMatch[1]); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -1382,15 +1479,15 @@
           "name": "30.4 · Aceitar o pedido",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/colaboracoes/{{request_id}}/decidir/",
+            "url": "{{tenant_a_base}}/colaboracoes/{{request_id}}/decidir/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -1398,7 +1495,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -1422,11 +1519,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1454,7 +1556,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Decisão registrada\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "pm.test(\"Aceite registrado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
@@ -1466,7 +1568,7 @@
           "name": "30.5 · Colaborador integrado",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -1482,11 +1584,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1515,8 +1622,12 @@
                 "exec": [
                   "pm.test(\"Detalhe abre\", () => pm.response.to.have.status(200));",
                   "const html = pm.response.text();",
-                  "pm.test(\"Colaborador aparece no projeto\", () => pm.expect(html).to.include(pm.environment.get(\"colab_username\")));",
-                  "pm.test(\"Pedido deixou de estar pendente\", () => pm.expect(html).not.to.include(\"/colaboracoes/\" + pm.variables.get(\"request_id\") + \"/decidir/\"));"
+                  "const cards = html.match(/<section\\b[^>]*>[\\s\\S]*?<\\/section>/gi) || [];",
+                  "const team = cards.find(section => /<span[^>]*>\\s*Equipe\\s*<\\/span>/.test(section)) || \"\";",
+                  "const members = team.match(/<p\\b[^>]*class=[\"'][^\"']*team-member[^\"']*[\"'][^>]*>[\\s\\S]*?<\\/p>/gi) || [];",
+                  "const display = pm.environment.get(\"colab_display_name\") || pm.environment.get(\"colab_username\");",
+                  "pm.test(\"Colaborador presente na equipe, não só nos comentários\", () => pm.expect(members.some(member => member.includes(display) && member.includes(\"Colaborador\"))).to.eql(true));",
+                  "pm.test(\"Pedido aceito deixou de estar pendente\", () => pm.expect(html).not.to.include(\"/colaboracoes/\" + pm.variables.get(\"request_id\") + \"/decidir/\"));"
                 ]
               }
             }
@@ -1526,14 +1637,14 @@
     },
     {
       "name": "40 · Encerramento",
-      "description": "Remove o projeto público desta execução. Também roda quando a jornada falha antes.",
+      "description": "Tenta excluir somente o ID criado nesta execução; falha ou interrupção pode deixar resíduos.",
       "item": [
         {
           "id": "72b30b94-8f18-45cc-a99c-c6ab073de5a9",
           "name": "40.1 · Formulário de login",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -1549,11 +1660,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1583,7 +1699,7 @@
                   "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -1594,15 +1710,15 @@
           "name": "40.2 · Entrar",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/entrar/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -1610,7 +1726,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 },
                 {
@@ -1639,11 +1755,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1671,9 +1792,12 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Login redireciona para a lista de projetos\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\"); });",
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
                   "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
-                  "pm.variables.set(\"auth_autor\", pm.response.code === 302);"
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && true);",
+                  "pm.variables.set(\"auth_colab\", authenticated && false);",
+                  "if (!authenticated) pm.execution.setNextRequest(null);"
                 ]
               }
             }
@@ -1684,7 +1808,7 @@
           "name": "40.3 · Formulário de edição",
           "request": {
             "method": "GET",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/editar/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/editar/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -1700,11 +1824,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1732,9 +1861,15 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Edição abre\", () => pm.response.to.have.status(200));",
+                  "const input = (pm.response.text().match(/<input\\b[^>]*>/gi) || []).find(tag => /\\bname=[\"']title[\"']/.test(tag));",
+                  "const title = input && input.match(/\\bvalue=[\"']([^\"']*)[\"']/);",
+                  "const owned = pm.response.code === 200 && Boolean(title) && title[1] === pm.variables.get(\"titulo\");",
+                  "pm.test(\"Título do projeto desta execução confirmado\", () => pm.expect(owned).to.eql(true));",
+                  "pm.variables.set(\"delete_pub_ok\", owned ? \"1\" : \"\");",
+                  "if (!owned) pm.execution.setNextRequest(null);",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_global\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
@@ -1745,15 +1880,15 @@
           "name": "40.4 · Excluir projeto de teste",
           "request": {
             "method": "POST",
-            "url": "{{global_base}}/projetos/{{project_pub_id}}/excluir/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/excluir/",
             "header": [
               {
                 "key": "Origin",
-                "value": "{{global_base}}"
+                "value": "{{tenant_a_base}}"
               },
               {
                 "key": "Referer",
-                "value": "{{global_base}}/"
+                "value": "{{tenant_a_base}}/"
               }
             ],
             "body": {
@@ -1761,7 +1896,7 @@
               "urlencoded": [
                 {
                   "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_global}}",
+                  "value": "{{csrf_tenant_a}}",
                   "type": "text"
                 }
               ]
@@ -1780,11 +1915,16 @@
                   "  const local = key => pm.variables.get(key);",
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  if (cfg.personal && !enabled(\"allow_personal\")) return skip();",
-                  "  if (cfg.gate && !enabled(cfg.gate)) return skip();",
-                  "  if (cfg.skipWhen && local(cfg.skipWhen) === true) return skip();",
-                  "  if (cfg.auth && local(cfg.auth) !== true) return skip();",
-                  "  if (cfg.need && !local(cfg.need)) return skip();",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
                   "  if (pm.request.method === \"GET\") return true;",
                   "  if (!enabled(\"allow_writes\")) return skip();",
                   "  const target = pm.variables.replaceIn(pm.request.url.toString());",
@@ -1802,7 +1942,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
+                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"delete_pub_ok\",\"skipWhen\":\"\"});"
                 ]
               }
             },

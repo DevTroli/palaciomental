@@ -1,0 +1,36 @@
+name: Postman · Jornadas do MVP
+
+on:
+  workflow_dispatch:
+    inputs:
+      autorizar:
+        description: Criar e remover dados das contas de teste em produção
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postman-producao
+  cancel-in-progress: false
+
+jobs:
+  jornadas:
+    if: inputs.autorizar && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Instalar Postman CLI
+        shell: bash
+        run: curl --fail --silent --show-error --location https://dl-cli.pstmn.io/install/unix.sh | sh
+      - name: Sincronizar coleções e publicar resultados no Postman
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_TEST_ENV: ${{ secrets.POSTMAN_TEST_ENV }}
+        run: python tools/run_postman_cloud.py
