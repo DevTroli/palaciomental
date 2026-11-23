@@ -1,58 +1,78 @@
-# Postman · CAMPPG
+<p align="center">
+  <img src="../docs/assets/palacio-mental-banner.svg" alt="Palácio Mental: projetos, colaboração e acompanhamento." width="100%">
+</p>
 
-Edite e execute os testes no workspace **PalacioMental** do Postman web.
-Os JSONs deste diretório são cópias versionadas para revisão e recuperação.
+<p align="center">
+  <a href="../README.md">Projeto</a> ·
+  <a href="https://go.postman.co/workspace/93cde965-fda5-4c07-b79b-7966778b859e">Workspace Postman</a> ·
+  <a href="../.github/workflows/postman.yml">Automação</a>
+</p>
 
-| Coleção | Fluxo | Environment |
+## Jornadas de teste · CAMPPG
+
+Execute as jornadas no **Postman web**. Os JSONs são cópias para revisão e recuperação.
+
+| Jornada | Fluxo | Environment |
 |---|---|---|
-| CAMPPG · Gestor e aluno | Gestor cria programa e turma; aluno participa, cria grupo e projeto; limpeza | CAMP-PG · Gestor e aluno |
-| Palácio Mental · Jornadas do MVP | Aluno cria projeto vinculado, salva contexto e verifica privacidade | P.M · Jornadas do MVP |
-| CAMPPG - Colaboração | Troli publica; Carvalho comenta, vota e solicita participação; Troli aceita e exclui | CAMP-PG · Colaboração |
+| 🏛️ Gestor e aluno | Criar programa e turma → formar grupo → criar projeto. | CAMP-PG · Gestor e aluno |
+| 🗂️ Jornadas do MVP | Vincular projeto à turma → salvar contexto → verificar privacidade. | P.M · Jornadas do MVP |
+| 🤝 Colaboração | Publicar → comentar e votar → solicitar e aceitar participação. | CAMP-PG · Colaboração |
 
-## Executar na web
+## Executar
 
-1. Abra **Environments** e selecione o ambiente da coleção. Preencha os valores
-   locais; marque senhas como sensíveis e não compartilhe seus valores.
-2. Nos três ambientes, configure `tenant_a_base=https://camppg.palaciomental.com.br`,
-   `allow_writes=true` e `approved_write_hosts=camppg.palaciomental.com.br`.
-3. Preencha os campos específicos abaixo. Use contas de teste afiliadas ao CAMPPG.
-4. Abra a coleção → **Run → Functional → Local**. Selecione o environment,
-   Desktop Agent, uma iteração e atraso de **300 ms**. Execute a coleção inteira.
+**Use contas de teste afiliadas ao CAMPPG.** As coleções criam e removem dados no ambiente real.
 
-| Environment | Campos específicos |
+1. Em **Environments**, preencha os valores abaixo no ambiente correspondente. Use credenciais locais e senhas sensíveis.
+2. Na coleção: **Run → Functional → Local**. Selecione environment e Desktop Agent.
+3. Execute a coleção inteira, com **1 iteração** e **300 ms** entre requisições.
+
+| Nos três ambientes | Valor |
 |---|---|
-| Gestor e aluno | `gestor_username/password`, `aluno_username/password`, `professor_id` |
-| Jornadas do MVP | `membro_username/password`, `turma_id`, `orientador_id`; `grupo_id` opcional |
-| Colaboração | `autor_username/password` (Troli), `colab_username/password` (Carvalho), `colab_display_name` |
+| `tenant_a_base` | `https://camppg.palaciomental.com.br` |
+| `allow_writes` | `true` |
+| `approved_write_hosts` | `camppg.palaciomental.com.br` |
 
-`professor_id` e `orientador_id` são IDs numéricos; `turma_id` é UUID. O aluno
-precisa participar da turma. Na jornada principal, mantenha `allow_isolation=false`:
-cinco passos de outro tenant serão pulados. A consulta ao host global verifica
-que o projeto institucional responde 404 fora do CAMPPG.
+| Ambiente | Campos adicionais |
+|---|---|
+| Gestor e aluno | `gestor_username`, `gestor_password`, `aluno_username`, `aluno_password`, `professor_id` |
+| Jornadas do MVP | `membro_username`, `membro_password`, `turma_id`, `orientador_id`; `grupo_id` opcional |
+| Colaboração | `autor_username`, `autor_password`, `colab_username`, `colab_password`, `colab_display_name` |
 
-As rodadas validadas tiveram 50, 19 e 37 asserções, respectivamente. Itens pulados
-não contam como aprovados. Falhas podem impedir a limpeza: confira os IDs da
-rodada antes de remover dados. Convites por e-mail não fazem parte desta suíte.
+Use **dois membros distintos** na colaboração. O aluno deve participar da turma. `turma_id`: UUID; `professor_id` e `orientador_id`: números.
 
-## GitHub Actions e manutenção
+<details>
+<summary>Cobertura e resultados</summary>
 
-Após o merge, abra **Actions → Postman · Jornadas do MVP → Run workflow**, escolha
-`main` e autorize os dados de teste. O workflow executa as três coleções atuais
-pelos IDs do workspace e publica os relatórios no Postman. Não sobrescreve as
-edições da web e não roda contra produção automaticamente em PRs ou pushes.
+- `allow_isolation=false` pula cinco passos de outro tenant. Pulados não contam como aprovados.
+- Preserve `global_base` no domínio global: a consulta espera **404** para projetos institucionais.
+- Convites por e-mail ficam fora desta suíte.
+- Após falhas, confira os IDs criados e a limpeza.
 
-A automação usa `POSTMAN_API_KEY` e `POSTMAN_TEST_ENV` nos secrets do GitHub. O
-segundo contém `gestor_username`, `gestor_password`, `aluno_username`,
-`aluno_password`, `professor_id`, `turma_id`, `orientador_id`, `colab_username`,
-`colab_password` e `colab_display_name`. Atualize o secret ao trocar contas ou
-IDs. O script cria environments temporários privados e os remove ao terminar.
+</details>
 
-Após editar e validar na web, exporte a coleção em **Collection v2.1** para o
-respectivo `*.postman_collection.json`. Atualize os modelos de environment
-somente com valores públicos e credenciais vazias. Não versione exports com
-senhas, cookies ou tokens. Se recriar uma coleção, atualize seu ID em
-`tools/run_postman_cloud.py`.
+## Executar pelo GitHub
 
-O CI comum verifica a automação com testes locais, sem acessar o CAMPPG.
-As execuções manuais usam a versão disponível na web naquele momento; os JSONs
-registram a versão exportada, não congelam o conteúdo das futuras execuções.
+Em **Actions → Postman · Jornadas do MVP → Run workflow**, selecione `main` e autorize os dados de teste. A execução manual roda as três coleções da web e publica resultados no Postman.
+
+<details>
+<summary>Credenciais da automação</summary>
+
+Configure os secrets `POSTMAN_API_KEY` e `POSTMAN_TEST_ENV`. O segundo recebe um JSON com:
+
+```text
+gestor_username, gestor_password, aluno_username, aluno_password,
+professor_id, turma_id, orientador_id,
+colab_username, colab_password, colab_display_name
+```
+
+O aluno também atua como membro e autor. Atualize contas e IDs no secret. Environments temporários são removidos ao terminar.
+
+</details>
+
+## Manter atualizado
+
+**Editar na web → validar → exportar → versionar.**
+
+Exporte em **Collection v2.1** para os JSONs desta pasta. Mantenha credenciais vazias nos environments; não versione senhas, cookies ou tokens.
+
+O CI manual usa a versão da web. Ao recriar uma coleção, atualize seu ID em [run_postman_cloud.py](../tools/run_postman_cloud.py). PRs e pushes testam apenas a automação local, sem acessar o CAMPPG.

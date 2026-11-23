@@ -1,92 +1,85 @@
-# Palácio Mental
+<p align="center">
+  <img src="docs/assets/palacio-mental-banner.svg" alt="Palácio Mental: projetos, colaboração e acompanhamento em espaços pessoais e organizações." width="100%">
+</p>
 
-Plataforma Django para projetos pessoais e ambientes institucionais privados. A organização é resolvida pelo hostname; projetos pessoais ficam no domínio global. PostgreSQL é a fonte oficial dos dados, e Redis acelera sessões e rankings sem decidir permissões.
+<p align="center">
+  <a href="https://palaciomental.com.br">Aplicação</a> ·
+  <a href="postman/README.md">Jornadas de teste</a> ·
+  <a href="status_api/README.md">API e monitoramento</a> ·
+  <a href="docs/arquitetura-multi-tenant-rls.md">Arquitetura</a>
+</p>
 
-## Estrutura
+O **Palácio Mental** reúne o contexto de um projeto: propósito, referências, equipe e evolução. Pode ser usado em um espaço pessoal ou no ambiente privado de uma organização, com identidade visual e acesso próprios.
 
-- `plataforma/`: autenticação, projetos, organizações, permissões, agenda e integrações.
-- `core/`: entrada pública, home institucional e projeções de ranking.
-- `setup/`: configuração Django e URLs principais.
-- `templates/` e `static/`: interface, identidade dos tenants e bibliotecas locais.
-- `status_api/`: serviço Spring Boot/Java 21 de status.
-- `docker/postgres/init/`: cria a role comum da aplicação no primeiro boot do banco local.
-- `scripts/`: gera segredos locais; `scripts/tests/` contém contratos usados pela CI.
-- [`postman/`](postman/README.md): coleções, environments e guia de testes HTTP do CAMPPG.
+| 🗂️ Projetos | 🤝 Colaboração | 🏛️ Organizações |
+|---|---|---|
+| Registrar ideias, links e marcos de evolução. | Encontrar projetos, comentar e solicitar participação. | Reunir programas, turmas, grupos e atividades. |
 
-## Executar localmente
+No fluxo institucional, o gestor organiza programas e turmas; alunos formam grupos e desenvolvem projetos. Professores orientam as turmas e disponibilizam materiais de apoio.
 
-Requisitos: Docker e Docker Compose.
+## Executar
+
+**Requisitos:** Docker com Compose e Python 3 para gerar os segredos locais.
 
 ```sh
 cp .env.example .env
-python scripts/configurar_dev.py
+python3 scripts/configurar_dev.py
 docker compose up --build -d
 docker compose ps
 ```
 
-O gerador preenche segredos vazios e atualiza `DATABASE_URL` quando ela usa a role `pm_app` sem senha. URLs e credenciais existentes são preservadas; trocar uma role de banco exige preparar essa role no PostgreSQL.
+| Acesso local | Endereço |
+|---|---|
+| Aplicação | http://localhost:8000 |
+| API Spring Boot | http://localhost:8080 |
+| Swagger | http://localhost:8080/docs |
 
-Django: `http://localhost:8000/`. API Spring: `http://localhost:8080/`. Swagger: `http://localhost:8080/docs`.
-
-O entrypoint aplica migrations antes de iniciar o servidor. Recarregar código com `runserver` não aplica migrations novas. Após alterações de schema:
+Para o primeiro acesso administrativo:
 
 ```sh
-docker compose exec django python manage.py migrate
+docker compose exec django python manage.py createsuperuser
+```
+
+Abra `/admin/` para cadastrar organização, domínio e afiliações. Por exemplo: domínio `camppg.localhost`, acessado em `http://camppg.localhost:8000`. Contas e dados de demonstração não são criados automaticamente.
+
+## Testar
+
+```sh
+# Aplicação Django
+docker compose exec django python manage.py test
+
+# Contratos de inicialização e automação
+docker compose exec django python -m unittest discover -s scripts/tests
+
+# Políticas de isolamento do banco
 docker compose exec django python manage.py pm_rls_status --strict
 ```
 
-Não use `docker compose down -v` para atualizar o projeto: isso apaga os dados locais.
+As [coleções Postman](postman/README.md) cobrem as jornadas de gestão, projeto e colaboração no CAMPPG. A [API Spring](status_api/README.md) tem instruções próprias de verificação. O CI executa as suítes Django e Spring com PostgreSQL.
 
-## Tenants e fluxos
+## Estrutura
 
-Cadastre organização, domínio e afiliações pelo Admin interno. O hostname deve estar em `ALLOWED_HOSTS` e resolver para a aplicação. Por exemplo, `camppg.localhost:8000`, com domínio cadastrado `camppg.localhost`.
-
-Somente em desenvolvimento, com `DJANGO_DEBUG=True`, `/?tenant=slug` permite testar o contexto sem DNS. Remova o cookie `pm_dev_tenant` para limpar a seleção.
-
-| Funcionalidade | Caminho no hostname institucional |
+| Caminho | Responsabilidade |
 |---|---|
-| Home | `/` |
-| Projetos | `/projetos/` |
-| Perfil próprio | `/perfil/` |
-| Agenda | `/calendario/` |
-| Gestão | `/gestao/` |
-| Identidade visual | `/gestao/identidade/` |
-| Publicar atividade para participante | `/calendario/publicar/` |
+| `plataforma/` · `core/` | Projetos, organizações, permissões e navegação. |
+| `templates/` · `static/` | Interface e identidade visual. |
+| `setup/` | Configuração e rotas Django. |
+| `status_api/` | Guardião de links e monitoramento em Spring Boot / Java 21. |
+| `postman/` · `scripts/` · `tools/` | Jornadas HTTP, configuração local e automação. |
+| `compose.yaml` · `docker/` | Serviços locais e inicialização do PostgreSQL. |
 
-Gestão e personalização exigem afiliação ativa como proprietário ou gestor. O `/admin/` é exclusivo da equipe interna. A agenda usa a tabela `plataforma_eventocalendario` e começa vazia, sem importar eventos do portal anterior. As URLs `/camp/` e o login automático de demonstração foram removidos.
+Django atende os espaços pessoal e institucional. **PostgreSQL com RLS** mantém dados e isolamento; **Redis** auxilia sessões e rankings. O worker comunica os links ao **Guardião**, que verifica disponibilidade e ameaças quando o provedor está configurado.
 
-## Configuração e operação
+<details>
+<summary>Configuração local e manutenção</summary>
 
-- `.env` contém configuração local e não deve ser versionado. Use `.env.example` e `python scripts/configurar_dev.py`.
-- Compose fornece Redis e API pelos nomes internos dos serviços. E-mails aparecem no terminal, e arquivos enviados ficam em armazenamento local.
-- R2, Resend, Safe Browsing e monitoramento público não são necessários para o percurso local básico. Configure integrações externas somente quando for testar essas funções.
-- `/saude` verifica se o processo responde. `/pronto` verifica banco e migrations; retorna HTTP 503 enquanto a aplicação não estiver pronta.
-- `PM_RLS_STRICT=true` bloqueia o boot quando a role ignora a RLS ou as políticas obrigatórias estão ausentes. Use uma role sem superusuário/BYPASSRLS.
-- `DATABASE_MIGRATION_URL`, quando definida, é usada somente no migrate do entrypoint. A role de runtime usa `DATABASE_URL`.
+- O script preenche segredos vazios no `.env` e preserva credenciais existentes. Não versione esse arquivo.
+- O Compose inicia PostgreSQL, Redis, Django, API, migrations e worker. E-mails vão para o console; mídia fica local. R2, Resend e Safe Browsing são integrações opcionais no desenvolvimento.
+- O boot aplica migrations. Após alterações de schema com o servidor já aberto, execute `docker compose exec django python manage.py migrate`.
+- `/saude` verifica resposta do Django; `/pronto` verifica banco e migrations.
+- Com `DJANGO_DEBUG=True`, `/?tenant=slug` permite selecionar o tenant local. Remova o cookie `pm_dev_tenant` para limpar a seleção.
+- `docker compose down` preserva os volumes. A opção `-v` apaga os dados locais.
 
-Reconstrua rankings completos, com `REDIS_URL` configurada:
+</details>
 
-```sh
-docker compose exec django python manage.py rebuild_rankings
-docker compose exec django python manage.py rebuild_rankings --tenant-id UUID_DA_ORGANIZACAO
-```
-
-O primeiro comando reconstrói o escopo pessoal/global; o segundo, somente o tenant indicado. Filtros parciais por projeto são rejeitados para não apagar os demais itens da projeção.
-
-## Verificações
-
-```sh
-docker compose exec django python manage.py check
-docker compose exec django python manage.py makemigrations --check --dry-run
-docker compose exec django python manage.py test
-docker compose exec django python -m unittest discover -s scripts/tests
-```
-
-Para conferir os serviços, use `docker compose ps` e `docker compose logs -f django status_api guardiao_worker`. As verificações de banco usam PostgreSQL com role comum e RLS ativa.
-
-Inclua no PR o comportamento alterado, testes executados e screenshots quando houver mudança visual. Não versione logs, relatórios de sessão ou configurações pessoais de editor.
-
-## Contratos técnicos
-
-- [Arquitetura e isolamento](docs/arquitetura-multi-tenant-rls.md)
-- [Permissões institucionais](docs/matriz-permissoes-e-convite-multi-tenant.md)
+Consulte as [regras de acesso e convites](docs/matriz-permissoes-e-convite-multi-tenant.md) antes de alterar permissões. Para contribuir, descreva no PR a mudança de comportamento e a validação realizada.
