@@ -1,90 +1,156 @@
-# API de status
+<p align="center">
+  <img src="../docs/assets/palacio-mental-banner.svg" alt="Palácio Mental: projetos, colaboração e acompanhamento." width="100%">
+</p>
 
-Serviço Spring Boot/Java 21 que executa o Guardião de links e mantém um diagnóstico técnico protegido. Execute com `docker compose up --build -d` na raiz; a documentação local abre em `http://localhost:8080/docs`.
+<p align="center">
+  <a href="../README.md">Projeto</a> ·
+  <a href="http://localhost:8080/docs">Swagger local</a> ·
+  <a href="../postman/README.md">Jornadas de teste</a> ·
+  <a href="../.github/workflows/ci.yml">CI</a>
+</p>
 
-## Configuração
+## Guardião de Contexto
 
-Defina `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD` no ambiente. A API usa essas variáveis individuais; não interpreta `DATABASE_URL`.
+API **Spring Boot / Java 21** para verificar links, monitorar páginas e registrar incidentes. O Django apresenta os resultados aos usuários.
 
-`DJANGO_APP_URL` é a URL base do Django; o padrão `http://django:8000` atende ao Compose local. Em outros ambientes, configure o endereço interno alcançável pelo serviço.
+| 🔗 Verificar links | 📊 Monitorar páginas | 🔔 Avisar sobre falhas |
+|---|---|---|
+| Ao receber alterações; depois, a cada **72 h**, com variação. | Consultas a cada **15 min**. | Discord, e-mail e caixa de entrada. |
 
-## Endpoints
+**Django salva e enfileira → worker envia → Spring verifica → Django exibe.**
 
-- `GET /v1/ping`: responde `pong` quando o processo está ativo.
-- `GET /v1/status`: diagnóstico técnico autenticado com `GUARDIAO_SERVICE_TOKEN` e HTTPS; verifica banco e `GET /pronto` do Django. Não é uma página pública.
-- `/docs`: Swagger com guia das operações e autenticação Bearer. Disponível apenas quando `SWAGGER_ENABLED=true`; o Compose local habilita essa opção. Em produção, mantenha desativada.
+O recebimento é imediato; a verificação ocorre em segundo plano. Pendências permanecem na fila se a comunicação falhar.
 
-O Actuator foi removido porque não é usado pelo serviço. O endpoint público `/v1/ping` informa somente que o processo Spring está ativo.
+## Executar e conferir
 
-## Monitoramento das jornadas
-
-A raiz `/` e `/status` apresentam o painel global. As coletas globais usam o `DJANGO_APP_URL` existente. Em produção, ele deve apontar para a origem HTTPS do Palácio Mental global para que as páginas sejam verificadas. O worker sincroniza automaticamente slug, nome e um domínio verificado por organização ativa, preferindo o principal. Cada organização tem uma página pública em `/status/org/{slug}` e dados isolados em `/v1/status/org/{slug}`. O rodapé institucional aponta para essa página quando `STATUS_API_URL` usa HTTPS. Em desenvolvimento, `DEBUG` e `GUARDIAO_LOCAL_HTTP` permitem também montar o link para uma API HTTP no loopback. No Compose, o rodapé usa `http://127.0.0.1:8080`. O perfil `guardiao-local` permite consultar o painel e o snapshot local. A coleta automática continua restrita ao perfil de produção e aos destinos HTTPS. Novos tenants entram no próximo ciclo do worker; suspensos e arquivados saem. Sem sincronização por dez minutos, o painel individual deixa de publicar dados. Não é necessário configurar URLs ou serviços por tenant. A página individual mostra a verificação de entrada atualmente coletada; novos componentes devem ser adicionados ao conjunto comum somente quando tiverem probes confiáveis. O pre-deploy Flyway aplica V11 e V12 antes da troca da API; depois, atualize o worker Django. O histórico e os incidentes permanecem separados pelo ID da organização. O snapshot também leva as cores principal e de destaque para a central institucional. O Spring guarda as cores com o tenant e a interface escolhe texto preto ou branco pelo contraste. A página global usa a identidade do Palácio Mental.
-
-O monitor acessa a página inicial, a vitrine pública de projetos, a entrada e o cadastro do Palácio Mental e a entrada de cada organização ativa por GET a cada quinze minutos, sem entrar em contas ou alterar dados. São necessários HTTP 200 e o marcador esperado. A verificação da vitrine confirma somente o carregamento da página pública. Duas falhas consecutivas abrem um incidente para a equipe; a página o destaca após 15 minutos de falhas contínuas. Duas verificações bem-sucedidas encerram o incidente. Cada página informa quando não há coleta recente e mostra a cobertura dos últimos 30 dias. Se o banco estiver indisponível, informa que os dados estão indisponíveis. Datas do histórico usam o horário de Brasília; horários são exibidos no fuso do navegador.
-
-### Validação das jornadas institucionais
-
-O painel público mede a resposta da página de entrada. O CI valida autenticação e onboarding em banco descartável, a consulta de programas e turmas publicados e a criação e reabertura de projetos. Os testes de convites usam os formulários reais e capturam o e-mail em memória. O aceite usa o link emitido para conferir a afiliação institucional ou a participação no grupo.
-
-A integração PostgreSQL valida que duas organizações com estados diferentes recebem apenas os próprios checks e incidentes. Use a suíte institucional com `python manage.py test plataforma.tests.institucional`. O resultado do CI comprova os fluxos da versão testada.
-
-Para sondar as leituras por HTTP em homologação, use uma conta de membro dedicada, vinculada à turma de teste. Configure `PM_PROBE_USERNAME` e `PM_PROBE_PASSWORD` como segredos no ambiente do executor e informe um projeto e um programa já existentes.
+Após o [setup local](../README.md#executar), na raiz do projeto:
 
 ```sh
-python manage.py verificar_jornadas_institucionais \
-  --origem https://tenant.homologacao.example.org \
-  --projeto 42 --titulo-projeto "Projeto de teste" \
-  --programa UUID_DO_PROGRAMA --nome-turma "Turma de teste"
+docker compose up --build -d
+curl --fail http://localhost:8080/v1/ping
+docker compose logs --tail=50 status_api guardiao_worker
 ```
 
-A sondagem abre uma sessão pelo formulário normal e consulta o conteúdo esperado nas duas páginas. A saída JSON indica o resultado de cada jornada e o processo termina com código diferente de zero se uma delas falhar. O executor é separado da API pública e os resultados de homologação não alimentam o histórico de produção. Configure o agendador de homologação para executar o comando a cada cinco minutos, com uma execução por vez. Mantenha os três campos do JSON no log do agendador. Para confirmar recuperação, execute novamente depois de restaurar a conta ou o registro de teste e confira os três resultados.
+Adicione um link a um projeto e confira o resultado na interface. `pong` confirma apenas que a API responde. O Compose prepara banco, migrations e worker; o token gerado no setup continua obrigatório.
 
-Para publicar os resultados no histórico, configure `STATUS_TENANT_PROBE_HOST` no Spring com o hostname HTTPS monitorado, sem protocolo. No executor, configure `GUARDIAO_SERVICE_TOKEN` e acrescente `--publicar-em https://api.exemplo.org/v1/guardiao/sondagens` ao comando. O destino aceita apenas o host configurado que consta no snapshot recente. Cada jornada tem seu próprio histórico, com uma amostra por janela de cinco minutos. O indicador aparece após a primeira publicação. As sondagens autenticadas não abrem incidentes automaticamente.
+| Acesso local | Uso |
+|---|---|
+| [Swagger · /docs](http://localhost:8080/docs) | Contratos e testes com token Bearer. |
+| [Central · /status](http://localhost:8080/status) | Painel público; coleta automática exige produção e HTTPS. |
+| `GET /v1/status` | Diagnóstico protegido do banco e Django. |
 
-Em produção, habilite a publicação somente depois de preparar uma conta comum dedicada, um projeto de teste visível a ela e um programa com turma de teste. Use um executor separado, o host e a API do próprio ambiente. A central já funciona com a coleta da página de entrada sem essa configuração.
+<details>
+<summary>Testes automatizados e operações</summary>
 
-## Alertas de incidentes
+O [CI](../.github/workflows/ci.yml) prepara banco descartável e valida migrations, isolamento e incidentes. Para executar com Java 21, use `./mvnw --batch-mode test` em `status_api/`. As integrações PostgreSQL exigem as variáveis e a preparação do workflow; sem elas, não há validação completa. A imagem runtime não contém Maven.
 
-O Discord recebe abertura, prolongamento e recuperação em um canal configurado por `STATUS_ALERT_DISCORD_WEBHOOK`. Um e-mail é enviado quando a falha contínua passa de uma hora ou quando a entrega ao Discord falha. O e-mail usa `RESEND_API_KEY` e `DEFAULT_FROM_EMAIL`, já adotados pelo Django, e um endereço da equipe em `STATUS_ALERT_EMAIL_TO`. Configure as variáveis também no serviço Spring. Sem um canal configurado, a entrega permanece pendente.
+| Operação em `/v1/guardiao/links` | Finalidade |
+|---|---|
+| `POST` | Receber alteração. |
+| `DELETE /{linkId}` | Remover link. |
+| `POST /results` | Consultar resultados. |
+| `POST /threats` | Avaliar ameaça. |
 
-O evento e suas entregas são registrados no PostgreSQL. Falhas de canal são isoladas, com até três tentativas; os erros registrados não incluem respostas de provedores nem credenciais. O Resend recebe uma chave estável para evitar duplicatas nas retentativas. O Discord não oferece garantia de entrega exatamente uma vez: se a conexão cair depois de o serviço receber a mensagem ou o processo cair antes de confirmar no banco, uma duplicação ainda é possível. Uma falha sem resposta é registrada como inconclusiva e aciona o e-mail, sem repetir automaticamente o envio ao Discord.
+Corpos e respostas estão no Swagger. Para testar os fluxos Django: `docker compose exec django python manage.py test plataforma.tests.institucional`.
 
-Após mais de uma hora de falha contínua, a caixa de entrada recebe um aviso. A jornada institucional é destinada apenas a membros ativos da organização vinculada ao domínio monitorado; as globais, a contas ativas. O worker Django já existente busca os avisos e os confirma após gravar as notificações. A chave por evento e usuário evita duplicatas após uma retentativa. Avisos ainda pendentes expiram 24 horas após sua criação; se a falha já tiver sido resolvida antes da entrega, a mensagem informa a recuperação. Um domínio institucional sem correspondência ativa é rejeitado e registrado, sem envio a outra organização.
+</details>
 
-No Railway, prepare o release antes de ativar a coleta: configure o mesmo `GUARDIAO_SERVICE_TOKEN` na API e no Django, aplique as migrations e informe o perfil e as URLs de monitoramento descritos acima. O proxy público do Railway termina o TLS antes de encaminhar a requisição. Para o Spring reconhecer o HTTPS nas rotas protegidas, configure `server.forward-headers-strategy=native` e a expressão de `server.tomcat.remoteip.internal-proxies` somente após identificar os proxies confiáveis e impedir acesso direto que permita forjar cabeçalhos. O padrão da aplicação não confia nesses cabeçalhos. Após o deploy, valide chamadas autenticadas e não autenticadas pelo domínio público, além de verificar que requisições diretas não podem simular HTTPS. Consulte a documentação oficial do [proxy Railway](https://docs.railway.com/networking/public-networking/specs-and-limits) e de [proxies no Spring Boot](https://docs.spring.io/spring-boot/how-to/webserver.html).
+## Entender o painel
 
-O Compose aguarda o banco e as migrations antes de iniciar este serviço. A API pode iniciar enquanto o Django está indisponível.
+| Escopo | Páginas verificadas | Painel |
+|---|---|---|
+| Global | Início, vitrine, entrada e cadastro. | `/status` |
+| Organização | Entrada institucional; sondagens opcionais. | `/status/org/{slug}` |
 
-## Guardião de links (em desenvolvimento)
+A consulta exige **HTTP 200 e conteúdo esperado**. O painel mostra última verificação e histórico de até 30 dias; isso não comprova todos os fluxos autenticados.
 
-As migrations Flyway do Guardião são independentes das migrations Django e **não são executadas no boot**. A configuração do plugin usa `GUARDIAO_MIGRATION_JDBC_URL`, `GUARDIAO_MIGRATION_USER` e `GUARDIAO_MIGRATION_PASSWORD`. Configure essas variáveis para um banco descartável e execute, a partir de `status_api/`:
+**2 falhas → incidente · 15 min de falha → destaque · 2 sucessos → recuperação.**
+
+<details>
+<summary>Sincronização de organizações e sondagens</summary>
+
+O worker sincroniza domínio verificado e cores das organizações ativas. Sem atualização por dez minutos, o painel institucional deixa de publicar dados. Histórico e incidentes são separados por organização; os dados públicos ficam em `/v1/status/org/{slug}`.
+
+A sondagem autenticada exige conta de membro dedicada, turma e registros de teste. Configure `PM_PROBE_USERNAME` e `PM_PROBE_PASSWORD` no executor:
 
 ```sh
-./mvnw flyway:migrate flyway:validate
+python manage.py verificar_jornadas_institucionais   --origem https://tenant.homologacao.example.org   --projeto 42 --titulo-projeto "Projeto de teste"   --programa UUID_DO_PROGRAMA --nome-turma "Turma de teste"
 ```
 
-O plugin cria e mantém o histórico somente no schema `guardiao`; seus arquivos versionados não devem ser alterados após aplicação. Em produção, a execução deve ser uma etapa explícita do release, com credenciais de migração próprias e procedimento de recuperação.
+Execute uma rodada por vez. O comando retorna JSON e código de erro em falhas. Mantenha resultados no próprio ambiente.
 
-No Railway, configure uma vez o **Pre-deploy Command** do serviço API como `java -jar app.jar --migrate-only`, com timeout de 300 segundos. O mesmo JAR contém as migrations e o executor Flyway; a imagem final continua usando JRE, sem Maven. A cada deploy, o executor aplica somente as versões pendentes, valida o histórico e termina. Erro de conexão, credencial, destino ou validação retorna código diferente de zero e impede a troca da API. O boot normal permanece com migração automática do Spring desativada.
+Para publicar: configure `STATUS_TENANT_PROBE_HOST` no Spring, o token compartilhado no executor e acrescente `--publicar-em https://api.exemplo.org/v1/guardiao/sondagens`. O hostname autorizado deve constar no snapshot recente. Há uma amostra por janela de cinco minutos, sem abertura automática de incidentes.
 
-Configure `GUARDIAO_MIGRATION_JDBC_URL`, `GUARDIAO_MIGRATION_USER` e `GUARDIAO_MIGRATION_PASSWORD` somente no serviço Spring, por referências ao banco. Use a role de migração, separada da role de execução. O executor compara host, porta e banco com `POSTGRES_HOST`, `POSTGRES_PORT` e `POSTGRES_DB`; não usa credenciais runtime como fallback. A saída não imprime URL JDBC nem senha. Preserve backup antes de migrations que alterem dados. As migrations já aplicadas devem permanecer imutáveis; uma falha exige diagnóstico antes de repetir o deploy.
+</details>
 
-A role da API precisa acessar as tabelas e sequências do schema `guardiao`; configure os privilégios existentes e os privilégios padrão da role que cria novas tabelas. Ela não precisa de permissão para alterar o schema. O worker Django não executa esse pre-deploy, e suas migrations permanecem no release Django.
+## Operar em produção
 
-O estágio Docker `migrate` e o comando Maven acima permanecem disponíveis para diagnóstico e execução manual controlada. Para testar o executor localmente, gere o JAR com `./mvnw -DskipTests package` e execute `java -jar target/status-api-0.0.1-SNAPSHOT.jar --migrate-only` em um banco descartável com as variáveis de migração e destino configuradas.
+**Migrar → atualizar API e Django → iniciar worker → testar um link → ativar monitor e canais.**
 
-O Guardião inicia junto com a API. Antes de iniciar o Spring, aplique as migrations Flyway e configure `GUARDIAO_SERVICE_TOKEN` com um segredo forte; sem token a API não inicia. No Django, aplique as migrations e configure o mesmo token. O worker deriva a origem HTTPS de `STATUS_API_URL` (por exemplo, `https://api.exemplo.com/v1/status`). Se for necessário usar outro host, `GUARDIAO_API_URL` é uma opção: informe a URL base HTTPS ou o endereço completo `/v1/guardiao/links`. Execute `python manage.py enviar_links_guardiao --continuo` em processo separado e supervisionado. A migration Django coloca os links existentes na fila; inclusão, alteração e exclusão posteriores atualizam a fila na mesma transação dos links. O worker envia até 100 alterações por ciclo, uma por requisição, e remove cada entrada somente após confirmação. Se a comunicação falhar, a entrada permanece para nova tentativa. Uma repetição é segura.
+<details>
+<summary>Configuração essencial</summary>
 
-Na primeira implantação da fila, pause gravações de links enquanto aplica a migration e atualiza o Django, para que nenhuma alteração passe sem ser enfileirada. Atualize a API antes de iniciar o novo worker: o protocolo anterior de retratos não é compatível com o novo. As migrations Flyway anteriores permanecem imutáveis; suas estruturas de retrato não são mais usadas. Se um ambiente já tiver usado o protocolo anterior, avalie referências antigas no schema do Guardião antes de ativar a nova versão: o preenchimento inicial envia os links existentes, mas não remove automaticamente IDs que já não existem no Django.
+| Onde | Variáveis |
+|---|---|
+| Spring · banco | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. Não lê `DATABASE_URL`. |
+| Spring · Django | `DJANGO_APP_URL`: origem global HTTPS alcançável. |
+| Spring, Django e worker | Mesmo `GUARDIAO_SERVICE_TOKEN` forte. |
+| Worker | `STATUS_API_URL=https://api.exemplo.org/v1/status`; `GUARDIAO_API_URL` apenas para outro destino. |
+| Spring · monitor | Perfil `production`, `STATUS_MONITOR_ENABLED=true`, após validar o núcleo. |
+| Spring · Swagger | `SWAGGER_ENABLED=false`. |
 
-O Spring exige HTTPS e não confia diretamente em cabeçalhos enviados pelo cliente. Se houver proxy TLS, aceite informações encaminhadas somente de proxies confiáveis e bloqueie acesso direto. Use token forte e credenciais distintas para migração e execução; restrinja a rede de saída para impedir acesso a endereços internos. Para reverter, pare o worker e retorne a API à versão anterior; preserve as tabelas e a fila para investigação e recuperação. A fila é coalescida por link, portanto representa o estado atual, não um histórico de edições. Operações em massa que ignoram sinais Django devem ser evitadas ou precisam enfileirar os IDs afetados explicitamente.
+Não use `guardiao-local`, `DEBUG` ou `GUARDIAO_LOCAL_HTTP` em produção. Preserve autenticação e proteção contra SSRF. Aceite cabeçalhos HTTPS apenas de proxies confiáveis, com estratégia nativa e `server.tomcat.remoteip.internal-proxies` restrito, bloqueando acesso direto com cabeçalhos forjados. Valide operações sem token (401) e com token pelo domínio HTTPS.
 
-Links novos ou alterados ficam elegíveis para verificação assim que o Guardião recebe a alteração. A resposta HTTP confirma apenas o recebimento: o resultado é produzido em segundo plano, sujeito à fila e aos limites por domínio. O próximo ciclo começa após 72 horas mais jitter. O intervalo padrão do worker Django é de 30 segundos e pode ser alterado com `--intervalo` (mínimo 5); a fila persiste enquanto o worker estiver parado. O scheduler Spring processa um item por vez e aguarda um segundo por padrão entre itens.
+</details>
 
-Ao usar a imagem Django para o worker, substitua também o entrypoint por `python` e passe `manage.py enviar_links_guardiao --continuo --intervalo 30` como argumentos. O entrypoint web executa migrations e collectstatic e não deve ser repetido pelo worker. A fila usa bloqueio transacional durante cada chamada HTTP, com timeout de dez segundos, para manter a ordem de atualizações do mesmo link; acompanhe o tamanho da fila e configure o supervisor para reiniciar o worker após falhas inesperadas.
+<details>
+<summary>Migrations e worker</summary>
 
-A verificação opcional de ameaças usa Google Safe Browsing v5, permitido somente para uso não comercial sem acordo próprio. Configure `GUARDIAO_SAFE_BROWSING_KEY` apenas no serviço Spring para ativar; sem chave, o resultado é “não verificado”. O serviço envia ao Google somente prefixos de quatro bytes derivados do endereço e respeita o prazo de cache informado. O worker Django reavalia links salvos e notifica o autor ao identificar uma ameaça. A cota é definida no projeto Google e deve ser acompanhada no console. Falha, limite de cota ou URL não suportada permite salvar com aviso; ausência de detecção não garante segurança. IPs e URLs com codificações ambíguas permanecem não verificados; domínios internacionalizados, segmentos de ponto e escapes comuns são aceitos. Antes de uso comercial, revise a elegibilidade e troque o provedor mediante aprovação. Consulte os [termos do Google](https://developers.google.com/safe-browsing/terms).
+**Pre-deploy da API no Railway**, com timeout de 300 segundos:
 
-No desenvolvimento, `docker compose up -d --build` executa as migrations Flyway, inicia a API e o worker. Configure apenas `GUARDIAO_SERVICE_TOKEN` no `.env`, com um valor aleatório exclusivo do desenvolvimento. O Compose ativa o perfil `guardiao-local` no Spring e permite HTTP ao worker somente para `status-api:8080`, com `DEBUG` e `GUARDIAO_LOCAL_HTTP` habilitados. O token continua obrigatório, e a porta da API é exposta somente em `127.0.0.1`. Não use esse perfil, essa exceção HTTP ou o token local em produção: o padrão fora do Compose exige HTTPS.
+```sh
+java -jar app.jar --migrate-only
+```
 
-O snapshot autenticado de tenants aceita até 1.000 organizações e corpo de até 1 MiB. As demais operações mantêm o limite de 64 KiB. A saúde institucional atual considera a última coleta de cada tenant ativo; os intervalos de cinco minutos são usados somente para o histórico. V9 retira os incidentes abertos da jornada institucional antiga e expira suas entregas pendentes, sem registrar uma recuperação que não foi observada.
+Configure `GUARDIAO_MIGRATION_JDBC_URL`, `GUARDIAO_MIGRATION_USER` e `GUARDIAO_MIGRATION_PASSWORD`. O executor confere o destino, aplica versões pendentes e valida o histórico; falhas impedem a troca da API.
+
+Flyway cuida do schema `guardiao`, separado das migrations Django. O boot normal não migra. Preserve backup e migrations aplicadas; use role de migração própria. A role runtime precisa acessar tabelas e sequências, incluindo futuras, sem alterar o schema.
+
+Execução manual: use o estágio Docker `migrate` ou `./mvnw --batch-mode flyway:migrate flyway:validate` em `status_api/`, com as variáveis acima.
+
+**Worker:** imagem Django, processo supervisionado e sem domínio público. Substitua o entrypoint web por `python`, com argumentos:
+
+```text
+-u manage.py enviar_links_guardiao --continuo --intervalo 30
+```
+
+Não repita migrations web nem Gunicorn. Monitore a fila; cada pendência sai somente após confirmação. Em reversões, pare o worker, confira compatibilidade e preserve fila e tabelas.
+
+</details>
+
+<details>
+<summary>Alertas e ameaças opcionais</summary>
+
+| Canal | Variáveis no Spring | Critério |
+|---|---|---|
+| Discord | `STATUS_ALERT_DISCORD_WEBHOOK` | Abertura, prolongamento e recuperação. |
+| E-mail | `STATUS_ALERT_EMAIL_TO`, `RESEND_API_KEY`, `DEFAULT_FROM_EMAIL` | Mais de uma hora de falha ou falha no Discord. |
+| Inbox | Worker ativo | Mais de uma hora; contas ativas do escopo afetado. |
+
+Entregas são persistidas, com até três tentativas. Sem canal, ficam pendentes. Discord pode duplicar mensagens; resposta inconclusiva aciona e-mail sem reenvio automático. Avisos de inbox expiram após 24 horas e têm deduplicação por evento/usuário. Teste cada canal com destinatários controlados.
+
+**Safe Browsing:** configure `GUARDIAO_SAFE_BROWSING_KEY` somente no Spring. A consulta usa prefixos de hash e cache do provedor. Sem chave, em falhas ou URL não suportada: **não verificado**; salvar continua permitido com aviso. Ausência de detecção não garante segurança. O worker reavalia links e notifica ameaças ao autor. Confira cota e [termos de uso não comercial](https://developers.google.com/safe-browsing/terms).
+
+</details>
+
+<details>
+<summary>Limites e compatibilidade</summary>
+
+- A fila guarda o estado atual por link. Operações em massa que ignoram sinais Django devem enfileirar os IDs explicitamente.
+- Primeira implantação da fila: pause gravações durante a migração; atualize a API antes do worker. O protocolo antigo de retratos é incompatível e pode deixar IDs obsoletos no Guardião.
+- Worker: até 100 alterações por ciclo. Scheduler: um item por vez, pausa padrão de um segundo e limites por domínio.
+- Snapshot: até 1.000 organizações e 1 MiB; demais operações: 64 KiB.
+- Saúde atual considera última coleta e atualidade por tenant; agrupamentos históricos não determinam esse estado.
+- Aplique todas as migrations pendentes: V9 retira incidentes legados sem inventar recuperação; V11/V12 acrescentam identificação pública e cores.
+
+</details>
