@@ -56,9 +56,9 @@ Importe [coleção](palacio-mental-api.postman_collection.json) e [environment](
 
 **Enviar referência → verificar disponibilidade → rejeitar URL inválida → excluir → confirmar remoção.**
 
-Execute a coleção inteira em instância de teste, com uma iteração e atraso de **1.000 ms**. A consulta aguarda até 30 tentativas pelo resultado. `test_link_url` e `expected_status` permitem conferir outros estados, como `REQUER_LOGIN` e `QUEBRADO`, usando destinos controlados.
+Execute a coleção inteira no destino autorizado, com uma iteração e atraso de **1.000 ms**. A consulta aguarda até 30 tentativas pelo resultado. `test_link_url` e `expected_status` permitem conferir outros estados, como `REQUER_LOGIN` e `QUEBRADO`, usando destinos controlados.
 
-O padrão usa `http://localhost:8080`. Para outro destino, configure origem HTTPS, `allow_writes=true` e o hostname em `approved_write_hosts`. Use ambiente sem sincronização Django concorrente. A rodada gera um ID alto aleatório e remove a referência ao terminar. Se interromper, confira `pm_test_link_id` e conclua a exclusão antes de limpar essa variável.
+O environment aponta para `https://api.palaciomental.com.br`, com escrita autorizada somente nesse hostname. A rodada cria uma referência temporária na API de produção. Para desenvolvimento, use `http://localhost:8080`. A rodada gera um ID alto aleatório e remove a referência ao terminar. Se interromper, confira `pm_test_link_id` e conclua a exclusão antes de limpar essa variável.
 
 ## Executar pelo GitHub
 
