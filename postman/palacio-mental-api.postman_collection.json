@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "71cc7cd4-e1eb-473a-9f60-204ffa2d93ec",
     "name": "P.M · API Spring Boot",
-    "description": "Cinco testes de processo, autenticação, dependências e contratos do Guardião. Usa consultas vazias e lote inválido para preservar links existentes.",
+    "description": "Jornada de um link descartável. Enfileira, aguarda resultado, rejeita substituição inválida, remove e confirma exclusão. Execute a coleção inteira, uma iteração, com atraso de 1.000 ms. Use instância de teste sem sincronização Django concorrente. O ID temporário usa faixa alta aleatória para reduzir colisões. Falha na limpeza exige remover o ID reportado em pm_test_link_id.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -12,65 +12,32 @@
         "type": "text/javascript",
         "exec": [
           "const base = pm.environment.get(\"api_base\") || \"\";",
-          "const token = pm.environment.get(\"service_token\") || \"\";",
           "const local = /^http:\\/\\/(localhost|127\\.0\\.0\\.1):8080$/.test(base);",
-          "if (!/^https:\\/\\/[^/]+$/.test(base) && !local) throw new Error(\"Use origem HTTPS ou localhost:8080.\");",
-          "if (pm.request.auth && pm.request.auth.type === \"bearer\" && !token) throw new Error(\"Preencha service_token nos valores locais do environment.\");"
+          "const host = /^https:\\/\\/([^/]+)$/.exec(base);",
+          "const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").split(\",\").map(x => x.trim().toLowerCase());",
+          "if (!local && (!host || pm.environment.get(\"allow_writes\") !== \"true\" || !approved.includes(host[1].toLowerCase()))) {",
+          "  pm.execution.setNextRequest(null);",
+          "  throw new Error(\"Escritas exigem allow_writes=true e hostname em approved_write_hosts. Use ambiente de teste.\");",
+          "}",
+          "if (!pm.environment.get(\"service_token\")) {",
+          "  pm.execution.setNextRequest(null);",
+          "  throw new Error(\"Preencha service_token no valor local do environment.\");",
+          "}"
         ]
       }
     }
   ],
   "item": [
     {
-      "name": "01 · Processo responde",
+      "name": "01 · Referência entra na fila",
       "request": {
-        "method": "GET",
-        "header": [],
-        "url": "{{api_base}}/v1/ping",
-        "auth": {
-          "type": "noauth"
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"API responde pong\", () => { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.eql(\"pong\"); });"
-            ]
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        }
-      ]
-    },
-    {
-      "name": "02 · Diagnóstico exige token",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": "{{api_base}}/v1/status",
-        "auth": {
-          "type": "noauth"
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Diagnóstico sem token retorna 401\", () => { pm.response.to.have.status(401); });"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "03 · Banco e Django operacionais",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": "{{api_base}}/v1/status",
+        ],
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -80,22 +47,47 @@
               "type": "string"
             }
           ]
+        },
+        "url": "{{api_base}}/v1/guardiao/links",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"links\": [{\"link_id\": {{pm_test_link_id}}, \"url\": \"{{test_link_url}}\"}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
         }
       },
       "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.environment.get(\"pm_test_link_id\")) {",
+              "  pm.execution.setNextRequest(null);",
+              "  throw new Error(\"Existe ID de rodada anterior. Confira e remova o link antes de limpar pm_test_link_id.\");",
+              "}",
+              "pm.environment.set(\"pm_test_link_id\", String(1000000000000 + Math.floor(Math.random() * 8000000000000)));",
+              "pm.variables.set(\"poll_count\", 0);"
+            ]
+          }
+        },
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test(\"Dependências operacionais\", () => { pm.response.to.have.status(200); const data = pm.response.json(); pm.expect(data.service).to.eql(\"palacio-mental-status\"); pm.expect(data.status).to.eql(\"operacional\"); pm.expect(data.dependencies.database.status).to.eql(\"operacional\"); pm.expect(data.dependencies.django_app.status).to.eql(\"operacional\"); });"
+              "pm.test(\"Link aceito para verificação\", () => pm.response.to.have.status(202));",
+              "if (pm.response.code !== 202) pm.execution.setNextRequest(\"04 · Remover referência\");"
             ]
           }
         }
       ]
     },
     {
-      "name": "04 · Consulta de resultados autenticada",
+      "name": "02 · Disponibilidade é verificada",
       "request": {
         "method": "POST",
         "header": [
@@ -104,20 +96,20 @@
             "value": "application/json"
           }
         ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{service_token}}",
+              "type": "string"
+            }
+          ]
+        },
         "url": "{{api_base}}/v1/guardiao/links/results",
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{service_token}}",
-              "type": "string"
-            }
-          ]
-        },
         "body": {
           "mode": "raw",
-          "raw": "{\"link_ids\": []}",
+          "raw": "{\"link_ids\": [{{pm_test_link_id}}]}",
           "options": {
             "raw": {
               "language": "json"
@@ -127,18 +119,38 @@
       },
       "event": [
         {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": []
+          }
+        },
+        {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test(\"Consulta sem IDs retorna lista vazia\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.deep.eql([]); });"
+              "const rows = pm.response.code === 200 ? pm.response.json() : [];",
+              "const result = Array.isArray(rows) ? rows.find(row => String(row.link_id) === pm.environment.get(\"pm_test_link_id\")) : null;",
+              "const attempt = Number(pm.variables.get(\"poll_count\") || 0) + 1;",
+              "pm.variables.set(\"poll_count\", attempt);",
+              "if (pm.response.code === 200 && (!result || !result.checked_at) && attempt < 30) {",
+              "  pm.execution.setNextRequest(\"02 · Disponibilidade é verificada\");",
+              "} else {",
+              "  pm.test(\"Referência recebe a disponibilidade esperada\", () => {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(result, \"Resultado não chegou após 30 consultas\").to.be.an(\"object\");",
+              "    pm.expect(result.status).to.eql(pm.environment.get(\"expected_status\"));",
+              "    pm.expect(Date.parse(result.checked_at)).to.not.be.NaN;",
+              "  });",
+              "}"
             ]
           }
         }
       ]
     },
     {
-      "name": "05 · Limite da avaliação de ameaças",
+      "name": "03 · URL inválida é rejeitada",
       "request": {
         "method": "POST",
         "header": [
@@ -147,7 +159,6 @@
             "value": "application/json"
           }
         ],
-        "url": "{{api_base}}/v1/guardiao/links/threats",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -158,9 +169,10 @@
             }
           ]
         },
+        "url": "{{api_base}}/v1/guardiao/links",
         "body": {
           "mode": "raw",
-          "raw": "{\"urls\": [\"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\"]}",
+          "raw": "{\"links\": [{\"link_id\": {{pm_test_link_id}}, \"url\": \"file:///etc/passwd\"}]}",
           "options": {
             "raw": {
               "language": "json"
@@ -170,11 +182,108 @@
       },
       "event": [
         {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": []
+          }
+        },
+        {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test(\"Mais de seis URLs retorna 400\", () => { pm.response.to.have.status(400); });"
+              "pm.test(\"Referência fora de HTTP(S) é rejeitada\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 · Remover referência",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{service_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{api_base}}/v1/guardiao/links/{{pm_test_link_id}}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": []
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Exclusão da referência confirmada\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 · Referência removida não retorna",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{service_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{api_base}}/v1/guardiao/links/results",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"link_ids\": [{{pm_test_link_id}}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": []
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Referência excluída deixa de aparecer nos resultados\", () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json()).to.deep.eql([]);",
+              "});",
+              "if (pm.response.code === 200 && JSON.stringify(pm.response.json()) === \"[]\") pm.environment.unset(\"pm_test_link_id\");"
             ]
           }
         }

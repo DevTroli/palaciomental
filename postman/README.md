@@ -52,11 +52,13 @@ Use **dois membros distintos** na colaboração. O aluno deve participar da turm
 
 ## API Spring Boot
 
-Importe [coleção](palacio-mental-api.postman_collection.json) e [environment](palacio-mental-api.postman_environment.json). Selecione **P.M · API Spring Boot**, preencha `service_token` com o segredo do Guardião apenas no valor local e execute a coleção inteira.
+Importe [coleção](palacio-mental-api.postman_collection.json) e [environment](palacio-mental-api.postman_environment.json). Selecione **P.M · API Spring Boot** e preencha `service_token` localmente.
 
-São cinco testes de processo, autenticação, dependências, resultados e limite de URLs. `api_base` aponta para a API HTTPS. Para desenvolvimento, use `http://localhost:8080`. O diagnóstico exige banco e Django operacionais. O token dá acesso às operações internas e deve ficar restrito à equipe.
+**Enviar referência → verificar disponibilidade → rejeitar URL inválida → excluir → confirmar remoção.**
 
-Esta coleção é executada manualmente no Postman ou Newman. A automação GitHub abaixo continua usando os IDs das três jornadas institucionais.
+Execute a coleção inteira em instância de teste, com uma iteração e atraso de **1.000 ms**. A consulta aguarda até 30 tentativas pelo resultado. `test_link_url` e `expected_status` permitem conferir outros estados, como `REQUER_LOGIN` e `QUEBRADO`, usando destinos controlados.
+
+O padrão usa `http://localhost:8080`. Para outro destino, configure origem HTTPS, `allow_writes=true` e o hostname em `approved_write_hosts`. Use ambiente sem sincronização Django concorrente. A rodada gera um ID alto aleatório e remove a referência ao terminar. Se interromper, confira `pm_test_link_id` e conclua a exclusão antes de limpar essa variável.
 
 ## Executar pelo GitHub
 
