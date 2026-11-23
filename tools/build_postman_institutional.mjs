@@ -71,4 +71,4 @@ b.write('palacio-mental-institucional', {
 }, ['gestor_password','aluno_password'], {
   flags:['auth_gestor','auth_aluno'], ids:['program_id','class_id','group_id','project_id'],
   titles:{titulo_programa:'programa',titulo_turma:'turma',titulo_grupo:'grupo',titulo_projeto:'projeto'},
-});
+}, "CAMP-PG · Gestor e aluno");

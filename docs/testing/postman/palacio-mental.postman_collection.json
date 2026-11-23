@@ -18,7 +18,7 @@
           "      for (const key of cfg.ids) pm.variables.set(key, \"\");",
           "      const run = Date.now();",
           "      for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
-          "    })({\"first\":\"10.1\",\"flags\":[\"auth_membro\",\"auth_b\"],\"ids\":[\"project_inst_id\"],\"titles\":{\"titulo_inst\":\"inst\"},\"namespace\":\"palacio-mental\"});"
+          "    })({\"flags\":[\"auth_membro\",\"auth_b\"],\"ids\":[\"project_inst_id\"],\"titles\":{\"titulo_inst\":\"inst\"},\"namespace\":\"palacio-mental\"});"
         ]
       }
     }
@@ -1072,12 +1072,12 @@
                 },
                 {
                   "key": "username",
-                  "value": "{{pessoal_username}}",
+                  "value": "{{sem_afiliacao_username}}",
                   "type": "text"
                 },
                 {
                   "key": "password",
-                  "value": "{{pessoal_password}}",
+                  "value": "{{sem_afiliacao_password}}",
                   "type": "text"
                 }
               ]

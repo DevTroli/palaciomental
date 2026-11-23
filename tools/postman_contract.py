@@ -9,7 +9,7 @@ from django.urls import resolve
 ROOT = Path(settings.BASE_DIR) / "docs/testing/postman"
 COLLECTIONS = {
     "palacio-mental-institucional": ("gestor_password", "aluno_password"),
-    "palacio-mental": ("pessoal_password", "membro_password", "membro_b_password"),
+    "palacio-mental": ("sem_afiliacao_password", "membro_password", "membro_b_password"),
     "palacio-mental-colaboracao": ("autor_password", "colab_password"),
 }
 

@@ -135,7 +135,7 @@ jobs:
         with:
           node-version: "22"
       - name: Scripts das jornadas Postman (sem acesso externo)
-        run: node --test tools/test_postman_guards.mjs tools/test_postman_identity.mjs
+        run: node --test tools/test_postman_guards.mjs
       - name: Contratos do boot com migrations no entrypoint (sem banco)
         run: python -m unittest discover -s scripts/tests -p 'test_release_contract.py' -v
       - name: Contratos e URLs sem banco

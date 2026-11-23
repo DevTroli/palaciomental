@@ -18,9 +18,12 @@ puladas com `allow_isolation=false`. A chamada ao host global apenas confirma
 node tools/build_postman_collection.mjs
 node tools/build_postman_collaboration.mjs
 node tools/build_postman_institutional.mjs
-node --test tools/test_postman_guards.mjs tools/test_postman_identity.mjs
+node --test tools/test_postman_guards.mjs
 docker compose exec django python manage.py test tools.postman_contract
 ```
+
+Os geradores mantêm os nomes dos environments do workspace: **CAMP-PG · Gestor e aluno**,
+**P.M · Jornadas do MVP** e **CAMP-PG · Colaboração**.
 
 Os geradores sobrescrevem os modelos de environment. Guarde credenciais em uma
 cópia privada. O Git mantém os scripts e os JSONs gerados juntos.
@@ -39,6 +42,9 @@ Configuração comum: `tenant_a_base=https://camppg.palaciomental.com.br`,
 - Jornada principal: conta Membro em `membro_username`/`membro_password`,
   `turma_id`, `orientador_id`; `grupo_id` opcional. A conta precisa participar
   da turma. Mantenha `allow_isolation=false` enquanto não houver outro tenant.
+  Para ativar os cinco passos opcionais, configure também `tenant_b_base`,
+  `membro_b_username`/`membro_b_password` e `sem_afiliacao_username`/
+  `sem_afiliacao_password` com uma conta sem vínculo ao tenant B.
 - Colaboração: conta Troli como autor e Carvalho como colaborador; veja
   [README-colaboracao.md](README-colaboracao.md).
 

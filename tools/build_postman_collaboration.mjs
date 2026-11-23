@@ -85,6 +85,6 @@ b.write("palacio-mental-colaboracao", {
   tenant_a_base: "https://camppg.palaciomental.com.br", allow_writes: "false", approved_write_hosts: "",
   autor_username: "", autor_password: "", colab_username: "", colab_password: "", colab_display_name: "",
 }, ["autor_password", "colab_password"], {
-  first: "10.1", flags: ["auth_autor", "auth_colab"], ids: [ID, "request_id", "delete_pub_ok", "vote_before"],
+  flags: ["auth_autor", "auth_colab"], ids: [ID, "request_id", "delete_pub_ok", "vote_before"],
   titles: {titulo: "colab", comentario: "comentario", pedido: "pedido"},
-});
+}, "CAMP-PG · Colaboração");

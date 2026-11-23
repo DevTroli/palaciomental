@@ -48,7 +48,7 @@ function requestGuard(cfg) {
 }
 
 // A prova lê o formulário salvo, sem depender de um marco visível no detalhe.
-function assertContext() {
+export function assertContext() {
   pm.test("Contexto abre", () => pm.response.to.have.status(200));
   const html = pm.response.text();
   for (const [name, expected] of [["category", "QA-PM"], ["tags", "qa"]]) {
@@ -70,13 +70,7 @@ export class Builder {
   group(name, description, fail = null) {
     this.folder = {name, description, item: []}; this.folders.push(this.folder); this.fail = JSON.stringify(fail);
   }
-  add(name, path, {method = "GET", fields, code = "", gate = "", auth = "", need = "", skipWhen = "", base = "tenant_a_base", fail} = {}) {
-    const main = this.namespace === "palacio-mental";
-    const linked = main && name.startsWith("10.5 ");
-    if (main && name.startsWith("10.7 ")) {
-      path += "contexto/";
-      code = `(${assertContext.toString()})();\n${csrf}`;
-    }
+  add(name, path, {method = "GET", fields, code = "", gate = "", auth = "", need = "", skipWhen = "", base = "tenant_a_base", linked = false, fail} = {}) {
     const target = fail === undefined ? this.fail : JSON.stringify(fail);
     const fill = text => text.replaceAll("__CSRF__", `csrf_${base.replace("_base", "")}`).replaceAll("__FAIL__", target);
     const cfg = {linked, gate, auth, need, skipWhen};
@@ -87,7 +81,7 @@ export class Builder {
         ...(fields ? {body: {mode: "urlencoded", urlencoded: Object.entries(fields).map(([key, value]) => ({key, value: fill(value), type: "text"}))}} : {})},
       protocolProfileBehavior: {followRedirects: false}, event: [script("prerequest", pre), script("test", fill(code))]});
   }
-  write(file, defaults, secrets, reset) {
+  write(file, defaults, secrets, reset, environmentName = `${this.name} · Seguro por padrão`) {
     // Inicializar apenas uma vez por execução, inclusive ao rodar uma pasta isolada.
     const init = cfg => {
       if (pm.variables.get("pm_run_namespace") === cfg.namespace) return;
@@ -100,7 +94,7 @@ export class Builder {
     const source = `(${init.toString()})(${JSON.stringify({...reset, namespace: this.namespace})});`;
     mkdirSync(OUT, {recursive: true});
     const collection = {info: {_postman_id: this.id("collection"), name: this.name, schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", description: this.description}, event: [script("prerequest", source)], item: this.folders};
-    const env = {id: this.id("environment"), name: `${this.name} · Seguro por padrão`, _postman_variable_scope: "environment", values: Object.entries(defaults).map(([key, value]) => ({key, value, enabled: true, type: secrets.includes(key) ? "secret" : "default"}))};
+    const env = {id: this.id("environment"), name: environmentName, _postman_variable_scope: "environment", values: Object.entries(defaults).map(([key, value]) => ({key, value, enabled: true, type: secrets.includes(key) ? "secret" : "default"}))};
     writeFileSync(`${OUT}/${file}.postman_collection.json`, JSON.stringify(collection, null, 2) + "\n");
     writeFileSync(`${OUT}/${file}.postman_environment.json`, JSON.stringify(env, null, 2) + "\n");
     console.log(`${file}: ${this.folders.length} pastas, ${this.folders.reduce((n, f) => n + f.item.length, 0)} requisições.`);

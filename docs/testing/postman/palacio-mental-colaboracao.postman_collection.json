@@ -18,7 +18,7 @@
           "      for (const key of cfg.ids) pm.variables.set(key, \"\");",
           "      const run = Date.now();",
           "      for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
-          "    })({\"first\":\"10.1\",\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\",\"delete_pub_ok\",\"vote_before\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\",\"pedido\":\"pedido\"},\"namespace\":\"palacio-mental-colaboracao\"});"
+          "    })({\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\",\"delete_pub_ok\",\"vote_before\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\",\"pedido\":\"pedido\"},\"namespace\":\"palacio-mental-colaboracao\"});"
         ]
       }
     }

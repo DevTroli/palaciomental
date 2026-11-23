@@ -23,10 +23,8 @@ def environment(name, credentials):
     path = ROOT / "docs/testing/postman" / f"{name}.postman_environment.json"
     doc = json.loads(path.read_text())
     values = dict(credentials)
-    for prefix in ("membro",):
-        for field in ("username", "password"):
-            values[f"{prefix}_{field}"] = credentials[f"aluno_{field}"]
     for field in ("username", "password"):
+        values[f"membro_{field}"] = credentials[f"aluno_{field}"]
         values[f"autor_{field}"] = credentials[f"aluno_{field}"]
     values.update(
         global_base="https://palaciomental.com.br",
