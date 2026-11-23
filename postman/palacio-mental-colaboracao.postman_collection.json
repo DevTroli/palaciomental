@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "c34549cc-867a-4f49-afbd-23ffab7201de",
-    "name": "CAMPPG · Gestor e aluno",
+    "_postman_id": "d3460444-1e8b-4e3d-a2f5-fe45549c3aac",
+    "name": "CAMPPG - Colaboração",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Programa, turma, participação, grupo e projeto. Use contas de teste e execute em ordem."
+    "description": "Jornada institucional com dois alunos afiliados: publicação, comentário, relevância, pedido, aceite e limpeza. Leia README.md."
   },
   "event": [
     {
@@ -18,19 +18,19 @@
           "      for (const key of cfg.ids) pm.variables.set(key, \"\");",
           "      const run = Date.now();",
           "      for (const [key, label] of Object.entries(cfg.titles)) pm.variables.set(key, `QA-PM-${label}-${run}`);",
-          "    })({\"flags\":[\"auth_gestor\",\"auth_aluno\"],\"ids\":[\"program_id\",\"class_id\",\"group_id\",\"project_id\"],\"titles\":{\"titulo_programa\":\"programa\",\"titulo_turma\":\"turma\",\"titulo_grupo\":\"grupo\",\"titulo_projeto\":\"projeto\"},\"namespace\":\"palacio-mental-institucional\"});"
+          "    })({\"flags\":[\"auth_autor\",\"auth_colab\"],\"ids\":[\"project_pub_id\",\"request_id\",\"delete_pub_ok\",\"vote_before\"],\"titles\":{\"titulo\":\"colab\",\"comentario\":\"comentario\",\"pedido\":\"pedido\"},\"namespace\":\"palacio-mental-colaboracao\"});"
         ]
       }
     }
   ],
   "item": [
     {
-      "name": "10 · Gestor",
-      "description": "Cria programa publicado e turma aberta com professor responsável.",
+      "name": "10 · Publicação",
+      "description": "Autor publica conteúdo sintético; autor não comenta nem vota no próprio projeto.",
       "item": [
         {
-          "id": "bbf1f981-cf92-4732-a917-cead48716053",
-          "name": "10.1 · Login gestor",
+          "id": "16e4a3e6-e601-43df-abd7-9bcd331a8208",
+          "name": "10.1 · Formulário de login",
           "request": {
             "method": "GET",
             "url": "{{tenant_a_base}}/entrar/",
@@ -50,7 +50,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -76,7 +75,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -85,18 +84,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "6e043e21-c8cd-4aba-ad4b-d812b7df5942",
-          "name": "10.2 · Entrar gestor",
+          "id": "fa7c9417-1e87-4e29-ab9e-076b4a72412e",
+          "name": "10.2 · Entrar",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/entrar/",
@@ -120,12 +119,12 @@
                 },
                 {
                   "key": "username",
-                  "value": "{{gestor_username}}",
+                  "value": "{{autor_username}}",
                   "type": "text"
                 },
                 {
                   "key": "password",
-                  "value": "{{gestor_password}}",
+                  "value": "{{autor_password}}",
                   "type": "text"
                 }
               ]
@@ -145,7 +144,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -171,7 +169,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -181,1076 +179,20 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
-                  "const valid = pm.response.code === 302 && path === '/gestao/';",
-                  "pm.test('Destino corresponde ao papel', () => pm.expect(valid).to.eql(true));",
-                  "pm.variables.set('auth_gestor', valid);",
-                  "if (!valid) pm.execution.setNextRequest(null);"
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && true);",
+                  "pm.variables.set(\"auth_colab\", authenticated && false);",
+                  "if (!authenticated) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
           ]
         },
         {
-          "id": "41db7fb9-347a-4457-a141-0be12719af4a",
-          "name": "10.3 · Gestão e convites",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/gestao/membros/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "d859473c-c0f9-492b-a20e-358a2275ca93",
-          "name": "10.4 · Criar programa",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/programas/novo/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                },
-                {
-                  "key": "nome",
-                  "value": "{{titulo_programa}}",
-                  "type": "text"
-                },
-                {
-                  "key": "descricao",
-                  "value": "Programa de teste HTTP.",
-                  "type": "text"
-                },
-                {
-                  "key": "status",
-                  "value": "publicado",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
-                  "const match = path.match(/^\\/programas\\/([a-f0-9-]+)\\/$/);",
-                  "pm.test('Programa criado', () => pm.expect(Boolean(match)).to.eql(true));",
-                  "if (match) pm.variables.set('program_id', match[1]); else pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "416f4796-65e2-4582-a45a-d6ea9e1b0de9",
-          "name": "10.5 · Formulário da turma",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/gestao/programas/{{program_id}}/turmas/novo/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"program_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);",
-                  "const professor = pm.environment.get('professor_id');",
-                  "const valid = Boolean(professor) && pm.response.text().includes('value=\"' + professor + '\"');",
-                  "pm.test('Professor selecionado disponível', () => pm.expect(valid).to.eql(true));",
-                  "if (!valid) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "65fb1862-9f83-4d61-a920-a389bfc50496",
-          "name": "10.6 · Criar turma com professor",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/gestao/programas/{{program_id}}/turmas/novo/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                },
-                {
-                  "key": "nome",
-                  "value": "{{titulo_turma}}",
-                  "type": "text"
-                },
-                {
-                  "key": "descricao",
-                  "value": "Turma de teste HTTP.",
-                  "type": "text"
-                },
-                {
-                  "key": "professor_responsavel",
-                  "value": "{{professor_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "politica_participacao",
-                  "value": "aberta",
-                  "type": "text"
-                },
-                {
-                  "key": "status",
-                  "value": "ativo",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"program_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "56f3add7-3435-4d7c-a1d8-9effd68f1787",
-          "name": "10.7 · Confirmar turma",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/programas/{{program_id}}/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"program_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Estrutura disponível\", () => pm.response.to.have.status(200));",
-                  "const found = pm.response.text().match(/id=\"turma-([a-f0-9-]+)\"/);",
-                  "pm.test('ID da estrutura criada presente', () => pm.expect(Boolean(found)).to.eql(true));",
-                  "if (found) pm.variables.set('class_id', found[1]); else pm.execution.setNextRequest(null);",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "340b9d10-9454-42b6-a02e-20971cb61761",
-          "name": "10.8 · Gestor não cria grupo",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/turmas/{{class_id}}/grupos/novo/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"class_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Grupo reservado ao aluno participante\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "0b94105d-b5f9-45fb-a901-868720c86089",
-          "name": "10.9 · Sair do gestor",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/sair/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "20 · Aluno",
-      "description": "Participa da turma e cria seu grupo antes de vincular o projeto.",
-      "item": [
-        {
-          "id": "53e72eeb-53b0-4f99-a7ac-a2ea2f783ec4",
-          "name": "20.1 · Login aluno",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/entrar/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "9c069bb5-89bf-4eeb-ab76-a34b5a650281",
-          "name": "20.2 · Entrar aluno",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/entrar/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                },
-                {
-                  "key": "username",
-                  "value": "{{aluno_username}}",
-                  "type": "text"
-                },
-                {
-                  "key": "password",
-                  "value": "{{aluno_password}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
-                  "const valid = pm.response.code === 302 && path === '/';",
-                  "pm.test('Destino corresponde ao papel', () => pm.expect(valid).to.eql(true));",
-                  "pm.variables.set('auth_aluno', valid);",
-                  "if (!valid) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "1f044ea8-f6de-42f6-a622-64c7b69645b0",
-          "name": "20.3 · Consultar programa publicado",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/programas/{{program_id}}/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"class_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "9547b7ab-877c-4143-af2d-539402d41d64",
-          "name": "20.4 · Participar da turma",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/turmas/{{class_id}}/participar/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"class_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "4b9f848b-b23c-41c8-a1c4-16a3ebb8a428",
-          "name": "20.5 · Criar grupo",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/turmas/{{class_id}}/grupos/novo/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                },
-                {
-                  "key": "nome",
-                  "value": "{{titulo_grupo}}",
-                  "type": "text"
-                },
-                {
-                  "key": "descricao",
-                  "value": "Grupo de teste HTTP.",
-                  "type": "text"
-                },
-                {
-                  "key": "status",
-                  "value": "ativo",
-                  "type": "text"
-                },
-                {
-                  "key": "aberto_para_entrada",
-                  "value": "on",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"class_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "3e2bc2cd-cc86-4eb1-a673-f0e14f0b0123",
-          "name": "20.6 · Confirmar grupo",
-          "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/programas/{{program_id}}/",
-            "header": []
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"class_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Estrutura disponível\", () => pm.response.to.have.status(200));",
-                  "const found = pm.response.text().match(/href=\"\\/grupos\\/([a-f0-9-]+)\\/membros\\/\"/);",
-                  "pm.test('ID da estrutura criada presente', () => pm.expect(Boolean(found)).to.eql(true));",
-                  "if (found) pm.variables.set('group_id', found[1]); else pm.execution.setNextRequest(null);",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "cb2f880e-5a2b-48c9-a0e9-e8e4701b73e3",
-          "name": "20.7 · Novo projeto",
+          "id": "de2f4324-e1ad-4bfb-a09a-5175c1f4f33e",
+          "name": "10.3 · Formulário de projeto",
           "request": {
             "method": "GET",
             "url": "{{tenant_a_base}}/projetos/novo/",
@@ -1270,7 +212,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -1296,7 +237,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"group_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1305,18 +246,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Formulário abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "e5e32b58-7884-427c-a83e-58de69b24084",
-          "name": "20.8 · Criar projeto vinculado",
+          "id": "b519252f-d6eb-4c1c-a075-43fa172dd230",
+          "name": "10.4 · Criar projeto",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/projetos/novo/",
@@ -1340,12 +281,12 @@
                 },
                 {
                   "key": "title",
-                  "value": "{{titulo_projeto}}",
+                  "value": "{{titulo}}",
                   "type": "text"
                 },
                 {
                   "key": "direction",
-                  "value": "Validar jornada institucional.",
+                  "value": "Jornada de colaboração entre alunos do CAMPPG.",
                   "type": "text"
                 },
                 {
@@ -1360,22 +301,7 @@
                 },
                 {
                   "key": "tipo_projeto",
-                  "value": "programa",
-                  "type": "text"
-                },
-                {
-                  "key": "turma",
-                  "value": "{{class_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "grupo",
-                  "value": "{{group_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "orientador",
-                  "value": "{{professor_id}}",
+                  "value": "autonomo",
                   "type": "text"
                 }
               ]
@@ -1395,7 +321,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -1421,7 +346,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"group_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1432,20 +357,20 @@
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
                   "pm.test(\"Projeto criado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/projetos\\/\\d+\\/contexto\\/$/); });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
                   "const created = path.match(/^\\/projetos\\/(\\d+)\\/contexto\\/$/);",
-                  "if (pm.response.code === 302 && created) pm.variables.set(\"project_id\", created[1]); else pm.execution.setNextRequest(null);"
+                  "if (pm.response.code === 302 && created) pm.variables.set(\"project_pub_id\", created[1]); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
           ]
         },
         {
-          "id": "0f0596e2-1a2b-47ab-ad9a-a1519a4f6803",
-          "name": "20.9 · Salvar contexto",
+          "id": "997431ab-fe28-43e0-a048-af10630edced",
+          "name": "10.5 · Publicar buscando colaboradores",
           "request": {
             "method": "POST",
-            "url": "{{tenant_a_base}}/projetos/{{project_id}}/contexto/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/contexto/",
             "header": [
               {
                 "key": "Origin",
@@ -1476,7 +401,7 @@
                 },
                 {
                   "key": "visibility",
-                  "value": "privado",
+                  "value": "publico",
                   "type": "text"
                 },
                 {
@@ -1498,6 +423,16 @@
                   "key": "links-MAX_NUM_FORMS",
                   "value": "1000",
                   "type": "text"
+                },
+                {
+                  "key": "seeking_collaborators",
+                  "value": "on",
+                  "type": "text"
+                },
+                {
+                  "key": "collaboration_description",
+                  "value": "Projeto institucional de teste, aberto somente durante a execução.",
+                  "type": "text"
                 }
               ]
             }
@@ -1516,7 +451,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -1542,7 +476,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"project_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1552,20 +486,44 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                  "pm.test(\"Publicação aceita\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
           ]
         },
         {
-          "id": "b54664f3-ef1d-405c-aed2-f176a0d8db8c",
-          "name": "20.10 · Confirmar projeto e vínculo",
+          "id": "b79b28bd-0e6e-4843-ae97-21a00af11880",
+          "name": "10.6 · Autor não comenta o próprio projeto",
           "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/projetos/{{project_id}}/",
-            "header": []
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/comentarios/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "Comentário proibido do autor",
+                  "type": "text"
+                }
+              ]
+            }
           },
           "protocolProfileBehavior": {
             "followRedirects": false
@@ -1581,7 +539,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -1607,7 +564,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"project_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1616,23 +573,38 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
-                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
-                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);",
-                  "for (const key of ['titulo_projeto','titulo_turma','titulo_grupo']) pm.test(key + ' presente', () => pm.expect(pm.response.text()).to.include(pm.variables.get(key)));"
+                  "pm.test(\"Autor não comenta o próprio projeto\", () => pm.response.to.have.status(403));"
                 ]
               }
             }
           ]
         },
         {
-          "id": "915e198a-6822-4ab7-a5b8-49e72f31e83d",
-          "name": "20.11 · Aluno sem gestão",
+          "id": "1620fb4d-b441-47af-a03b-2d7e1651c2e6",
+          "name": "10.7 · Autor não vota no próprio projeto",
           "request": {
-            "method": "GET",
-            "url": "{{tenant_a_base}}/gestao/membros/",
-            "header": []
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/relevancia/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                }
+              ]
+            }
           },
           "protocolProfileBehavior": {
             "followRedirects": false
@@ -1648,7 +620,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -1674,7 +645,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -1683,7 +654,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Aluno não gerencia afiliações\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Autor não vota no próprio projeto\", () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -1692,264 +663,12 @@
       ]
     },
     {
-      "name": "30 · Limpeza",
-      "description": "Remove somente os IDs criados nesta execução, na ordem das dependências.",
+      "name": "20 · Colaborador",
+      "description": "Outra conta encontra o projeto, comenta, vota e solicita colaboração.",
       "item": [
         {
-          "id": "379baa8f-2a71-4f20-ab35-3eb6f50178d5",
-          "name": "30.1 · Excluir projeto de teste",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/projetos/{{project_id}}/excluir/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"project_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "6ff394f1-1a14-4b98-a939-7c8277ed4f5d",
-          "name": "30.2 · Excluir grupo de teste",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/grupos/{{group_id}}/excluir/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"group_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "0a2fd39b-2da8-4ce7-a846-87c4e9300627",
-          "name": "30.3 · Sair do aluno",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/sair/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_aluno\",\"need\":\"\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "4de39a18-51d0-489d-a026-33da093fc209",
-          "name": "31.1 · Login gestor",
+          "id": "d1c44f6e-7c10-41b1-a14f-fbe36da914f3",
+          "name": "20.1 · Formulário de login",
           "request": {
             "method": "GET",
             "url": "{{tenant_a_base}}/entrar/",
@@ -1969,7 +688,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -1995,7 +713,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -2004,18 +722,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
-                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "bc7d3301-b258-42b2-ae62-6adf7315352b",
-          "name": "31.2 · Entrar gestor",
+          "id": "8010ca28-d723-44f1-a5c8-f6548a804cac",
+          "name": "20.2 · Entrar",
           "request": {
             "method": "POST",
             "url": "{{tenant_a_base}}/entrar/",
@@ -2039,12 +757,12 @@
                 },
                 {
                   "key": "username",
-                  "value": "{{gestor_username}}",
+                  "value": "{{colab_username}}",
                   "type": "text"
                 },
                 {
                   "key": "password",
-                  "value": "{{gestor_password}}",
+                  "value": "{{colab_password}}",
                   "type": "text"
                 }
               ]
@@ -2064,7 +782,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -2090,7 +807,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -2100,23 +817,23 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
-                  "const valid = pm.response.code === 302 && path === '/gestao/';",
-                  "pm.test('Destino corresponde ao papel', () => pm.expect(valid).to.eql(true));",
-                  "pm.variables.set('auth_gestor', valid);",
-                  "if (!valid) pm.execution.setNextRequest(null);"
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && false);",
+                  "pm.variables.set(\"auth_colab\", authenticated && true);",
+                  "if (!authenticated) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
                 ]
               }
             }
           ]
         },
         {
-          "id": "146a0b66-b445-4b02-a185-71dbfcae85fa",
-          "name": "31.3 · Renovar CSRF",
+          "id": "4e4431a0-b668-49e5-ac8b-28e36dddfe5a",
+          "name": "20.3 · Descobrir na lista pública",
           "request": {
             "method": "GET",
-            "url": "{{tenant_a_base}}/programas/{{program_id}}/",
+            "url": "{{tenant_a_base}}/projetos/?q={{titulo}}",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -2133,7 +850,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -2159,7 +875,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"program_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -2168,7 +884,804 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Página disponível\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Busca abre\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Projeto encontrado\", () => pm.expect(pm.response.text()).to.include(pm.variables.get(\"titulo\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8827ce23-7ea8-4da2-a478-7c26e2ca0001",
+          "name": "20.4 · Abrir o projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Detalhe abre\", () => pm.response.to.have.status(200));",
+                  "const html = pm.response.text();",
+                  "pm.test(\"Projeto correto\", () => pm.expect(html).to.include(pm.variables.get(\"titulo\")));",
+                  "const count = html.match(/class=[\"'][^\"']*relevance-count[^\"']*[\"'][^>]*>\\s*(\\d+)/);",
+                  "pm.test(\"Contador disponível e projeto novo sem votos\", () => pm.expect(count && Number(count[1])).to.eql(0));",
+                  "if (count) pm.variables.set(\"vote_before\", Number(count[1])); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "7633ce99-c2f3-4c09-a59a-bae26caad78d",
+          "name": "20.5 · Comentar",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/comentarios/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "{{comentario}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Comentar\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1e77d262-b5a9-4c7c-a93d-0f68247fcd2a",
+          "name": "20.6 · Reconhecer relevância",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/relevancia/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Reconhecer relevância\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "252e526a-4de6-4b52-aec0-2eadd7e83d19",
+          "name": "20.7 · Pedir para colaborar",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/colaboracao/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                },
+                {
+                  "key": "message",
+                  "value": "{{pedido}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_colab\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Pedir para colaborar\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "30 · Decisão do autor",
+      "description": "Releitura comprova comentário, incremento do voto e pedido exato; aceite deve aparecer na equipe.",
+      "item": [
+        {
+          "id": "8ac21881-87d2-4a16-a856-fd113f50f6cb",
+          "name": "30.1 · Formulário de login",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e36bcc16-8395-4ab9-a259-fd6323c81659",
+          "name": "30.2 · Entrar",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/entrar/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{autor_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{autor_password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && true);",
+                  "pm.variables.set(\"auth_colab\", authenticated && false);",
+                  "if (!authenticated) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e87f6770-39b0-4b46-a60e-32cdaf87e995",
+          "name": "30.3 · Ver pedido pendente",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Detalhe do autor abre\", () => pm.response.to.have.status(200));",
+                  "const html = pm.response.text();",
+                  "pm.test(\"Comentário persistido\", () => pm.expect(html).to.include(pm.variables.get(\"comentario\")));",
+                  "const count = html.match(/class=[\"'][^\"']*relevance-count[^\"']*[\"'][^>]*>\\s*(\\d+)/);",
+                  "pm.test(\"Voto incrementou o contador\", () => pm.expect(count && Number(count[1])).to.eql(Number(pm.variables.get(\"vote_before\")) + 1));",
+                  "const requests = html.match(/<div\\b[^>]*class=[\"'][^\"']*request-item[^\"']*[\"'][^>]*>[\\s\\S]*?<\\/form>/gi) || [];",
+                  "const own = requests.find(block => block.includes(pm.variables.get(\"pedido\")) && block.includes(\"@\" + pm.environment.get(\"colab_username\")));",
+                  "const requestMatch = own && own.match(/\\/colaboracoes\\/(\\d+)\\/decidir\\//);",
+                  "pm.test(\"Pedido pertence ao colaborador desta execução\", () => pm.expect(Boolean(requestMatch)).to.eql(true));",
+                  "if (requestMatch) pm.variables.set(\"request_id\", requestMatch[1]); else pm.execution.setNextRequest(\"40.1 · Formulário de login\");",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(\"40.1 · Formulário de login\"); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e0f8726e-3c4c-4e37-ac8b-2e8b1424e984",
+          "name": "30.4 · Aceitar o pedido",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/colaboracoes/{{request_id}}/decidir/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                },
+                {
+                  "key": "decision",
+                  "value": "aceita",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"request_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Aceite registrado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/projetos/\" + pm.variables.get(\"project_pub_id\") + \"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(\"40.1 · Formulário de login\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "98720e62-2f43-441c-adca-95c120d7bc9e",
+          "name": "30.5 · Colaborador integrado",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"request_id\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Detalhe abre\", () => pm.response.to.have.status(200));",
+                  "const html = pm.response.text();",
+                  "const cards = html.match(/<section\\b[^>]*>[\\s\\S]*?<\\/section>/gi) || [];",
+                  "const team = cards.find(section => /<span[^>]*>\\s*Equipe\\s*<\\/span>/.test(section)) || \"\";",
+                  "const members = team.match(/<p\\b[^>]*class=[\"'][^\"']*team-member[^\"']*[\"'][^>]*>[\\s\\S]*?<\\/p>/gi) || [];",
+                  "const display = pm.environment.get(\"colab_display_name\") || pm.environment.get(\"colab_username\");",
+                  "pm.test(\"Colaborador presente na equipe, não só nos comentários\", () => pm.expect(members.some(member => member.includes(display) && member.includes(\"Colaborador\"))).to.eql(true));",
+                  "pm.test(\"Pedido aceito deixou de estar pendente\", () => pm.expect(html).not.to.include(\"/colaboracoes/\" + pm.variables.get(\"request_id\") + \"/decidir/\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "40 · Encerramento",
+      "description": "Tenta excluir somente o ID criado nesta execução; falha ou interrupção pode deixar resíduos.",
+      "item": [
+        {
+          "id": "72b30b94-8f18-45cc-a99c-c6ab073de5a9",
+          "name": "40.1 · Formulário de login",
+          "request": {
+            "method": "GET",
+            "url": "{{tenant_a_base}}/entrar/",
+            "header": []
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login abre\", () => pm.response.to.have.status(200));",
                   "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
                   "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
                   "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
@@ -2178,11 +1691,11 @@
           ]
         },
         {
-          "id": "c01b9b12-62fb-44af-aea3-f2cc68fe926f",
-          "name": "31.4 · Excluir turma de teste",
+          "id": "dcbd5b8f-e1b9-4b52-a9c6-4f41778b3862",
+          "name": "40.2 · Entrar",
           "request": {
             "method": "POST",
-            "url": "{{tenant_a_base}}/turmas/{{class_id}}/excluir/",
+            "url": "{{tenant_a_base}}/entrar/",
             "header": [
               {
                 "key": "Origin",
@@ -2199,6 +1712,16 @@
                 {
                   "key": "csrfmiddlewaretoken",
                   "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{autor_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{autor_password}}",
                   "type": "text"
                 }
               ]
@@ -2218,7 +1741,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -2244,7 +1766,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"class_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"\",\"need\":\"project_pub_id\",\"skipWhen\":\"auth_autor\"});"
                 ]
               }
             },
@@ -2254,103 +1776,23 @@
                 "type": "text/javascript",
                 "exec": [
                   "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
+                  "pm.test(\"Login conclui no destino esperado\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.eql(\"/\"); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);",
+                  "const authenticated = pm.response.code === 302 && path === \"/\";",
+                  "pm.variables.set(\"auth_autor\", authenticated && true);",
+                  "pm.variables.set(\"auth_colab\", authenticated && false);",
+                  "if (!authenticated) pm.execution.setNextRequest(null);"
                 ]
               }
             }
           ]
         },
         {
-          "id": "c156b006-e386-439e-aa32-b58c0e2bd929",
-          "name": "31.5 · Excluir programa de teste",
-          "request": {
-            "method": "POST",
-            "url": "{{tenant_a_base}}/programas/{{program_id}}/excluir/",
-            "header": [
-              {
-                "key": "Origin",
-                "value": "{{tenant_a_base}}"
-              },
-              {
-                "key": "Referer",
-                "value": "{{tenant_a_base}}/"
-              }
-            ],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "csrfmiddlewaretoken",
-                  "value": "{{csrf_tenant_a}}",
-                  "type": "text"
-                }
-              ]
-            }
-          },
-          "protocolProfileBehavior": {
-            "followRedirects": false
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "(function requestGuard(cfg) {",
-                  "  const local = key => pm.variables.get(key);",
-                  "  const enabled = key => pm.environment.get(key) === \"true\";",
-                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
-                  "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
-                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
-                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
-                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
-                  "    if (cfg.need && !local(cfg.need)) return false;",
-                  "    return true;",
-                  "  }",
-                  "",
-                  "  if (!scenarioAllowed()) return skip();",
-                  "  if (pm.request.method === \"GET\") return true;",
-                  "  if (!enabled(\"allow_writes\")) return skip();",
-                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
-                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
-                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
-                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
-                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
-                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
-                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
-                  "    pm.execution.setNextRequest(null);",
-                  "    return skip();",
-                  "  }",
-                  "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"program_id\",\"skipWhen\":\"\"});"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
-                  "pm.test(\"Alteração aceita\", () => { pm.expect(pm.response.code).to.eql(302);  });",
-                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "id": "d617c2bc-8402-4be1-ad51-01898f3eccb8",
-          "name": "31.6 · Confirmar exclusão",
+          "id": "998ea2d0-8dfe-454e-a191-eb18bd390198",
+          "name": "40.3 · Formulário de edição",
           "request": {
             "method": "GET",
-            "url": "{{tenant_a_base}}/programas/{{program_id}}/",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/editar/",
             "header": []
           },
           "protocolProfileBehavior": {
@@ -2367,7 +1809,6 @@
                   "  const enabled = key => pm.environment.get(key) === \"true\";",
                   "  const skip = () => { pm.execution.skipRequest(); return false; };",
                   "  function scenarioAllowed() {",
-                  "    if (cfg.personal && !enabled(\"allow_personal\")) return false;",
                   "    if (cfg.gate && !enabled(cfg.gate)) return false;",
                   "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
                   "    if (cfg.auth && local(cfg.auth) !== true) return false;",
@@ -2393,7 +1834,7 @@
                   "    return skip();",
                   "  }",
                   "  return true;",
-                  "})({\"personal\":false,\"linked\":false,\"gate\":\"\",\"auth\":\"auth_gestor\",\"need\":\"program_id\",\"skipWhen\":\"\"});"
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"project_pub_id\",\"skipWhen\":\"\"});"
                 ]
               }
             },
@@ -2402,7 +1843,99 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Programa de teste removido\", () => pm.response.to.have.status(404));"
+                  "pm.test(\"Edição abre\", () => pm.response.to.have.status(200));",
+                  "const input = (pm.response.text().match(/<input\\b[^>]*>/gi) || []).find(tag => /\\bname=[\"']title[\"']/.test(tag));",
+                  "const title = input && input.match(/\\bvalue=[\"']([^\"']*)[\"']/);",
+                  "const owned = pm.response.code === 200 && Boolean(title) && title[1] === pm.variables.get(\"titulo\");",
+                  "pm.test(\"Título do projeto desta execução confirmado\", () => pm.expect(owned).to.eql(true));",
+                  "pm.variables.set(\"delete_pub_ok\", owned ? \"1\" : \"\");",
+                  "if (!owned) pm.execution.setNextRequest(null);",
+                  "const match = pm.response.text().match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)/);",
+                  "pm.test(\"CSRF presente\", () => pm.expect(match).not.to.equal(null));",
+                  "if (!match) pm.execution.setNextRequest(null); else pm.variables.set(\"csrf_tenant_a\", match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "85cc5fa7-25b9-4e66-a380-e1a0f1c2f2f5",
+          "name": "40.4 · Excluir projeto de teste",
+          "request": {
+            "method": "POST",
+            "url": "{{tenant_a_base}}/projetos/{{project_pub_id}}/excluir/",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{tenant_a_base}}"
+              },
+              {
+                "key": "Referer",
+                "value": "{{tenant_a_base}}/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{csrf_tenant_a}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function requestGuard(cfg) {",
+                  "  const local = key => pm.variables.get(key);",
+                  "  const enabled = key => pm.environment.get(key) === \"true\";",
+                  "  const skip = () => { pm.execution.skipRequest(); return false; };",
+                  "  function scenarioAllowed() {",
+                  "    if (cfg.gate && !enabled(cfg.gate)) return false;",
+                  "    if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;",
+                  "    if (cfg.auth && local(cfg.auth) !== true) return false;",
+                  "    if (cfg.need && !local(cfg.need)) return false;",
+                  "    return true;",
+                  "  }",
+                  "",
+                  "  if (!scenarioAllowed()) return skip();",
+                  "  if (pm.request.method === \"GET\") return true;",
+                  "  if (!enabled(\"allow_writes\")) return skip();",
+                  "  const target = pm.variables.replaceIn(pm.request.url.toString());",
+                  "  const match = target.match(/^https:\\/\\/([^/@?#]+)(?:\\/|$)/i);",
+                  "  const approved = (pm.environment.get(\"approved_write_hosts\") || \"\").toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);",
+                  "  if (!match || !approved.includes(match[1].toLowerCase())) {",
+                  "    pm.test(\"Host HTTPS de escrita aprovado\", () => pm.expect.fail(\"Escrita bloqueada: destino não aprovado.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  // Não enviar um projeto vinculado com os campos obrigatórios vazios.",
+                  "  if (cfg.linked && (!pm.environment.get(\"turma_id\") || !pm.environment.get(\"orientador_id\"))) {",
+                  "    pm.test(\"Preparação institucional\", () => pm.expect.fail(\"Preencha turma_id e orientador_id; o membro precisa participar da turma.\"));",
+                  "    pm.execution.setNextRequest(null);",
+                  "    return skip();",
+                  "  }",
+                  "  return true;",
+                  "})({\"linked\":false,\"gate\":\"\",\"auth\":\"auth_autor\",\"need\":\"delete_pub_ok\",\"skipWhen\":\"\"});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const path = (pm.response.headers.get(\"Location\") || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");",
+                  "pm.test(\"Exclusão redireciona ao perfil\", () => { pm.expect(pm.response.code).to.eql(302); pm.expect(path).to.match(/^\\/perfil\\//); });",
+                  "if (pm.response.code !== 302) pm.execution.setNextRequest(null);"
                 ]
               }
             }

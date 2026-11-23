@@ -29,7 +29,7 @@ jobs:
       - name: Instalar Postman CLI
         shell: bash
         run: curl --fail --silent --show-error --location https://dl-cli.pstmn.io/install/unix.sh | sh
-      - name: Sincronizar coleções e publicar resultados no Postman
+      - name: Executar coleções do workspace e publicar resultados
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
           POSTMAN_TEST_ENV: ${{ secrets.POSTMAN_TEST_ENV }}
