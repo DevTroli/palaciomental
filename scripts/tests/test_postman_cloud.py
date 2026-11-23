@@ -25,18 +25,17 @@ class PostmanCloudTests(unittest.TestCase):
                 self.assertEqual(entries["allow_isolation"]["value"], "false")
 
     @patch.dict("os.environ", {}, clear=True)
-    @patch.object(runner, "urlopen")
-    def test_missing_credentials_stop_before_network(self, network):
+    @patch.object(runner.subprocess, "run")
+    def test_missing_credentials_stop_before_execution(self, network):
         with self.assertRaises(SystemExit):
             runner.main()
         network.assert_not_called()
 
-    def test_sync_precedes_runs_and_temporary_credentials_are_removed(self):
+    def test_runs_use_cloud_ids_and_temporary_credentials_are_removed(self):
         paths = []
-        response = MagicMock()
-        response.__enter__.return_value.status = 200
 
         def run(args, check):
+            self.assertIn(args[3], runner.COLLECTIONS.values())
             path = Path(args[args.index("-e") + 1])
             self.assertTrue(path.exists())
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
@@ -44,12 +43,7 @@ class PostmanCloudTests(unittest.TestCase):
             return MagicMock(returncode=0)
 
         env = {"POSTMAN_API_KEY": "test-only", "POSTMAN_TEST_ENV": json.dumps(self.credentials())}
-        with patch.dict("os.environ", env), patch.object(runner, "urlopen", return_value=response) as network, patch.object(runner.subprocess, "run", side_effect=run):
+        with patch.dict("os.environ", env), patch.object(runner.subprocess, "run", side_effect=run):
             runner.main()
-        self.assertEqual(network.call_count, 3)
         self.assertEqual(len(paths), 3)
         self.assertTrue(all(not path.exists() for path in paths))
-        for call in network.call_args_list:
-            request = call.args[0]
-            uid = request.full_url.rsplit("/", 1)[1]
-            self.assertEqual(json.loads(request.data)["collection"]["info"]["_postman_id"], uid.split("-", 1)[1])

@@ -11,6 +11,7 @@ Plataforma Django para projetos pessoais e ambientes institucionais privados. A 
 - `status_api/`: serviço Spring Boot/Java 21 de status.
 - `docker/postgres/init/`: cria a role comum da aplicação no primeiro boot do banco local.
 - `scripts/`: gera segredos locais; `scripts/tests/` contém contratos usados pela CI.
+- [`postman/`](postman/README.md): coleções, environments e guia de testes HTTP do CAMPPG.
 
 ## Executar localmente
 

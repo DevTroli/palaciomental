@@ -1,10 +1,9 @@
-"""Sincroniza e executa as três jornadas autorizadas no workspace da equipe."""
+"""Executa as coleções do Postman web com credenciais temporárias do CI."""
 import json
 import os
 from pathlib import Path
 import subprocess
 import tempfile
-from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,7 +19,7 @@ REQUIRED = (
 
 
 def environment(name, credentials):
-    path = ROOT / "docs/testing/postman" / f"{name}.postman_environment.json"
+    path = ROOT / "postman" / f"{name}.postman_environment.json"
     doc = json.loads(path.read_text())
     values = dict(credentials)
     for field in ("username", "password"):
@@ -47,17 +46,6 @@ def main():
     failed = []
     with tempfile.TemporaryDirectory(prefix="pm-postman-") as directory:
         for name, uid in COLLECTIONS.items():
-            collection = json.loads((ROOT / "docs/testing/postman" / f"{name}.postman_collection.json").read_text())
-            collection["info"]["_postman_id"] = uid.split("-", 1)[1]
-            request = Request(
-                f"https://api.getpostman.com/collections/{uid}", method="PUT",
-                data=json.dumps({"collection": collection}).encode(),
-                headers={"X-Api-Key": key, "Content-Type": "application/json"},
-            )
-            # Se a atualização falhar, não executar a versão antiga da nuvem.
-            with urlopen(request, timeout=30) as response:
-                if response.status != 200:
-                    raise SystemExit(f"Falha ao sincronizar {name}")
             path = Path(directory) / f"{name}.json"
             path.touch(mode=0o600)
             path.write_text(json.dumps(environment(name, credentials)))

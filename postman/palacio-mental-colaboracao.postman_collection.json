@@ -3,7 +3,7 @@
     "_postman_id": "d3460444-1e8b-4e3d-a2f5-fe45549c3aac",
     "name": "CAMPPG - Colaboração",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Jornada institucional com dois alunos afiliados: publicação, comentário, relevância, pedido, aceite e limpeza. Leia README-colaboracao.md."
+    "description": "Jornada institucional com dois alunos afiliados: publicação, comentário, relevância, pedido, aceite e limpeza. Leia README.md."
   },
   "event": [
     {
