@@ -1,0 +1,184 @@
+{
+  "info": {
+    "_postman_id": "71cc7cd4-e1eb-473a-9f60-204ffa2d93ec",
+    "name": "P.M · API Spring Boot",
+    "description": "Cinco testes de processo, autenticação, dependências e contratos do Guardião. Usa consultas vazias e lote inválido para preservar links existentes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const base = pm.environment.get(\"api_base\") || \"\";",
+          "const token = pm.environment.get(\"service_token\") || \"\";",
+          "const local = /^http:\\/\\/(localhost|127\\.0\\.0\\.1):8080$/.test(base);",
+          "if (!/^https:\\/\\/[^/]+$/.test(base) && !local) throw new Error(\"Use origem HTTPS ou localhost:8080.\");",
+          "if (pm.request.auth && pm.request.auth.type === \"bearer\" && !token) throw new Error(\"Preencha service_token nos valores locais do environment.\");"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 · Processo responde",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{api_base}}/v1/ping",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"API responde pong\", () => { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.eql(\"pong\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 · Diagnóstico exige token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{api_base}}/v1/status",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Diagnóstico sem token retorna 401\", () => { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 · Banco e Django operacionais",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{api_base}}/v1/status",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{service_token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Dependências operacionais\", () => { pm.response.to.have.status(200); const data = pm.response.json(); pm.expect(data.service).to.eql(\"palacio-mental-status\"); pm.expect(data.status).to.eql(\"operacional\"); pm.expect(data.dependencies.database.status).to.eql(\"operacional\"); pm.expect(data.dependencies.django_app.status).to.eql(\"operacional\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 · Consulta de resultados autenticada",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_base}}/v1/guardiao/links/results",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{service_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"link_ids\": []}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Consulta sem IDs retorna lista vazia\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.deep.eql([]); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 · Limite da avaliação de ameaças",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_base}}/v1/guardiao/links/threats",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{service_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"urls\": [\"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\", \"https://example.com\"]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Mais de seis URLs retorna 400\", () => { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

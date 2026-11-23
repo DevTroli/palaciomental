@@ -50,6 +50,14 @@ Use **dois membros distintos** na colaboração. O aluno deve participar da turm
 
 </details>
 
+## API Spring Boot
+
+Importe [coleção](palacio-mental-api.postman_collection.json) e [environment](palacio-mental-api.postman_environment.json). Selecione **P.M · API Spring Boot**, preencha `service_token` com o segredo do Guardião apenas no valor local e execute a coleção inteira.
+
+São cinco testes de processo, autenticação, dependências, resultados e limite de URLs. `api_base` aponta para a API HTTPS. Para desenvolvimento, use `http://localhost:8080`. O diagnóstico exige banco e Django operacionais. O token dá acesso às operações internas e deve ficar restrito à equipe.
+
+Esta coleção é executada manualmente no Postman ou Newman. A automação GitHub abaixo continua usando os IDs das três jornadas institucionais.
+
 ## Executar pelo GitHub
 
 Em **Actions → Postman · Jornadas do MVP → Run workflow**, selecione `main` e autorize os dados de teste. A execução manual roda as três coleções da web e publica resultados no Postman.
