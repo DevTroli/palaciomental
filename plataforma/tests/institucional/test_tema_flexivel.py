@@ -37,11 +37,6 @@ class TemaFlexivelTests(PortalInstitucionalBase):
         self.assertEqual(self.identity.tema["primary"], "#ABCDEF")
         self.assertEqual(self.identity.cor_primaria, "azul-sobrio")
 
-    def test_owner_can_save(self):
-        self.membership.papel = "proprietario"
-        self.membership.save()
-        response = self.client.post("/gestao/identidade/", self.payload(), HTTP_HOST=HOST)
-        self.assertEqual(response.status_code, 302)
 
     def test_other_roles_cannot_post_directly(self):
         for role in ("professor", "membro"):

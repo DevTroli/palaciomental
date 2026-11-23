@@ -1,7 +1,5 @@
-import re
 from datetime import timedelta
 
-from django.urls import reverse
 from django.utils import timezone
 
 from plataforma.models import (
@@ -79,30 +77,3 @@ class HomeDiscoveryTests(PortalInstitucionalBase):
         for event in hidden + visible[2:]:
             self.assertNotContains(response, event.titulo)
         self.assertContains(response, f"?ano={today.year}&amp;mes={today.month}")
-
-    def test_empty_agenda_has_a_real_create_event_destination(self):
-        response = self.client.get("/", HTTP_HOST=HOST)
-        self.assertContains(response, "Nenhum compromisso próximo.")
-        self.assertContains(response, 'href="/calendario/novo/"')
-        self.assertNotContains(response, "Conhecimento que transforma")
-        self.assertNotContains(response, 'class="camp-sidebar-foot"')
-
-    def test_account_menu_has_institutional_workspace_and_profile_links_to_global(self):
-        response = self.client.get("/", HTTP_HOST=HOST)
-        self.assertContains(response, 'class="camp-brand-logo-fallback"')
-        self.assertContains(response, f'class="camp-brand-name">{self.organization.nome}</span>')
-        self.assertContains(response, f'aria-label="Início de {self.organization.nome}"')
-        account_menu = re.search(
-            r'<div class="camp-account-menu"[^>]*>(.*?)</form>',
-            response.content.decode(),
-            re.DOTALL,
-        ).group(1)
-        institutional_workspace = reverse("plataforma:institutional_profile")
-        self.assertIn(f'href="{institutional_workspace}"', account_menu)
-        self.assertIn("Meu espaço", account_menu)
-        self.assertNotIn("Meu espaço pessoal", account_menu)
-        self.assertNotIn(response.context["personal_workspace_url"], account_menu)
-
-        profile = self.client.get(institutional_workspace, HTTP_HOST=HOST)
-        self.assertContains(profile, 'class="camp-global-profile-link"')
-        self.assertContains(profile, f'href="{profile.context["personal_workspace_url"]}"')

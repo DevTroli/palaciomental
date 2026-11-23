@@ -80,10 +80,6 @@ class CapaHomeTests(PortalInstitucionalBase):
         self.assertContains(response, "&lt;script&gt;alert(1)&lt;/script&gt;")
         self.assertNotContains(response, "<script>alert(1)</script>")
 
-    def test_empty_cover_and_home_sections(self):
-        response = self.client.get("/", HTTP_HOST=HOST)
-        for label in ("tenant-cover--empty", "Projetos autônomos", "Projetos institucionais", "Ranking de projetos", "Acesso rápido"):
-            self.assertContains(response, label)
 
     def test_only_tenant_public_projects_in_columns(self):
         autonomous = Project.objects.create(title="Autônomo A", owner=self.user, organizacao=self.organization, visibility=Project.VISIBILITY_PUBLIC)

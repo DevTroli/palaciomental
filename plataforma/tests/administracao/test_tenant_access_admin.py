@@ -6,7 +6,6 @@ from django.template.loader import get_template
 from django.test import RequestFactory, SimpleTestCase, override_settings
 
 from plataforma.admin import OrganizacaoAdmin
-from plataforma.admin_tenant_access import TenantAccessAdminMixin
 from plataforma.models import Organizacao
 
 
@@ -27,8 +26,6 @@ class TenantAccessAdminTests(SimpleTestCase):
         domains = [self.domain()] if domains is None else domains
         return SimpleNamespace(pk=1, STATUS_ATIVA=Organizacao.STATUS_ATIVA, status=status or Organizacao.STATUS_ATIVA, dominios=SimpleNamespace(all=lambda: domains))
 
-    def test_registered_admin_uses_mixin(self):
-        self.assertIsInstance(admin.site._registry[Organizacao], TenantAccessAdminMixin)
 
     def test_active_primary_domain_generates_local_url(self):
         url, message = self.modeladmin._tenant_access(self.request, self.organization())

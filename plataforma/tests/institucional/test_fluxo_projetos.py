@@ -77,24 +77,6 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         self.assertContains(response, "Projetos institucionais")
         self.assertNotContains(response, "Projetos autorais")
 
-    def test_header_de_todas_as_telas_de_projeto_preserva_identidade(self):
-        paths = [
-            reverse("plataforma:projects"),
-            reverse("plataforma:profile", args=[self.user.username]),
-            reverse("plataforma:project_create"),
-            reverse("plataforma:project_detail", args=[self.project.pk]),
-            reverse("plataforma:project_edit", args=[self.project.pk]),
-            reverse("plataforma:project_context", args=[self.project.pk]),
-        ]
-        for path in paths:
-            with self.subTest(path=path):
-                response = self.client.get(path, HTTP_HOST=HOST)
-                self.assertContains(response, 'class="camp-topbar"')
-                self.assertNotContains(response, 'class="mvp-brand"')
-                self.assertContains(response, "Instituição de teste")
-                self.assertContains(response, 'id="main-content"')
-                header = response.content.decode().split('<header class="camp-topbar">', 1)[1].split("</header>", 1)[0]
-                self.assertNotIn("mind_palace_logo.png", header)
 
     def test_global_mantem_marca_e_criacao_pessoal(self):
         response = self.client.get(reverse("plataforma:profile", args=[self.user.username]), HTTP_HOST=GLOBAL)

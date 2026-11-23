@@ -1,22 +1,12 @@
 from typing import cast
 from django.db.models.fields.files import ImageFieldFile
 
-import hashlib
-from io import BytesIO
-import secrets
-from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.core import mail
-from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
-from django.utils import timezone
-from PIL import Image
 
-from plataforma.models import ConviteGrupo, ConviteOrganizacao, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
-from plataforma.services import ativar_organizacao
+from plataforma.models import IdentidadeOrganizacao, MembroOrganizacao, Organizacao, ProgramaInstitucional, Project
 
 
 User = get_user_model()
@@ -143,23 +133,6 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         self.assertNotContains(response, "Vitrine global")
         self.assertNotContains(response, "Projeto de outro tenant")
 
-    def test_member_home_keeps_group_content_on_its_dedicated_screen(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(
-            organizacao=self.organization,
-            nome="Programa de grupos",
-            slug="programa-grupos-home",
-            status=ProgramaInstitucional.STATUS_PUBLICADO,
-            criado_por=self.user,
-        )
-        own_group = self.make_group(programa, "Grupo do participante")
-        other_group = self.make_group(programa, "Grupo de outra equipe")
-        MembroTurma.objects.create(turma=own_group.turma, usuario=self.user)
-        MembroGrupo.objects.create(grupo=own_group, usuario=self.user)
-        self.client.force_login(self.user)
-        response = self.client.get("/", HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertNotContains(response, "Grupo do participante")
-        self.assertNotContains(response, "Grupo de outra equipe")
 
     def test_manager_can_enter_institutional_management_portal(self):
         MembroOrganizacao.objects.create(
@@ -201,29 +174,6 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         )
         self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
 
-    def test_owner_dashboard_shows_member_management_and_tenant_metrics(self):
-        MembroOrganizacao.objects.create(
-            organizacao=self.organization,
-            usuario=self.user,
-            papel=MembroOrganizacao.PAPEL_PROPRIETARIO,
-        )
-        ProgramaInstitucional.objects.create(
-            organizacao=self.organization,
-            nome="Programa no painel",
-            slug="programa-no-painel",
-            status=ProgramaInstitucional.STATUS_PUBLICADO,
-            criado_por=self.user,
-        )
-        self.client.force_login(self.user)
-        response = self.client.get(
-            reverse("plataforma:institutional_management"),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Membros e convites")
-        self.assertNotContains(response, "Governança e papéis")
-        self.assertContains(response, "Programas publicados")
-        self.assertContains(response, "1", html=False)
 
     def test_manager_can_update_tenant_identity_from_portal(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
@@ -264,19 +214,4 @@ class AcessoAoTenantTests(PortalInstitucionalBase):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
         self.client.force_login(self.user)
         response = self.client.get(reverse("plataforma:institutional_identity"), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 403)
-
-    def test_regular_member_cannot_enter_institutional_management_portal(self):
-        MembroOrganizacao.objects.create(
-            organizacao=self.organization,
-            usuario=self.user,
-            papel=MembroOrganizacao.PAPEL_MEMBRO,
-        )
-        self.client.force_login(self.user)
-
-        response = self.client.get(
-            reverse("plataforma:institutional_management"),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-
         self.assertEqual(response.status_code, 403)

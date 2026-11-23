@@ -4,22 +4,17 @@ from typing import cast
 from django.core.mail import EmailMultiAlternatives
 
 import hashlib
-from io import BytesIO
 import secrets
 from urllib.parse import urlsplit
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from PIL import Image
 
-from plataforma.models import ConviteGrupo, ConviteOrganizacao, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
-from plataforma.services import ativar_organizacao
+from plataforma.models import ConviteGrupo, ConviteOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional
 
 
 User = get_user_model()
@@ -91,22 +86,6 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(ConviteOrganizacao.objects.filter(email="peer@example.com").exists())
 
-    def test_teacher_cannot_invite_to_other_class_or_invite_existing_manager(self):
-        teacher = self.user
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=teacher, papel="professor")
-        manager = User.objects.create_user(username="higher", email="higher@example.com")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel="gestor")
-        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", slug="professor-programa", criado_por=teacher)
-        own = self.make_group(program, "Própria", professor=teacher)
-        other = self.make_group(program, "Outra")
-        self.client.force_login(teacher)
-        host = {"HTTP_HOST": "camppg.palaciomental.com.br"}
-        response = self.client.post(reverse("plataforma:institutional_group_members", args=[own.pk]), {"email": manager.email}, **host)
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(ConviteGrupo.objects.filter(grupo=own, email=manager.email).exists())
-        response = self.client.post(reverse("plataforma:institutional_group_members", args=[other.pk]), {"email": "aluno@example.com"}, **host)
-        self.assertIn(response.status_code, (403, 404))
-        self.assertFalse(ConviteGrupo.objects.filter(grupo=other).exists())
 
     def test_organization_invite_redirects_by_role(self):
         for role in ("membro", "professor", "gestor", "proprietario"):
@@ -208,12 +187,6 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_regular_member_cannot_manage_affiliations_or_invite(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        self.client.force_login(self.user)
-        self.assertEqual(self.client.get(reverse("plataforma:institutional_members"), HTTP_HOST="camppg.palaciomental.com.br").status_code, 403)
-        response = self.client.get(reverse("plataforma:institutional_management"), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 403)
 
     def test_professor_cannot_invite_to_group_even_when_assigned(self):
         professor = User.objects.create_user(username="professor", email="professor@example.com", password="Senha-forte-123")

@@ -20,6 +20,7 @@ User = get_user_model()
 
 
 @override_settings(
+    PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"],
     ALLOWED_HOSTS=["testserver", ".palaciomental.com.br", ".app.github.dev"],
     PALACIO_BASE_DOMAIN="palaciomental.com.br",
     TENANT_RESERVED_HOSTS=["www", "api", "status", "admin", "app"],

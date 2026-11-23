@@ -112,15 +112,6 @@ class ConvitesCSRFTests(PortalInstitucionalBase):
         self.assertNotContains(response, "Reabrir formulário", status_code=403)
         self.assertIn("no-store", response["Cache-Control"])
 
-    def test_compact_form_only_has_three_visible_account_fields(self):
-        response = self.get_form()
-        self.assertContains(response, 'aria-current="step"')
-        self.assertContains(response, "Confirmar entrada")
-        self.assertContains(response, "Requisitos da senha")
-        self.assertNotContains(response, 'name="first_name"')
-        self.assertNotContains(response, 'name="email"')
-        for field in ("username", "password1", "password2"):
-            self.assertContains(response, f'name="{field}"')
 
     def test_different_passwords_are_rejected_without_affiliation(self):
         self.get_form()

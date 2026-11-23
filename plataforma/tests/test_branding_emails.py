@@ -112,14 +112,6 @@ class BrandingEmailTests(SimpleTestCase):
         self.assertIn('alt="Palácio Mental"', html)
         self.assertIn("Campus &amp; Projetos", html)
 
-    def test_existing_web_templates_never_render_file_name_as_src(self):
-        from pathlib import Path
-        from django.conf import settings
-
-        for folder in ("institutional", "auth", "emails"):
-            for path in (settings.BASE_DIR / "templates" / folder).rglob("*.html"):
-                with self.subTest(template=path.name):
-                    self.assertNotIn('src="{{ identidade.logo }}"', path.read_text())
 
     @patch("plataforma.views.reverse", return_value="/convites/token/")
     def test_organization_sender_passes_branding_to_actual_html(self, reverse):

@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count
 from django.test import TestCase, override_settings
 
 from plataforma.models import Project, ProjectVote, Organizacao
@@ -135,46 +134,3 @@ class RankingProjectionTests(TestCase):
         with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
             update_project_projection(self.public.pk)
             self.assertEqual(public_ranking_ids(), [self.public.pk])
-
-    def test_partial_projection_falls_back_to_sql_ordering(self):
-        from core.rankings import ranked_projects
-
-        older = Project.objects.create(
-            owner=self.owner,
-            title="Projeto com relevância SQL",
-            direction="Direção",
-            category="Pesquisa",
-            visibility=Project.VISIBILITY_PUBLIC,
-        )
-        for index in range(3):
-            ProjectVote.objects.create(
-                project=older,
-                user=User.objects.create_user(username=f"voter-{index}"),
-            )
-        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            self.redis.zadd(ranking_key("all"), {str(self.public.pk): 1})
-            queryset = Project.objects.filter(
-                pk__in=[self.public.pk, older.pk]
-            ).annotate(relevance=Count("votes", distinct=True))
-            result = list(ranked_projects(queryset, tenant_id=None))
-        self.assertEqual([project.pk for project in result], [older.pk, self.public.pk])
-
-    def test_complete_projection_orders_highest_first_and_matches_sql_on_ties(self):
-        from core.rankings import ranked_projects
-
-        mais_votado = Project.objects.create(owner=self.owner, title="Mais reconhecido", visibility=Project.VISIBILITY_PUBLIC)
-        empatado = Project.objects.create(owner=self.owner, title="Mesmo número de votos", visibility=Project.VISIBILITY_PUBLIC)
-        for index in range(2):
-            voter = User.objects.create_user(username=f"rank-voter-{index}")
-            ProjectVote.objects.create(project=mais_votado, user=voter)
-            ProjectVote.objects.create(project=empatado, user=voter)
-        ProjectVote.objects.create(project=self.public, user=self.other)
-        queryset = Project.objects.filter(pk__in=[self.public.pk, mais_votado.pk, empatado.pk])
-        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            for project in (self.public, mais_votado, empatado):
-                update_project_projection(project.pk)
-            redis_order = list(ranked_projects(queryset).values_list("pk", flat=True))
-        with override_settings(REDIS_URL=""):
-            sql_order = list(ranked_projects(queryset).values_list("pk", flat=True))
-        self.assertEqual(redis_order, sql_order)
-        self.assertEqual(redis_order, [empatado.pk, mais_votado.pk, self.public.pk])

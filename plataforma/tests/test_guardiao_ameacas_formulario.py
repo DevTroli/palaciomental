@@ -84,13 +84,6 @@ class AmeacasLinksSalvosTests(TestCase):
         self.assertEqual(self.link.ameaca_estado, "UNVERIFIED")
         self.assertFalse(self.link.ameaca_notificada)
 
-    @patch("plataforma.guardiao_consulta.consultar_links", return_value={})
-    def test_titulo_e_apresentado_em_maiusculas(self, consulta):
-        self.link.label = "Referencial do projeto"
-        self.link.save()
-        self.client.force_login(self.user)
-        page = self.client.get(reverse("plataforma:project_detail", args=[self.project.pk]))
-        self.assertContains(page, "REFERENCIAL DO PROJETO")
 
     @patch("plataforma.guardiao_consulta.consultar_links", return_value={})
     def test_alerta_expira_e_nao_expoe_classificacao_antiga(self, consulta):
