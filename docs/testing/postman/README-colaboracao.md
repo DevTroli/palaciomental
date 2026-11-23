@@ -1,4 +1,4 @@
-# Colaboração entre alunos no CAMPPG
+# CAMPPG - Colaboração
 
 A coleção testa um fluxo institucional entre duas contas de aluno: Troli publica
 um projeto, Carvalho comenta, reconhece relevância e pede para participar;
@@ -30,3 +30,15 @@ rodada antes de qualquer limpeza manual.
 O teste verifica se ambos entram no tenant, se o autor pode publicar buscando
 colaboradores, se o segundo aluno pode interagir, se o pedido fica associado à
 conta certa e se o autor consegue aceitar e excluir o projeto.
+
+Validada com Newman: 21 requisições enviadas e 37 asserções aprovadas. Os dois
+passos de reautenticação do encerramento são dispensados quando o autor já está
+autenticado. Ambos os logins esperam `/`. A criação usa `tipo_projeto=autonomo`,
+pois a turma não é obrigatória nesta jornada.
+
+
+Versão sincronizada no workspace PalacioMental como **CAMPPG - Colaboração**.
+O modelo **CAMP-PG · Colaboração** foi publicado com senhas vazias: preencha
+somente os valores locais. Usa `tenant_a_base`; `global_base` não é mais usado.
+
+[Execução validada no Postman](https://go.postman.co/workspace/93cde965-fda5-4c07-b79b-7966778b859e/run/30871897-f23328f0-a15c-4dbd-bb24-ebda0a95a1a5)

@@ -15,35 +15,34 @@ function guard(prefix, {env = {}, local = {}, method = "POST", url = "https://ca
 }
 const approved = {allow_writes: "true", approved_write_hosts: "camppg.palaciomental.com.br"};
 test("todos os scripts compilam; tenant é primeiro e contexto é relido", () => {
-  assert.match(main.item[0].name, /^20/);
+  assert.equal(main.item.length, 1);
+  assert.equal(main.item[0].name, "10 - FLUXO DE USO PRINCIPAL");
   for (const c of [main, collab, institutional]) for (const item of items(c)) for (const event of item.event) new Function(event.script.exec.join("\n"));
-  assert.match(find("20.7").request.url, /\/contexto\/$/);
-  assert.match(find("10.6").request.url, /\/contexto\/$/);
+  assert.match(find("10.7").request.url, /\/contexto\/$/);
 });
 test("tenant B desligado é pulado antes da validação de host", () => {
-  const out = guard("20.11", {env: approved, local: {project_inst_id: "1"}, url: "https://homolog-b.palaciomental.com.br/entrar/"});
+  const out = guard("10.11", {env: approved, local: {project_inst_id: "1"}, url: "https://homolog-b.palaciomental.com.br/entrar/"});
   assert.equal(out.skipped, true); assert.deepEqual(out.failures, []); assert.equal(out.next, undefined);
 });
-test("público é opcional e escrita não autorizada continua bloqueada", () => {
-  assert.equal(guard("10.2", {env: approved}).skipped, true);
-  const bad = guard("20.2", {env: approved, url: "https://outro.example/entrar/"});
+test("escrita não autorizada continua bloqueada", () => {
+  const bad = guard("10.2", {env: approved, url: "https://outro.example/entrar/"});
   assert.equal(bad.skipped, true); assert.equal(bad.next, null); assert.equal(bad.failures.length, 1);
-  assert.equal(guard("20.2", {env: approved}).skipped, false);
-  assert.equal(guard("20.2").skipped, true);
+  assert.equal(guard("10.2", {env: approved}).skipped, false);
+  assert.equal(guard("10.2").skipped, true);
 });
 test("turma e orientador ausentes impedem POST de projeto vinculado", () => {
   const local = {auth_membro: true};
-  assert.equal(guard("20.5", {env: approved, local}).failures.length, 1);
-  assert.equal(guard("20.5", {env: {...approved, turma_id: "uuid", orientador_id: "1"}, local}).skipped, false);
+  assert.equal(guard("10.5", {env: approved, local}).failures.length, 1);
+  assert.equal(guard("10.5", {env: {...approved, turma_id: "uuid", orientador_id: "1"}, local}).skipped, false);
 });
 test("sessão e ID continuam obrigatórios antes do POST", () => {
-  assert.equal(guard("20.6", {env: approved}).skipped, true);
-  assert.equal(guard("20.6", {env: approved, local: {auth_membro: true, project_inst_id: "1"}}).skipped, false);
+  assert.equal(guard("10.6", {env: approved}).skipped, true);
+  assert.equal(guard("10.6", {env: approved, local: {auth_membro: true, project_inst_id: "1"}}).skipped, false);
 });
 test("persistência verifica category e tags por nome e valor, independente da ordem dos atributos", () => {
   for (const [body, errors] of [[`<input value="QA-PM" name="category"><input name="tags" value="qa"><input name="csrfmiddlewaretoken" value="tok">`, 0], [`<input name="category" value="outra"><input name="tags" value="qa"><input name="csrfmiddlewaretoken" value="tok">`, 1]]) {
     let failures = 0;
     const pm = {response: {text: () => body, to: {have: {status: n => assert.equal(n, 200)}}}, variables: {set: () => {}}, execution: {setNextRequest: () => {}}, test: (_name, fn) => {try {fn();} catch {failures++;}}, expect: value => ({to: {eql: expected => assert.equal(value, expected)}, not: {to: {equal: expected => assert.notEqual(value, expected)}}})};
-    runInNewContext(find("20.7").event[1].script.exec.join("\n"), {pm}); assert.equal(failures, errors);
+    runInNewContext(find("10.7").event[1].script.exec.join("\n"), {pm}); assert.equal(failures, errors);
   }
 });

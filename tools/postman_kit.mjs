@@ -20,7 +20,6 @@ function requestGuard(cfg) {
   const enabled = key => pm.environment.get(key) === "true";
   const skip = () => { pm.execution.skipRequest(); return false; };
   function scenarioAllowed() {
-    if (cfg.personal && !enabled("allow_personal")) return false;
     if (cfg.gate && !enabled(cfg.gate)) return false;
     if (cfg.skipWhen && local(cfg.skipWhen) === true) return false;
     if (cfg.auth && local(cfg.auth) !== true) return false;
@@ -73,15 +72,14 @@ export class Builder {
   }
   add(name, path, {method = "GET", fields, code = "", gate = "", auth = "", need = "", skipWhen = "", base = "tenant_a_base", fail} = {}) {
     const main = this.namespace === "palacio-mental";
-    const personal = main && name.startsWith("10.");
-    const linked = main && name.startsWith("20.5 ");
-    if (main && (name.startsWith("10.6 ") || name.startsWith("20.7 "))) {
+    const linked = main && name.startsWith("10.5 ");
+    if (main && name.startsWith("10.7 ")) {
       path += "contexto/";
       code = `(${assertContext.toString()})();\n${csrf}`;
     }
     const target = fail === undefined ? this.fail : JSON.stringify(fail);
     const fill = text => text.replaceAll("__CSRF__", `csrf_${base.replace("_base", "")}`).replaceAll("__FAIL__", target);
-    const cfg = {personal, linked, gate, auth, need, skipWhen};
+    const cfg = {linked, gate, auth, need, skipWhen};
     const pre = `(${requestGuard.toString()})(${JSON.stringify(cfg)});`;
     this.folder.item.push({id: this.id(name), name,
       request: {method, url: `{{${base}}}${path}`,
@@ -90,11 +88,6 @@ export class Builder {
       protocolProfileBehavior: {followRedirects: false}, event: [script("prerequest", pre), script("test", fill(code))]});
   }
   write(file, defaults, secrets, reset) {
-    const main = this.namespace === "palacio-mental";
-    if (main) {
-      defaults = {...defaults, tenant_a_base: "https://camppg.palaciomental.com.br", allow_personal: "false"};
-      this.folders.sort((a, b) => Number(b.name.startsWith("20")) - Number(a.name.startsWith("20")));
-    }
     // Inicializar apenas uma vez por execução, inclusive ao rodar uma pasta isolada.
     const init = cfg => {
       if (pm.variables.get("pm_run_namespace") === cfg.namespace) return;

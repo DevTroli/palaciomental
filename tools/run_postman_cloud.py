@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 COLLECTIONS = {
     "palacio-mental-institucional": "30871897-8c01abc6-db4d-4d37-89f3-8930455c98cd",
     "palacio-mental": "30871897-c72d6a1a-9339-4824-a1be-e0da7dcc132b",
-    "palacio-mental-colaboracao": "30871897-8db0dc36-9007-40c2-b885-8106b80f566e",
+    "palacio-mental-colaboracao": "30871897-22c47f1c-5838-478f-a637-e5be16e79182",
 }
 REQUIRED = (
     "gestor_username", "gestor_password", "aluno_username", "aluno_password",
-    "professor_id", "turma_id", "orientador_id", "colab_display_name",
+    "professor_id", "turma_id", "orientador_id", "colab_display_name", "colab_username", "colab_password",
 )
 
 
@@ -23,16 +23,16 @@ def environment(name, credentials):
     path = ROOT / "docs/testing/postman" / f"{name}.postman_environment.json"
     doc = json.loads(path.read_text())
     values = dict(credentials)
-    for prefix in ("membro", "pessoal", "colab"):
+    for prefix in ("membro",):
         for field in ("username", "password"):
             values[f"{prefix}_{field}"] = credentials[f"aluno_{field}"]
     for field in ("username", "password"):
-        values[f"autor_{field}"] = credentials[f"gestor_{field}"]
+        values[f"autor_{field}"] = credentials[f"aluno_{field}"]
     values.update(
         global_base="https://palaciomental.com.br",
         tenant_a_base="https://camppg.palaciomental.com.br",
-        allow_writes="true", allow_personal="true", allow_isolation="false",
-        approved_write_hosts="camppg.palaciomental.com.br,palaciomental.com.br",
+        allow_writes="true", allow_isolation="false",
+        approved_write_hosts="camppg.palaciomental.com.br",
     )
     for entry in doc["values"]:
         if entry["key"] in values:

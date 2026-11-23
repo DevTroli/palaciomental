@@ -1,20 +1,19 @@
 // node tools/build_postman_collaboration.mjs
 import {Builder, status, redirect, csrf, login, form, projectCreated, detailPath, contextFields, deleteStep} from "./postman_kit.mjs";
 
-const b = new Builder("palacio-mental-colaboracao", "Palácio Mental · Colaboração entre alunos no CAMPPG",
+const b = new Builder("palacio-mental-colaboracao", "CAMPPG - Colaboração",
   "Jornada institucional com dois alunos afiliados: publicação, comentário, relevância, pedido, aceite e limpeza. Leia README-colaboracao.md.");
 const add = (name, path, options = {}) => b.add(name, path, {base: "tenant_a_base", ...options});
 const ID = "project_pub_id";
 const detail = `/projetos/{{${ID}}}/`;
 const cleanup = "40.1 · Formulário de login";
-const loginTarget = () => "/";
 const ok = label => status(200, label);
 const back = label => redirect(label, `pm.expect(path).to.eql(${detailPath(ID)});`);
 const loginPair = (prefix, user, pass, role, {first = false, skip = false} = {}) => {
   const opts = {need: first ? "" : ID, skipWhen: skip ? "auth_autor" : ""};
   add(`${prefix}.1 · Formulário de login`, "/entrar/", {...opts, code: `${ok("Login abre")}\n${csrf}`});
-  add(`${prefix}.2 · Entrar`, "/entrar/", {...opts, method: "POST", fields: login(user, pass), code: `${redirect("Login conclui no destino esperado", `pm.expect(path).to.eql(${JSON.stringify(loginTarget(role))});`)}
-const authenticated = pm.response.code === 302 && path === ${JSON.stringify(loginTarget(role))};
+  add(`${prefix}.2 · Entrar`, "/entrar/", {...opts, method: "POST", fields: login(user, pass), code: `${redirect("Login conclui no destino esperado", `pm.expect(path).to.eql(${JSON.stringify("/")});`)}
+const authenticated = pm.response.code === 302 && path === ${JSON.stringify("/")};
 pm.variables.set("auth_autor", authenticated && ${role === "autor"});
 pm.variables.set("auth_colab", authenticated && ${role === "colab"});
 if (!authenticated) pm.execution.setNextRequest(__FAIL__);`});
@@ -23,7 +22,7 @@ if (!authenticated) pm.execution.setNextRequest(__FAIL__);`});
 b.group("10 · Publicação", "Autor publica conteúdo sintético; autor não comenta nem vota no próprio projeto.", cleanup);
 loginPair("10", "autor_username", "autor_password", "autor", {first: true});
 add("10.3 · Formulário de projeto", "/projetos/novo/", {auth: "auth_autor", code: `${ok("Formulário abre")}\n${csrf}`});
-add("10.4 · Criar projeto", "/projetos/novo/", {auth: "auth_autor", method: "POST", fields: form({title: "{{titulo}}", direction: "Jornada de colaboração entre alunos do CAMPPG.", status: "ideia", visibility: "privado"}), code: projectCreated(ID)});
+add("10.4 · Criar projeto", "/projetos/novo/", {auth: "auth_autor", method: "POST", fields: form({title: "{{titulo}}", direction: "Jornada de colaboração entre alunos do CAMPPG.", status: "ideia", visibility: "privado", tipo_projeto: "autonomo"}), code: projectCreated(ID)});
 add("10.5 · Publicar buscando colaboradores", `${detail}contexto/`, {auth: "auth_autor", need: ID, method: "POST", fields: contextFields({visibility: "publico", seeking_collaborators: "on", collaboration_description: "Projeto institucional de teste, aberto somente durante a execução."}), code: back("Publicação aceita")});
 for (const [number, endpoint, fields, label] of [
   ["6", "comentarios", {content: "Comentário proibido do autor"}, "Autor não comenta o próprio projeto"],

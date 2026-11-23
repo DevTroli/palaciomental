@@ -44,6 +44,6 @@ class PostmanContractTests(SimpleTestCase):
 
     def test_deletion_is_limited_to_the_run_projects(self):
         deletes = [item for name in COLLECTIONS for item in self.load(name)[2] if "/excluir/" in item["request"]["url"]]
-        self.assertEqual(len(deletes), 7)
+        self.assertEqual(len(deletes), 6)
         for item in deletes:
             self.assertRegex(item["request"]["url"], r"\{\{(project_(pessoal|inst|pub)_id|project_id|group_id|class_id|program_id)\}\}")

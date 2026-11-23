@@ -15,7 +15,7 @@ class PostmanCloudTests(unittest.TestCase):
         credentials = {**self.credentials(), "tenant_a_base": "https://other.example", "allow_isolation": "true"}
         for name in runner.COLLECTIONS:
             entries = {v["key"]: v for v in runner.environment(name, credentials)["values"]}
-            self.assertEqual(entries["approved_write_hosts"]["value"], "camppg.palaciomental.com.br,palaciomental.com.br")
+            self.assertEqual(entries["approved_write_hosts"]["value"], "camppg.palaciomental.com.br")
             for key, entry in entries.items():
                 if key.endswith("_password"):
                     self.assertEqual(entry["type"], "secret")
