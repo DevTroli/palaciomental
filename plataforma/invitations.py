@@ -14,6 +14,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 
+from .auth_limits import limit_authentication
 from .account_identity import register_account
 from .forms import MemberCreationForm
 from .models import (
@@ -123,6 +124,7 @@ def _accept(invitation, user, kind):
 @never_cache
 @sensitive_post_parameters("password1", "password2")
 @require_http_methods(["GET", "POST"])
+@limit_authentication("invitation")
 def invitation_accept(request, token, kind):
     invitation = _invitation(request, token, kind)
     if request.user.is_authenticated and request.user.email.casefold() != invitation.email.casefold():
