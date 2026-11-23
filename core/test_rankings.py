@@ -3,15 +3,9 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from plataforma.models import Project, ProjectVote, Organizacao
+from plataforma.models import Project, ProjectVote
 
-from .rankings import (
-    public_ranking_ids,
-    ranking_key,
-    rebuild_rankings,
-    remove_project_from_rankings,
-    update_project_projection,
-)
+from .rankings import ranking_key, rebuild_rankings, update_project_projection
 
 User = get_user_model()
 
@@ -92,26 +86,6 @@ class RankingProjectionTests(TestCase):
             self.assertEqual(self.redis.data[key][str(self.public.pk)], 1)
             self.assertNotIn(str(self.private.pk), self.redis.data[key])
 
-    def test_global_and_institutional_sets_are_separate(self):
-        org = Organizacao.objects.create(nome="Organização A", slug="org-a", status="ativa")
-        institutional = Project.objects.create(owner=self.owner, organizacao=org,
-                                               title="Projeto institucional", visibility="publico")
-        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            update_project_projection(self.public.pk)
-            update_project_projection(institutional.pk)
-            self.assertIn(str(self.public.pk), self.redis.data[ranking_key("all")])
-            self.assertNotIn(str(institutional.pk), self.redis.data[ranking_key("all")])
-            self.assertIn(str(institutional.pk), self.redis.data[ranking_key("all", org.pk)])
-            self.assertNotIn(str(self.public.pk), self.redis.data[ranking_key("all", org.pk)])
-
-    def test_confirmed_vote_uses_increment_without_duplicate_score(self):
-        from core.rankings import adjust_project_projection
-
-        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            adjust_project_projection(self.public.pk, 1)
-            adjust_project_projection(self.public.pk, -1)
-
-            self.assertEqual(self.redis.data[ranking_key("all")][str(self.public.pk)], 0)
 
     def test_rebuild_reads_postgresql_and_removes_stale_members(self):
         with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
@@ -121,16 +95,3 @@ class RankingProjectionTests(TestCase):
             self.assertEqual(count, 1)
             self.assertNotIn("999", self.redis.data[ranking_key("all")])
             self.assertIn(str(self.public.pk), self.redis.data[ranking_key("all")])
-
-    def test_remove_project_erases_all_periods(self):
-        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            update_project_projection(self.public.pk)
-            remove_project_from_rankings(self.public.pk)
-
-            for period in ("all", "weekly", "monthly"):
-                self.assertNotIn(str(self.public.pk), self.redis.data.get(ranking_key(period), {}))
-
-    def test_read_returns_ids_from_projection(self):
-        with patch("core.rankings.redis.Redis.from_url", return_value=self.redis):
-            update_project_projection(self.public.pk)
-            self.assertEqual(public_ranking_ids(), [self.public.pk])

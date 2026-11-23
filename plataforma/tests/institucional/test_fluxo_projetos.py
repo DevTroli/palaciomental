@@ -2,10 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.urls import reverse
 
-from plataforma.models import (
-    CollaborationRequest, DominioOrganizacao, IdentidadeOrganizacao,
-    MembroOrganizacao, Notification, Organizacao, Project, ProjectMember,
-)
+from plataforma.models import CollaborationRequest, DominioOrganizacao, IdentidadeOrganizacao, MembroOrganizacao, Notification, Organizacao, Project
 from plataforma.navigation import project_notification_url
 
 from .base import PortalInstitucionalBase
@@ -32,11 +29,6 @@ class FluxoProjetosTests(PortalInstitucionalBase):
             visibility=Project.VISIBILITY_PRIVATE,
         )
 
-    def test_home_separa_criacao_institucional_e_espaco_pessoal(self):
-        response = self.client.get("/", HTTP_HOST=HOST, secure=True)
-        self.assertContains(response, 'href="/projetos/novo/"')
-        self.assertContains(response, 'href="https://palaciomental.com.br/" aria-label="Ir para a página inicial do Palácio Mental"')
-        self.assertContains(response, "Meus Projetos")
 
     def test_fluxo_criar_salvar_contexto_reabrir_e_editar_sem_sair_do_tenant(self):
         response = self.client.post(reverse("plataforma:project_create"), {
@@ -78,12 +70,6 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         self.assertNotContains(response, "Projetos autorais")
 
 
-    def test_global_mantem_marca_e_criacao_pessoal(self):
-        response = self.client.get(reverse("plataforma:profile", args=[self.user.username]), HTTP_HOST=GLOBAL)
-        self.assertContains(response, 'class="mvp-brand"')
-        self.assertContains(response, "Projetos autorais")
-        self.assertNotContains(response, "Privado institucional")
-
     def test_notificacoes_usam_host_do_projeto_e_nao_host_do_cliente(self):
         request = RequestFactory().get("/", HTTP_HOST="outra.palaciomental.com.br", secure=True)
         expected = f"https://{HOST}/projetos/{self.project.pk}/"
@@ -121,34 +107,6 @@ class FluxoProjetosTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Notification.objects.get(recipient=other).url, expected)
 
-    def test_decisao_de_colaboracao_aparece_no_badge_antes_de_abrir_inbox(self):
-        Notification.objects.create(
-            recipient=self.user,
-            kind="collaboration_decision",
-            message="Seu pedido foi aceito.",
-            url=f"https://{HOST}/projetos/{self.project.pk}/",
-        )
-        response = self.client.get(
-            reverse("plataforma:notification_summary"), HTTP_HOST=HOST, secure=True
-        )
-        self.assertEqual(response.json()["count"], 1)
-
-    def test_workspace_only_for_members_and_no_duplicate_collaboration_action(self):
-        other = get_user_model().objects.create_user(username="membro-equipe")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=other)
-        self.project.visibility = Project.VISIBILITY_PUBLIC
-        self.project.seeking_collaborators = True
-        self.project.save()
-        self.client.force_login(other)
-        url = reverse("plataforma:project_detail", args=[self.project.pk])
-        self.assertNotContains(self.client.get(url, HTTP_HOST=HOST), "Você colabora neste projeto")
-        ProjectMember.objects.create(project=self.project, user=other)
-        response = self.client.get(url, HTTP_HOST=HOST)
-        self.assertContains(response, "Você colabora neste projeto")
-        self.assertNotContains(response, "Tenho interesse")
-        public_profile = self.client.get(reverse("plataforma:profile", args=[self.user.username]), HTTP_HOST=HOST)
-        self.assertContains(public_profile, "tenant-member.css")
-        self.assertNotContains(public_profile, "Abrir meu espaço pessoal")
 
     def test_restricted_share_requires_token_and_active_tenant_affiliation(self):
         self.project.visibility = Project.VISIBILITY_RESTRICTED

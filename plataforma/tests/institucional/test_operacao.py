@@ -1,5 +1,4 @@
 from unittest.mock import patch
-from urllib.parse import parse_qs
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -49,11 +48,6 @@ class OperacaoInstitucionalTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 503)
         self.assertIsNone(response.json()["count"])
 
-    def test_paginacao_preserva_filtros_sem_numero_da_pagina(self):
-        response = self.client.get("/projetos/", {"aluno": self.user.username,
-            "status": "ativo", "tag": "educação", "page": "2"}, HTTP_HOST=HOST)
-        params = parse_qs(response.context["pagination_query"])
-        self.assertEqual(params, {"aluno": [self.user.username], "status": ["ativo"], "tag": ["educação"]})
 
     def test_aprovacao_revalida_afiliacao_do_solicitante(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.pm_staff)

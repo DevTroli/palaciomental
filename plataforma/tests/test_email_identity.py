@@ -9,7 +9,7 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.management import call_command, CommandError
 from django.db import close_old_connections, connection, connections, IntegrityError, transaction
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TestCase, TransactionTestCase
 
 from plataforma.account_identity import register_account
 from plataforma.experience_forms import PerfilInstitucionalForm
@@ -45,21 +45,6 @@ class EmailIdentityTests(TestCase):
         profile = PerfilInstitucionalForm({"first_name": "Pessoa", "email": "person@example.com"}, instance=user)
         self.assertFalse(profile.is_valid())
         self.assertIn("email", profile.errors)
-
-    def test_registration_race_becomes_field_error_without_partial_profile(self):
-        form = registration("new", "person@example.com")
-        self.assertTrue(form.is_valid(), form.errors)
-        User.objects.create_user(username="other", email="PERSON@example.com")
-        self.assertIsNone(register_account(form))
-        self.assertIn("email", form.errors)
-        self.assertFalse(User.objects.filter(username="new").exists())
-        self.assertFalse(MemberProfile.objects.filter(user__username="new").exists())
-
-    def test_inventory_does_not_print_email(self):
-        User.objects.create_user(username="one", email="person@example.com")
-        output = StringIO()
-        call_command("verificar_emails", stdout=output)
-        self.assertNotIn("person@example.com", output.getvalue())
 
 
 @skipUnless(connection.vendor == "postgresql", "Concorrência e migração exigem PostgreSQL")

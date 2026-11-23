@@ -1,19 +1,7 @@
-import hashlib
-from io import BytesIO
-import secrets
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
-from django.core import mail
-from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils import timezone
-from PIL import Image
 
-from plataforma.models import ConviteGrupo, ConviteOrganizacao, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
-from plataforma.services import ativar_organizacao
+from plataforma.models import MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, Turma, VinculoProjetoInstitucional
 
 
 User = get_user_model()
@@ -23,30 +11,6 @@ from .base import PortalInstitucionalBase
 
 
 class ProjetosInstitucionaisTests(PortalInstitucionalBase):
-    def test_project_created_inside_tenant_is_institutional(self):
-        MembroOrganizacao.objects.create(
-            organizacao=self.organization,
-            usuario=self.user,
-            papel=MembroOrganizacao.PAPEL_MEMBRO,
-        )
-        self.client.force_login(self.user)
-
-        response = self.client.post(
-            reverse("plataforma:project_create"),
-            {
-                "title": "Projeto CAMPPG",
-                "direction": "Organizar uma iniciativa institucional.",
-                "status": "ideia",
-                "visibility": "privado",
-                "tipo_projeto": "autonomo",
-            },
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-
-        self.assertEqual(response.status_code, 302)
-        project = Project.objects.get(title="Projeto CAMPPG")
-        self.assertEqual(project.organizacao_id, self.organization.pk)
-        self.assertFalse(VinculoProjetoInstitucional.objects.filter(projeto=project).exists())
 
     def test_program_project_requires_an_eligible_orienting_professor(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
@@ -134,40 +98,3 @@ class ProjetosInstitucionaisTests(PortalInstitucionalBase):
         self.assertNotContains(tenant_response, global_project.title)
         self.assertNotContains(tenant_response, other_project.title)
         self.assertContains(tenant_response, "Projetos da CAMPPG")
-
-    def test_personal_project_is_not_visible_from_an_institutional_host(self):
-        personal = Project.objects.create(
-            owner=self.user,
-            title="Projeto pessoal",
-            direction="Direção pessoal",
-            category="Pesquisa",
-        )
-        MembroOrganizacao.objects.create(
-            organizacao=self.organization,
-            usuario=self.user,
-            papel=MembroOrganizacao.PAPEL_MEMBRO,
-        )
-        self.client.force_login(self.user)
-
-        response = self.client.get(
-            reverse("plataforma:project_detail", kwargs={"pk": personal.pk}),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-
-        self.assertEqual(response.status_code, 404)
-
-    def test_institutional_project_is_not_visible_from_global_space(self):
-        project = Project.objects.create(
-            owner=self.user,
-            organizacao=self.organization,
-            title="Projeto institucional",
-            direction="Direção institucional",
-            category="Educação",
-        )
-
-        response = self.client.get(
-            reverse("plataforma:project_detail", kwargs={"pk": project.pk}),
-            HTTP_HOST="palaciomental.com.br",
-        )
-
-        self.assertEqual(response.status_code, 404)

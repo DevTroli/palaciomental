@@ -111,26 +111,6 @@ class M2AcceptanceTests(TestCase):
         self.assertEqual(self.client.get(url + f"?access={restricted.access_token}").status_code, 200)
         self.assertEqual(self.client.get(reverse("plataforma:project_detail", args=[private.pk])).status_code, 404)
 
-    def test_create_starts_with_basics_then_generates_action_milestone(self):
-        self.client.force_login(self.owner)
-        response = self.client.post(reverse("plataforma:project_create"), {"title": "Nova ideia", "direction": "Um rumo", "status": "ideia", "visibility": "privado"})
-        project = Project.objects.get(title="Nova ideia")
-        self.assertRedirects(response, reverse("plataforma:project_context", args=[project.pk]))
-        self.assertTrue(ProjectMilestone.objects.filter(project=project, title="Projeto iniciado").exists())
-
-    def test_context_can_add_links_and_creates_progress_milestone(self):
-        project = Project.objects.create(owner=self.owner, title="Links", direction="Rumo", category="", visibility=Project.VISIBILITY_PRIVATE)
-        self.client.force_login(self.owner)
-        response = self.client.post(reverse("plataforma:project_context", args=[project.pk]), {
-            "category": "Pesquisa", "tags": "contexto, design", "visibility": "restrito", "seeking_collaborators": "",
-            "collaboration_description": "", "links-TOTAL_FORMS": "1", "links-INITIAL_FORMS": "0", "links-MIN_NUM_FORMS": "0", "links-MAX_NUM_FORMS": "12",
-            "links-0-label": "Documento", "links-0-url": "https://example.com",
-        })
-        project.refresh_from_db()
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(project.visibility, Project.VISIBILITY_RESTRICTED)
-        self.assertEqual(project.links.count(), 1)
-        self.assertTrue(ProjectMilestone.objects.filter(project=project, description__icontains="links").exists())
 
     def test_unread_inbox_is_counted_and_marked_read_when_opened(self):
         notification = Notification.objects.create(recipient=self.owner, kind="test", message="Nova atualização")

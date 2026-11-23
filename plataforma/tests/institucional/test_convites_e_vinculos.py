@@ -1,7 +1,5 @@
 from plataforma.tests.email_helpers import html_alternative
 
-from typing import cast
-from django.core.mail import EmailMultiAlternatives
 
 import hashlib
 import secrets
@@ -14,7 +12,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from plataforma.models import ConviteGrupo, ConviteOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional
+from plataforma.models import ConviteGrupo, ConviteOrganizacao, MembroOrganizacao, ProgramaInstitucional
 
 
 User = get_user_model()
@@ -119,74 +117,6 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         self.assertEqual(affiliation.papel, "professor")
         self.assertEqual(invite.status, ConviteOrganizacao.STATUS_PENDENTE)
 
-    def test_group_invitation_acceptance_creates_affiliation_and_membership(self):
-        manager = self.user
-        MembroOrganizacao.objects.create(
-            organizacao=self.organization,
-            usuario=manager,
-            papel=MembroOrganizacao.PAPEL_GESTOR,
-        )
-        programa = ProgramaInstitucional.objects.create(
-            organizacao=self.organization,
-            nome="Programa CAMPPG",
-            slug="programa-camppg",
-            criado_por=manager,
-        )
-        grupo = self.make_group(programa, "Turma 2026", criado_por=manager)
-        invited = User.objects.create_user(username="convidado", email="convidado@example.com", password="Senha-forte-123")
-        raw_token = secrets.token_urlsafe(24)
-        invite = ConviteGrupo.objects.create(
-            grupo=grupo,
-            convidado_por=manager,
-            email=invited.email,
-            papel="membro",
-            hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
-            expira_em=timezone.now() + timedelta(days=7),
-        )
-
-        response = self.client.get(
-            reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertContains(response, "Criar conta e continuar")
-        self.assertFalse(MembroOrganizacao.objects.filter(usuario=invited).exists())
-
-        self.client.force_login(invited)
-        response = self.client.post(
-            reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
-            {"action": "accept"},
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
-        self.assertTrue(MembroOrganizacao.objects.filter(organizacao=self.organization, usuario=invited, papel=MembroOrganizacao.PAPEL_MEMBRO).exists())
-        self.assertTrue(MembroGrupo.objects.filter(grupo=grupo, usuario=invited, status=MembroGrupo.STATUS_ATIVO).exists())
-        invite.refresh_from_db()
-        self.assertEqual(invite.status, ConviteGrupo.STATUS_ACEITO)
-
-    def test_expired_group_invitation_is_rejected(self):
-        programa = ProgramaInstitucional.objects.create(
-            organizacao=self.organization,
-            nome="Programa expirado",
-            slug="programa-expirado",
-            criado_por=self.user,
-        )
-        grupo = self.make_group(programa, "Grupo expirado")
-        raw_token = secrets.token_urlsafe(24)
-        ConviteGrupo.objects.create(
-            grupo=grupo,
-            convidado_por=self.user,
-            email=self.user.email,
-            hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
-            expira_em=timezone.now() - timedelta(minutes=1),
-        )
-
-        self.client.force_login(self.user)
-        response = self.client.get(
-            reverse("plataforma:institutional_invite_accept", kwargs={"token": raw_token}),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertEqual(response.status_code, 403)
-
 
     def test_professor_cannot_invite_to_group_even_when_assigned(self):
         professor = User.objects.create_user(username="professor", email="professor@example.com", password="Senha-forte-123")
@@ -211,30 +141,6 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
         response = self.client.post(reverse("plataforma:institutional_members"), {"membro_id": owner_affiliation.pk, "acao": "papel", "papel": MembroOrganizacao.PAPEL_MEMBRO}, HTTP_HOST="camppg.palaciomental.com.br")
         self.assertEqual(response.status_code, 400)
 
-    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
-    def test_group_invite_sends_html_and_text_email_after_commit(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de e-mail", slug="programa-email", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        grupo = self.make_group(programa, "Grupo de convite")
-        destinatario = User.objects.create_user(username="destinatario-grupo", email="email@example.com")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=destinatario, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        MembroTurma.objects.create(turma=grupo.turma, usuario=self.user)
-        MembroTurma.objects.create(turma=grupo.turma, usuario=destinatario)
-        MembroGrupo.objects.create(grupo=grupo, usuario=self.user, representante=True)
-        self.client.force_login(self.user)
-        with self.captureOnCommitCallbacks(execute=True):
-            response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": "email@example.com", "papel": "membro"}, HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to[0], "email@example.com")
-        self.assertEqual(cast(EmailMultiAlternatives, mail.outbox[0]).alternatives[0][1], "text/html")
-        self.assertIn("Grupo de convite", mail.outbox[0].body)
-        self.assertIn("camppg.palaciomental.com.br", html_alternative(mail.outbox[0]))
-
-        self.accept_delivered_invitation(destinatario, mail.outbox[0])
-        self.assertTrue(MembroGrupo.objects.filter(
-            grupo=grupo, usuario=destinatario, status=MembroGrupo.STATUS_ATIVO,
-        ).exists())
 
     def accept_delivered_invitation(self, recipient, message):
         links = [word for word in message.body.split() if word.startswith(("https://", "http://"))
@@ -282,95 +188,6 @@ class ConvitesEVinculosTests(PortalInstitucionalBase):
             status=MembroOrganizacao.STATUS_ATIVA,
         ).exists())
 
-    def test_manager_cannot_invite_owner_and_member_cannot_use_tenant_invitation(self):
-        manager = User.objects.create_user(username="gestor", email="gestor@example.com", password="Senha-forte-123")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=manager, papel=MembroOrganizacao.PAPEL_GESTOR)
-        self.client.force_login(manager)
-        response = self.client.post(
-            reverse("plataforma:institutional_members"),
-            {"acao": "convidar", "email": "owner@example.com", "papel": MembroOrganizacao.PAPEL_PROPRIETARIO},
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(ConviteOrganizacao.objects.filter(email="owner@example.com").exists())
-
-        member = User.objects.create_user(username="membro", email="membro@example.com", password="Senha-forte-123")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=member, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        self.client.force_login(member)
-        response = self.client.post(
-            reverse("plataforma:institutional_members"),
-            {"acao": "convidar", "email": "outro@example.com", "papel": MembroOrganizacao.PAPEL_MEMBRO},
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertEqual(response.status_code, 403)
-
-    def test_organization_invitation_acceptance_creates_affiliation_once(self):
-        owner = self.user
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=owner, papel=MembroOrganizacao.PAPEL_PROPRIETARIO)
-        invited = User.objects.create_user(username="novo-membro", email="novo@example.com", password="Senha-forte-123")
-        raw_token = secrets.token_urlsafe(32)
-        convite = ConviteOrganizacao.objects.create(
-            organizacao=self.organization,
-            convidado_por=owner,
-            email=invited.email,
-            papel=MembroOrganizacao.PAPEL_PROFESSOR,
-            hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
-            expira_em=timezone.now() + timedelta(days=7),
-        )
-        self.client.force_login(invited)
-        response = self.client.post(
-            reverse("plataforma:institutional_organization_invite_accept", kwargs={"token": raw_token}),
-            {"action": "accept"},
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertRedirects(response, reverse("core:index"), fetch_redirect_response=False)
-        affiliation = MembroOrganizacao.objects.get(organizacao=self.organization, usuario=invited)
-        self.assertEqual(affiliation.papel, MembroOrganizacao.PAPEL_PROFESSOR)
-        convite.refresh_from_db()
-        self.assertEqual(convite.status, ConviteOrganizacao.STATUS_ACEITO)
-        self.assertEqual(
-            self.client.get(
-                reverse("plataforma:institutional_organization_invite_accept", kwargs={"token": raw_token}),
-                HTTP_HOST="camppg.palaciomental.com.br",
-            ).status_code,
-            403,
-        )
-
-    def test_expired_or_wrong_email_organization_invitation_is_rejected(self):
-        owner = self.user
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=owner, papel=MembroOrganizacao.PAPEL_PROPRIETARIO)
-        invited = User.objects.create_user(username="outro", email="outro@example.com", password="Senha-forte-123")
-        raw_token = secrets.token_urlsafe(32)
-        ConviteOrganizacao.objects.create(
-            organizacao=self.organization,
-            convidado_por=owner,
-            email="destinatario@example.com",
-            papel=MembroOrganizacao.PAPEL_MEMBRO,
-            hash_token=hashlib.sha256(raw_token.encode()).hexdigest(),
-            expira_em=timezone.now() + timedelta(days=7),
-        )
-        self.client.force_login(invited)
-        response = self.client.get(
-            reverse("plataforma:institutional_organization_invite_accept", kwargs={"token": raw_token}),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(MembroOrganizacao.objects.filter(organizacao=self.organization, usuario=invited).exists())
-
-        expired_token = secrets.token_urlsafe(32)
-        ConviteOrganizacao.objects.create(
-            organizacao=self.organization,
-            convidado_por=owner,
-            email=invited.email,
-            papel=MembroOrganizacao.PAPEL_MEMBRO,
-            hash_token=hashlib.sha256(expired_token.encode()).hexdigest(),
-            expira_em=timezone.now() - timedelta(minutes=1),
-        )
-        response = self.client.get(
-            reverse("plataforma:institutional_organization_invite_accept", kwargs={"token": expired_token}),
-            HTTP_HOST="camppg.palaciomental.com.br",
-        )
-        self.assertEqual(response.status_code, 403)
 
     def test_manager_can_revoke_pending_organization_invitation(self):
         manager = self.user

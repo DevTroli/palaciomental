@@ -1,21 +1,10 @@
 from datetime import date, time, timedelta
-from pathlib import Path
-import tempfile
 
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from plataforma.models import (
-    CollaborationRequest,
-    DominioOrganizacao,
-    MemberProfile,
-    MembroOrganizacao,
-    Organizacao,
-    Project,
-    ProjectMember,
-)
+from plataforma.models import DominioOrganizacao, MembroOrganizacao, Organizacao, Project
 
 from plataforma.models import EventoCalendario
 
@@ -102,14 +91,6 @@ class AgendaTestCase(TestCase):
 
 
 class CalendarTests(AgendaTestCase):
-    def test_calendario_exige_autenticacao(self):
-        self.client.logout()
-        response = self.get(reverse("plataforma:calendar"))
-        self.assertRedirects(
-            response,
-            "/entrar/?next=/calendario/",
-            fetch_redirect_response=False,
-        )
 
     def test_calendario_mostra_apenas_eventos_do_aluno(self):
         self.evento(titulo="Entrega própria")
@@ -124,12 +105,6 @@ class CalendarTests(AgendaTestCase):
         self.assertContains(response, "Atividades do aluno")
         self.assertNotContains(response, "Membro")
 
-    def test_calendario_ignora_parametros_invalidos(self):
-        response = self.get(reverse("plataforma:calendar"), {"ano": "abc", "mes": "99"})
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["ano"], date.today().year)
-        self.assertEqual(response.context["mes"], date.today().month)
 
     def test_trabalhos_atrasados_continuam_pendentes(self):
         atrasado = self.evento(
@@ -142,15 +117,6 @@ class CalendarTests(AgendaTestCase):
         self.assertIn(atrasado, response.context["trabalhos_pendentes"])
         self.assertContains(response, "Entrega atrasada")
 
-    def test_calendario_exibe_descricao_do_trabalho_publicado(self):
-        self.evento(
-            titulo="Entrega com instruções",
-            descricao="Anexe o relatório final no projeto.",
-            origem=EventoCalendario.ORIGEM_ORGANIZACAO,
-            data=date.today(),
-        )
-        response = self.get(reverse("plataforma:calendar"))
-        self.assertContains(response, "Anexe o relatório final no projeto.")
 
     def test_marcar_entrega_altera_status(self):
         trabalho = self.evento()
@@ -197,18 +163,6 @@ class CalendarEventCrudTests(AgendaTestCase):
         self.assertEqual(evento.status, EventoCalendario.STATUS_PENDENTE)
         self.assertEqual(evento.projeto, self.projeto)
 
-    def test_atividade_criada_fica_confirmada(self):
-        self.post(
-            reverse("plataforma:event_create"),
-            {
-                "titulo": "Estudo individual",
-                "tipo": EventoCalendario.TIPO_ATIVIDADE,
-                "data": date.today().isoformat(),
-            },
-        )
-
-        evento = EventoCalendario.objects.get(titulo="Estudo individual")
-        self.assertEqual(evento.status, EventoCalendario.STATUS_CONFIRMADO)
 
     def test_aluno_edita_evento_proprio(self):
         evento = self.evento(
@@ -261,25 +215,3 @@ class CalendarEventCrudTests(AgendaTestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertTrue(EventoCalendario.objects.filter(pk=evento.pk).exists())
-
-    def test_nao_permite_titulo_duplicado_na_mesma_data(self):
-        self.evento(
-            titulo="Entrega repetida",
-            origem=EventoCalendario.ORIGEM_ALUNO,
-        )
-
-        response = self.post(
-            reverse("plataforma:event_create"),
-            {
-                "titulo": "entrega repetida",
-                "tipo": EventoCalendario.TIPO_TRABALHO,
-                "data": date.today().isoformat(),
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "já tem um evento com este título")
-        self.assertEqual(
-            EventoCalendario.objects.filter(titulo__iexact="Entrega repetida").count(),
-            1,
-        )

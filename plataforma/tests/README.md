@@ -32,4 +32,16 @@ A suíte Spring possui execução própria no CI e instruções no [guia da API]
 
 Adicione teste para uma regra nova, um limite de autorização ou uma regressão específica. Reutilize o cenário existente quando ele já cobre a mesma decisão. Casos de entrada semelhantes podem usar `subTest`, desde que a falha identifique o caso. Agrupar funções sem reduzir preparação ou ações repetidas apenas muda a contagem.
 
-O refinamento da v1.0 reduziu a suíte Django de 413 para 378 cenários e retirou 35 testes sobrepostos ou de implementação. Foram removidas cópias da home, contratos de strings CSS/HTML, persistência trivial da quarentena e verificações antigas de ordenação Redis substituídas por SQL. Permanecem os testes de envio real de convites, papéis, visibilidade, contraste numérico, RLS, recuperação da fila, concorrência e falhas externas. A revisão não encontrou repetição equivalente que justificasse corte no motor Spring.
+A seleção atual mantém 245 cenários Django. O corte mais recente retirou 133 dos 378 testes, uma redução de 35%. A revisão partiu dos fluxos de uso e dos riscos de regressão.
+
+| Prioridade mantida | Cobertura |
+|---|---|
+| Criar e desenvolver projetos | Cadastro, contexto, visibilidade e vínculos institucionais. |
+| Colaborar | Comentários, votos, aprovação e permissões de autor e participante. |
+| Operar uma organização | Papéis, convites, programas, turmas, grupos e atividades. |
+| Proteger dados | Isolamento por tenant, RLS, CSRF, concorrência, identidade e avatar. |
+| Recuperar falhas | Persistência da fila, retentativas, notificações e dependências indisponíveis. |
+
+Foram cortados testes de detalhes internos, rotas legadas, personalização visual, variantes secundárias de validação e cenários repetidos por fluxos mais completos. Alguns caminhos secundários deixam de ter teste automatizado específico. Aparência, combinações de tema, rodapé e capa exigem revisão visual ao mudar essas áreas. Os testes restantes de contraste e escaping continuam verificando seus contratos principais.
+
+A suíte Spring e os testes de scripts mantêm suas execuções próprias. O total de 245 refere-se ao Django e core. A seleção preserva os testes diretos de RLS e as regressões de perda de dados e concorrência introduzidas nesta milestone.

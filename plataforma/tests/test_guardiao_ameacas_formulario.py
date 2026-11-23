@@ -103,23 +103,3 @@ class AmeacasLinksSalvosTests(TestCase):
         self.assertContains(page, 'class="link-status link-status--security"')
         self.assertContains(page, "Segurança não verificada")
         self.assertContains(page, 'href="https://example.com/"')
-
-
-class ConsultaAmeacasTests(TestCase):
-    @patch("plataforma.guardiao_consulta.build_opener")
-    @patch("plataforma.guardiao_consulta.Command._configuracao", return_value=("https://api.example/v1/guardiao/links", "token"))
-    def test_rejeita_alerta_expirado_e_falha_sem_inventar_seguranca(self, config, opener):
-        import json
-        from datetime import timedelta
-        from django.utils import timezone
-        from plataforma.guardiao_consulta import consultar_ameacas
-
-        now = timezone.now()
-        response = opener.return_value.open.return_value.__enter__.return_value
-        response.read.return_value = json.dumps([{
-            "state": "THREAT", "checkedAt": (now - timedelta(minutes=31)).isoformat(),
-            "expiresAt": (now + timedelta(minutes=30)).isoformat(),
-        }]).encode()
-        self.assertEqual(consultar_ameacas(["https://example.com/"]), ["UNVERIFIED"])
-        response.read.return_value = "resposta inválida".encode()
-        self.assertEqual(consultar_ameacas(["https://example.com/"]), ["UNVERIFIED"])

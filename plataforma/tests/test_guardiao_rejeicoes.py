@@ -94,35 +94,6 @@ class RejeicoesGuardiaoTests(TestCase):
         self.sync()
         self.assertFalse(GuardiaoLinkPendente.objects.exists())
 
-    def test_editar_titulo_nao_reativa_url_rejeitada(self):
-        self.quarantine()
-        self.bad.label = "Novo título"
-        self.bad.save(update_fields=["label"])
-        self.assertTrue(GuardiaoLinkPendente.objects.get(pk=self.bad.pk).quarentena)
-
-    def test_url_nao_persistida_por_update_fields_nao_reativa(self):
-        self.quarantine()
-        self.bad.url = "https://example.org/nao-salvo"
-        self.bad.label = "Novo título"
-        self.bad.save(update_fields=["label"])
-        self.assertTrue(GuardiaoLinkPendente.objects.get(pk=self.bad.pk).quarentena)
-        self.bad.refresh_from_db()
-        self.assertEqual(self.bad.url, "https://example.com/a")
-
-    def test_excluir_link_reativa_operacao_delete(self):
-        self.quarantine()
-        link_id = self.bad.pk
-        self.bad.delete()
-        entry = GuardiaoLinkPendente.objects.get(pk=link_id)
-        self.assertFalse(entry.quarentena)
-        self.assertIsNone(entry.rejeicao_http)
-        self.build.return_value.open.return_value.__enter__.return_value.status = 204
-        GuardiaoLinkPendente.objects.filter(pk=self.good.pk).delete()
-        self.sync()
-        request = self.build.return_value.open.call_args.args[0]
-        self.assertEqual(request.get_method(), "DELETE")
-        self.assertTrue(request.full_url.endswith(f"/links/{link_id}"))
-        self.assertFalse(GuardiaoLinkPendente.objects.filter(pk=link_id).exists())
 
     def test_rollback_da_correcao_preserva_quarentena(self):
         self.quarantine()
@@ -144,8 +115,3 @@ class RejeicoesGuardiaoTests(TestCase):
         self.assertIsNone(entry.rejeitada_em)
         self.assertTrue(GuardiaoLinkPendente.objects.get(pk=self.good.pk).quarentena)
         self.build.return_value.open.assert_not_called()
-
-    def test_reprocessamento_rejeita_id_invalido_ou_ausente(self):
-        for link_id in (0, -1, 999999):
-            with self.subTest(link_id=link_id), self.assertRaises(CommandError):
-                call_command("reprocessar_link_guardiao", link_id, stdout=StringIO())

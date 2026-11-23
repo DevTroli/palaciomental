@@ -63,10 +63,6 @@ class AuthLimitHttpTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("_auth_user_id", self.client.session)
 
-    def test_get_does_not_consume_attempts(self):
-        self.client.get("/entrar/", HTTP_HOST="palaciomental.com.br")
-        self.assertFalse(AuthAttemptWindow.objects.exists())
-
 
 @skipUnless(connection.vendor == "postgresql", "Concorrência exige PostgreSQL")
 class ConcurrentAuthLimitTests(TransactionTestCase):

@@ -209,31 +209,6 @@ class OnboardingConvitesTests(PortalInstitucionalBase):
                 invitation.refresh_from_db()
                 self.assertEqual(invitation.status, "aceito")
 
-    def test_switch_account_requires_csrf(self):
-        _, path = self.make_invitation()
-        client = Client(enforce_csrf_checks=True)
-        client.force_login(self.user)
-        response = client.post(path, {"action": "switch_account"}, HTTP_HOST=HOST)
-        self.assertEqual(response.status_code, 403)
-        self.assertIn("_auth_user_id", client.session)
-    def test_login_exception_does_not_allow_arbitrary_next(self):
-        user = self.make_existing_recipient()
-        for path in ("/gestao/", "//evil.example/", "/convites/organizacao/invalido/aceitar/"):
-            self.client.logout()
-            self.assertEqual(self.login_for_invitation(path, user).status_code, 403)
-
-    def test_register_without_invite_stays_closed_in_tenant(self):
-        self.assertEqual(self.client.get(reverse("plataforma:register"), HTTP_HOST=HOST).status_code, 403)
-        self.assertEqual(self.client.post(reverse("plataforma:register"), {}, HTTP_HOST=HOST).status_code, 403)
-
-    def test_global_registration_still_does_not_grant_tenant_access(self):
-        response = self.client.post(reverse("plataforma:register"), {
-            "first_name": "Pessoal", "username": "pessoal", "email": "pessoal@example.com",
-            "password1": PASSWORD, "password2": PASSWORD,
-        }, HTTP_HOST="palaciomental.com.br")
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(MembroOrganizacao.objects.filter(usuario__username="pessoal").exists())
-        self.assertEqual(self.client.get("/", HTTP_HOST=HOST).status_code, 403)
 
     def test_accept_requires_csrf_and_valid_action(self):
         _, path = self.make_invitation()

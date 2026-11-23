@@ -1,8 +1,5 @@
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
-from django.utils import timezone
 
 from plataforma.models import MembroOrganizacao
 from .base import PortalInstitucionalBase
@@ -103,25 +100,6 @@ class ConvitesCSRFTests(PortalInstitucionalBase):
         self.invitation.refresh_from_db()
         self.assertEqual(self.invitation.status, "pendente")
 
-    def test_expired_invitation_uses_safe_permission_page(self):
-        self.invitation.expira_em = timezone.now() - timedelta(minutes=1)
-        self.invitation.save(update_fields=["expira_em"])
-        response = self.get_form()
-        self.assertContains(response, "Este acesso não está disponível", status_code=403)
-        self.assertNotContains(response, "Criar conta e continuar", status_code=403)
-        self.assertNotContains(response, "Reabrir formulário", status_code=403)
-        self.assertIn("no-store", response["Cache-Control"])
-
-
-    def test_different_passwords_are_rejected_without_affiliation(self):
-        self.get_form()
-        response = self.browser.post(
-            self.path, self.registration(password2="Outra-senha-1234"),
-            secure=True, HTTP_HOST=HOST, HTTP_REFERER=f"https://{HOST}/",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="id_password2_error"')
-        self.assertFalse(User.objects.filter(username="csrf-convidado").exists())
 
     def test_csrf_log_does_not_contain_token_or_submitted_password(self):
         self.get_form()

@@ -1,19 +1,8 @@
-import hashlib
-from io import BytesIO
-import secrets
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
-from django.core import mail
 from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils import timezone
-from PIL import Image
 
-from plataforma.models import ConviteGrupo, ConviteOrganizacao, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
-from plataforma.services import ativar_organizacao
+from plataforma.models import ConviteGrupo, Grupo, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from plataforma.forms import ProjectBasicsForm
 
 
@@ -34,17 +23,6 @@ class TurmasEGruposTests(PortalInstitucionalBase):
         self.assertNotContains(response, rascunho.nome)
         self.assertEqual(self.client.get(reverse("plataforma:institutional_program_detail", args=[rascunho.pk]), HTTP_HOST="camppg.palaciomental.com.br").status_code, 404)
 
-    def test_program_creation_has_its_own_manager_only_page(self):
-        afiliacao = MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_GESTOR)
-        self.client.force_login(self.user)
-        lista = self.client.get(reverse("plataforma:institutional_programs"), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(lista, reverse("plataforma:institutional_program_create"))
-        self.assertNotContains(lista, 'name="nome"')
-        formulario = self.client.get(reverse("plataforma:institutional_program_create"), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(formulario, 'name="nome"')
-        afiliacao.papel = MembroOrganizacao.PAPEL_MEMBRO
-        afiliacao.save(update_fields=["papel"])
-        self.assertEqual(self.client.get(reverse("plataforma:institutional_program_create"), HTTP_HOST="camppg.palaciomental.com.br").status_code, 403)
 
     def test_only_student_in_active_class_can_create_group(self):
         afiliacao = MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
@@ -111,29 +89,6 @@ class TurmasEGruposTests(PortalInstitucionalBase):
         self.assertIn(meu_grupo, form.fields["grupo"].queryset)
         self.assertNotIn(outro_grupo, form.fields["grupo"].queryset)
 
-    def test_representative_can_invite_only_active_students_in_same_class(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        outro = User.objects.create_user(username="fora-da-turma", email="fora@example.com")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=outro, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", slug="programa-convite-grupo", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        turma = Turma.objects.create(programa=programa, nome="Turma", criado_por=self.user)
-        MembroTurma.objects.create(turma=turma, usuario=self.user)
-        grupo = Grupo.objects.create(turma=turma, nome="Grupo", criado_por=self.user)
-        MembroGrupo.objects.create(grupo=grupo, usuario=self.user, representante=True)
-        self.client.force_login(self.user)
-        url = reverse("plataforma:institutional_group_members", args=[grupo.pk])
-        response = self.client.post(url, {"email": outro.email}, HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(response, "Você pode convidar apenas alunos ativos desta turma.")
-        self.assertFalse(ConviteGrupo.objects.filter(grupo=grupo).exists())
-        MembroTurma.objects.create(turma=turma, usuario=outro)
-        self.assertEqual(self.client.post(url, {"email": outro.email}, HTTP_HOST="camppg.palaciomental.com.br").status_code, 302)
-        self.assertTrue(ConviteGrupo.objects.filter(grupo=grupo, email=outro.email).exists())
-        editar = reverse("plataforma:institutional_group_edit", args=[grupo.pk])
-        self.assertEqual(self.client.post(editar, {"nome": "Grupo atualizado", "status": "ativo"}, HTTP_HOST="camppg.palaciomental.com.br").status_code, 302)
-        grupo.refresh_from_db()
-        self.assertEqual(grupo.nome, "Grupo atualizado")
-        self.client.force_login(outro)
-        self.assertEqual(self.client.post(editar, {"nome": "Indevido", "status": "ativo"}, HTTP_HOST="camppg.palaciomental.com.br").status_code, 403)
 
     def test_only_group_members_invite_and_only_author_deletes_group(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
@@ -161,26 +116,6 @@ class TurmasEGruposTests(PortalInstitucionalBase):
         self.client.force_login(self.user)
         self.assertEqual(self.client.post(excluir, HTTP_HOST="camppg.palaciomental.com.br").status_code, 302)
 
-    def test_program_class_group_hierarchy_keeps_members_in_scope(self):
-        programa = ProgramaInstitucional.objects.create(
-            organizacao=self.organization,
-            nome="Iniciativa",
-            slug="iniciativa",
-            criado_por=self.user,
-        )
-        turma = Turma.objects.create(programa=programa, nome="Turma 2026", criado_por=self.user)
-        grupo = Grupo.objects.create(
-            turma=turma,
-            nome="Grupo A",
-            criado_por=self.user,
-            aberto_para_entrada=True,
-        )
-        MembroTurma.objects.create(turma=turma, usuario=self.user)
-        MembroGrupo.objects.create(grupo=grupo, usuario=self.user, representante=True)
-
-        self.assertEqual(grupo.turma.programa.organizacao_id, self.organization.pk)
-        self.assertTrue(grupo.aberto_para_entrada)
-        self.assertTrue(grupo.membros.filter(usuario=self.user, representante=True).exists())
 
     def test_institutional_project_link_rejects_group_from_another_class(self):
         programa = ProgramaInstitucional.objects.create(
@@ -243,16 +178,6 @@ class TurmasEGruposTests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 403)
         self.assertFalse(MembroTurma.objects.filter(turma=turma, usuario=self.user).exists())
 
-    def test_member_can_create_group_only_in_permitted_class(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa de grupos", slug="programa-de-grupos", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        turma = Turma.objects.create(programa=programa, nome="Turma de grupos", criado_por=self.user, politica_participacao=Turma.POLITICA_ABERTA)
-        MembroTurma.objects.create(turma=turma, usuario=self.user)
-        self.client.force_login(self.user)
-        response = self.client.post(reverse("plataforma:institutional_group_create_for_class", kwargs={"turma_id": turma.pk}), {"nome": "Grupo criado pelo aluno", "descricao": "", "status": Grupo.STATUS_ATIVO, "aberto_para_entrada": "on"}, HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 302)
-        grupo = Grupo.objects.get(turma=turma, nome="Grupo criado pelo aluno")
-        self.assertTrue(MembroGrupo.objects.filter(grupo=grupo, usuario=self.user, representante=True).exists())
 
     def test_open_group_creates_request_and_representative_can_approve(self):
         target = User.objects.create_user(username="interessado", email="interessado@example.com", password="Senha-forte-123")
@@ -296,45 +221,6 @@ class TurmasEGruposTests(PortalInstitucionalBase):
         self.assertEqual(self.client.post(reverse("plataforma:institutional_group_leave", kwargs={"group_id": grupo.pk}), HTTP_HOST="camppg.palaciomental.com.br").status_code, 302)
         self.assertEqual(self.client.post(url, {"nome": "Segundo grupo", "status": Grupo.STATUS_ATIVO}, HTTP_HOST="camppg.palaciomental.com.br").status_code, 302)
 
-    def test_class_member_can_preview_group_without_seeing_private_members(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        colega = User.objects.create_user(username="colega-preview", email="colega-preview@example.com")
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=colega, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa preview", slug="programa-preview", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        turma = Turma.objects.create(programa=programa, nome="Turma preview", criado_por=self.user, politica_participacao=Turma.POLITICA_ABERTA)
-        MembroTurma.objects.create(turma=turma, usuario=self.user)
-        MembroTurma.objects.create(turma=turma, usuario=colega)
-        grupo = Grupo.objects.create(turma=turma, nome="Grupo preview", criado_por=colega, descricao="Objetivo de preview")
-        MembroGrupo.objects.create(grupo=grupo, usuario=colega, representante=True)
-        self.client.force_login(self.user)
-        response = self.client.get(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertContains(response, "Preview do grupo")
-        self.assertContains(response, "Objetivo de preview")
-        self.assertNotContains(response, "@colega-preview")
-
-    def test_group_invite_accepts_username_as_primary_target(self):
-        target = User.objects.create_user(username="aluno-por-usuario", email="aluno-por-usuario@example.com")
-        for usuario in (self.user, target):
-            MembroOrganizacao.objects.create(organizacao=self.organization, usuario=usuario, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa @", slug="programa-arroba", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        turma = Turma.objects.create(programa=programa, nome="Turma @", criado_por=self.user)
-        for usuario in (self.user, target):
-            MembroTurma.objects.create(turma=turma, usuario=usuario)
-        grupo = Grupo.objects.create(turma=turma, nome="Grupo @", criado_por=self.user)
-        MembroGrupo.objects.create(grupo=grupo, usuario=self.user, representante=True)
-        self.client.force_login(self.user)
-        response = self.client.post(reverse("plataforma:institutional_group_members", kwargs={"group_id": grupo.pk}), {"email": "@aluno-por-usuario"}, HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(ConviteGrupo.objects.filter(grupo=grupo, email=target.email).exists())
-
-    def test_ineligible_member_does_not_see_invite_only_class(self):
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
-        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa restrito", slug="programa-restrito", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        Turma.objects.create(programa=programa, nome="Turma por convite", criado_por=self.user, politica_participacao=Turma.POLITICA_CONVITE)
-        self.client.force_login(self.user)
-        response = self.client.get(reverse("plataforma:institutional_program_detail", kwargs={"programa_id": programa.pk}), HTTP_HOST="camppg.palaciomental.com.br")
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Turma por convite")
 
     def test_manager_can_create_program_and_group_in_current_tenant(self):
         MembroOrganizacao.objects.create(

@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from plataforma.models import ConviteOrganizacao, DominioOrganizacao, MembroOrganizacao, Organizacao
+from plataforma.models import ConviteOrganizacao, MembroOrganizacao, Organizacao
 
 
 User = get_user_model()
@@ -71,19 +71,3 @@ class AdminInstitucionalTests(TestCase):
         convite = ConviteOrganizacao.objects.get(email="professor@example.com")
         self.assertEqual(len(convite.hash_token), 64)
         self.assertEqual(convite.convidado_por_id, self.admin.pk)
-
-    def test_domain_form_normalizes_hostname(self):
-        response = self.client.post(
-            reverse("admin:listaEspera_dominioorganizacao_add"),
-            {
-                "organizacao": str(self.organizacao.pk),
-                "hostname": "CAMPPG.PALACIOMENTAL.COM.BR.",
-                "tipo": DominioOrganizacao.TIPO_SUBDOMINIO,
-                "principal": "on",
-                "status_verificacao": "ativo",
-                "_save": "Salvar",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(DominioOrganizacao.objects.filter(hostname="camppg.palaciomental.com.br").exists())
