@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.db import DatabaseError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.core.paginator import Paginator
 from django.http import Http404, JsonResponse
@@ -29,6 +29,7 @@ from .models import (
 
 from .experience_forms import PerfilInstitucionalForm, SenhaInstitucionalForm
 from .models import EventoCalendario
+from .account_identity import EMAIL_ERROR, is_email_conflict
 from .profile_updates import save_profile
 from .agenda import visible_events
 from .decorators import tenant_required
@@ -281,6 +282,11 @@ def _processar_atualizacao_perfil(request, perfil_usuario):
     if form_perfil.is_valid():
         try:
             save_profile(form_perfil, perfil_usuario.pk)
+        except IntegrityError as exc:
+            if not is_email_conflict(exc):
+                raise
+            form_perfil.add_error("email", EMAIL_ERROR)
+            return form_perfil, form_senha, None
         except Exception:
             logging.getLogger(__name__).warning("Falha ao atualizar perfil institucional")
             form_perfil.add_error(None, "Não foi possível salvar o perfil. Sua foto anterior foi preservada. Tente novamente.")

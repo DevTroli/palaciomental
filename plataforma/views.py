@@ -23,6 +23,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
+from .account_identity import register_account
 from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm, TurmaReferenciaForm
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, Organizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
@@ -57,8 +58,9 @@ def register(request):
         return redirect("plataforma:profile", username=request.user.username)
     form = MemberCreationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
-        MemberProfile.objects.create(user=user)
+        user = register_account(form)
+        if user is None:
+            return render(request, "auth/register.html", {"form": form})
         login(request, user)
         messages.success(request, "Conta criada. Agora você pode dar forma ao seu primeiro projeto.")
         return redirect("plataforma:profile", username=user.username)

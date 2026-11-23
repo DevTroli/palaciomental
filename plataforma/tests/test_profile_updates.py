@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import DatabaseError, close_old_connections, connection, transaction
+from django.db import DatabaseError, close_old_connections, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase, override_settings
 
 from plataforma.models import MemberProfile
@@ -117,7 +117,7 @@ class ConcurrentProfileUpdateTests(TransactionTestCase):
                     barrier.wait(timeout=10)
                     return save_profile(form, profile_id).avatar.name
                 finally:
-                    close_old_connections()
+                    connections.close_all()
 
             with ThreadPoolExecutor(max_workers=2) as executor:
                 names = list(executor.map(update, range(2)))

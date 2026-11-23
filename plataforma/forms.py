@@ -7,6 +7,8 @@ from urllib.parse import urlsplit
 
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroGrupo, MembroOrganizacao, MembroTurma, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMilestone, SolicitacaoGrupo, SolicitacaoTurma, Turma
 
+from .account_identity import email_users
+
 User = get_user_model()
 
 
@@ -20,8 +22,8 @@ class MemberCreationForm(UserCreationForm):
         labels = {"username": "Nome de usuário"}
 
     def clean_email(self):
-        email = self.cleaned_data["email"].lower()
-        if User.objects.filter(email__iexact=email).exists():
+        email = self.cleaned_data["email"].strip().lower()
+        if email_users(email).exists():
             raise forms.ValidationError("Este e-mail já está cadastrado.")
         return email
 

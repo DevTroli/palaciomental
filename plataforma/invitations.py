@@ -14,6 +14,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 
+from .account_identity import register_account
 from .forms import MemberCreationForm
 from .models import (
     ConviteGrupo, ConviteOrganizacao, MemberProfile, MembroGrupo,
@@ -145,10 +146,10 @@ def invitation_accept(request, token, kind):
                 invitation = _invitation(request, token, kind, locked=True)
                 form = InvitationRegistrationForm(request.POST, invited_email=invitation.email)
                 if form.is_valid():
-                    user = form.save()
-                    MemberProfile.objects.create(user=user)
-                    login(request, user)
-                    return redirect(request.path)
+                    user = register_account(form)
+                    if user is not None:
+                        login(request, user)
+                        return redirect(request.path)
         elif action == "accept" and request.user.is_authenticated:
             with transaction.atomic():
                 invitation = _invitation(request, token, kind, locked=True)
