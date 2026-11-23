@@ -29,6 +29,7 @@ from .models import (
 
 from .experience_forms import PerfilInstitucionalForm, SenhaInstitucionalForm
 from .models import EventoCalendario
+from .profile_updates import save_profile
 from .agenda import visible_events
 from .decorators import tenant_required
 
@@ -278,16 +279,12 @@ def _processar_atualizacao_perfil(request, perfil_usuario):
         return form_perfil, form_senha, None
     form_perfil = PerfilInstitucionalForm(request.POST, request.FILES, instance=request.user)
     if form_perfil.is_valid():
-        form_perfil.save()
-        if form_perfil.cleaned_data.get("remover_avatar"):
-            if perfil_usuario.avatar:
-                perfil_usuario.avatar.delete(save=False)
-            perfil_usuario.avatar = ""
-        elif form_perfil.cleaned_data.get("avatar"):
-            if perfil_usuario.avatar:
-                perfil_usuario.avatar.delete(save=False)
-            perfil_usuario.avatar = form_perfil.cleaned_data["avatar"]
-        perfil_usuario.save()
+        try:
+            save_profile(form_perfil, perfil_usuario.pk)
+        except Exception:
+            logging.getLogger(__name__).warning("Falha ao atualizar perfil institucional")
+            form_perfil.add_error(None, "Não foi possível salvar o perfil. Sua foto anterior foi preservada. Tente novamente.")
+            return form_perfil, form_senha, None
         messages.success(request, "Dados do perfil atualizados.")
         return form_perfil, form_senha, redirect(
             f"{reverse('plataforma:institutional_profile')}?aba=configuracoes"
