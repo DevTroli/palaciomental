@@ -36,17 +36,17 @@
     .journey h3 { font-size:1rem; margin:0; } .badge { font-size:.75rem; font-weight:750; padding:.25rem .65rem; border-radius:999px; max-width:100%; overflow-wrap:anywhere; }
     .badge.funcionando { background:#e4f2eb; color:#17613f; } .badge.falha { background:#faeae7; color:#9c3026; } .badge.recuperando { background:#fff1d9; color:#805000; } .badge.sem_coleta { background:#efedf0; color:#5e5662; }
     .history { display:grid; grid-template-columns:repeat(var(--history-days,30),minmax(0,1fr)); gap:4px; margin:1rem 0 .4rem; }
-    .day { display:block; width:100%; height:24px; padding:0; border:0; cursor:pointer; border-radius:3px; background:#c0bbc1; transition:transform .16s ease, box-shadow .16s ease; } .day.funcionando { background:#238b60; } .day.falha { background:#b34238; } .day.parcial { background:#bc7a1d; }
+    .day { display:block; width:100%; height:24px; padding:0; border:0; cursor:pointer; border-radius:3px; background:#c0bbc1; transition:transform .16s ease, box-shadow .16s ease; } .day.funcionando { background:#238b60; } .day.falha { background:#b34238; } .day.recuperado { background:#72568b; } .day.parcial { background:#bc7a1d; }
     .day:hover,.day:focus-visible,.day[aria-pressed="true"] { transform:translateY(-3px); box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--purple); outline:0; }
     .day-detail { min-height:1.3em; margin:.6rem 0 0; color:var(--purple); font-size:.76rem; font-weight:650; }
     .history-help { display:none; margin:.75rem 0 0; color:var(--muted); font-size:.73rem; }
     .history-meta { display:flex; justify-content:space-between; gap:1rem; color:var(--muted); font-size:.73rem; }
     .journey-meta { margin:.8rem 0 0; color:var(--muted); font-size:.78rem; }
     a:focus-visible { outline:3px solid #238b60; outline-offset:3px; }
-    .legend { display:flex; flex-wrap:nowrap; justify-content:space-between; gap:.35rem; overflow-x:auto; color:var(--muted); font-size:.7rem; margin:0 0 .55rem; }
+    .legend { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.35rem .75rem; color:var(--muted); font-size:.7rem; margin:0 0 .55rem; }
     .legend-notes { display:grid; gap:.2rem; list-style:none; padding:0; margin:0 0 1rem; color:var(--muted); font-size:.75rem; }
     .legend span { display:inline-flex; align-items:center; gap:.25rem; white-space:nowrap; } .legend .dot { flex:none; } .dot { width:.55rem; height:.55rem; border-radius:50%; background:#c0bbc1; }
-    .dot.good { background:#238b60; } .dot.bad { background:#b34238; } .dot.partial { background:#bc7a1d; }
+    .dot.good { background:#238b60; } .dot.bad { background:#b34238; } .dot.recovered { background:#72568b; } .dot.partial { background:#bc7a1d; }
     .incident-tabs, .incident-pages { display:flex; flex-wrap:wrap; gap:.5rem; }
     .incident-tabs button, .incident-pages button { font:inherit; font-size:.8rem; color:var(--purple); background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:.55rem .65rem; cursor:pointer; }
     .overview.tenant-branded { background:var(--tenant-status-primary); color:var(--tenant-status-primary-text); }
@@ -80,7 +80,7 @@
       <div class="overview-side" id="overview-side" hidden><strong id="overview-count"></strong><span>acessos com coleta recente</span></div>
     </section>
     <div class="layout" id="content" hidden>
-      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Cada bloco representa um dia</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot partial" aria-hidden="true"></i>Incompleto</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Consultas a cada 15 minutos.</li><li>Falha: resposta ausente ou inesperada.</li><li>Incompleto: algumas verificações previstas para o dia não foram realizadas.</li></ul><div id="journeys"></div></section>
+      <section class="panel" aria-labelledby="journeys-title"><div class="panel-head"><div><h2 id="journeys-title">Disponibilidade</h2><p>Selo: agora · blocos: histórico diário</p></div><span class="count" id="history-count">Até 30 dias</span></div><div class="legend" aria-label="Legenda do histórico"><span><i class="dot good" aria-hidden="true"></i>Normal</span><span><i class="dot bad" aria-hidden="true"></i>Falha</span><span><i class="dot recovered" aria-hidden="true"></i>Recuperado</span><span><i class="dot partial" aria-hidden="true"></i>Incompleto</span><span><i class="dot" aria-hidden="true"></i>Sem dados</span></div><ul class="legend-notes"><li>Verificações a cada 15 minutos.</li><li>O histórico preserva falhas anteriores, mesmo após a recuperação.</li><li>Incompleto: faltaram verificações previstas para o dia.</li></ul><div id="journeys"></div></section>
       <section class="panel" aria-labelledby="incidents-title"><div class="panel-head"><div><h2 id="incidents-title">Incidentes</h2><p>Últimos 30 dias e incidentes abertos</p></div><span class="count" id="incidents-count"></span></div><div class="incident-tabs" role="tablist" aria-label="Estado do incidente">
         <button type="button" id="incident-open" role="tab" aria-controls="incidents-open" aria-selected="true">Abertos</button>
         <button type="button" id="incident-recovered" role="tab" aria-controls="incidents-recovered" aria-selected="false" tabindex="-1">Recuperados</button>
@@ -93,7 +93,7 @@
   </main>
   <script>
     const dateTime = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : 'Ainda não verificado';
-    const labels = { funcionando:'Resposta normal', falha:'Falha na verificação', parcial:'Incompleto', sem_coleta:'Sem dados recentes' };
+    const labels = { funcionando:'Agora normal', falha:'Falha agora', parcial:'Incompleto', sem_coleta:'Sem dados recentes' };
     const node = (tag, text, className) => { const element = document.createElement(tag); element.textContent = text; if (className) element.className = className; return element; };
     const incidentTabs = Array.from(document.querySelectorAll('.incident-tabs [role="tab"]'));
     function selectIncidentTab(selected) {
@@ -209,11 +209,15 @@
         const history = node('div', '', 'history'); history.setAttribute('role', 'group'); history.setAttribute('aria-label', 'Histórico diário de ' + journey.nome);
         history.style.setProperty('--history-days', Math.max(1, journey.dias.length)); history.style.maxWidth = Math.max(1, journey.dias.length) * 32 + 'px';
         const selection = node('p', journey.dias.length ? 'Selecione um dia para ver detalhes.' : 'Aguardando a primeira coleta.', 'day-detail'); selection.setAttribute('aria-live', 'polite');
-        for (const day of journey.dias) {
-          const dayLabel = day.estado === 'sem_coleta' ? 'Sem dados' : labels[day.estado];
+        for (const [index, day] of journey.dias.entries()) {
+          const recoveredToday = index === journey.dias.length - 1 && day.estado === 'falha'
+            && journey.estado === 'funcionando' && !recovering;
+          const dayLabel = recoveredToday ? 'Houve falha; agora normal'
+            : day.estado === 'falha' ? 'Falha registrada'
+            : day.estado === 'sem_coleta' ? 'Sem dados' : labels[day.estado];
           const dayCoverage = day.esperadas ? Math.min(100, Math.floor(day.coletas / day.esperadas * 100)) : 0;
-          const text = day.data.split('-').reverse().join('/') + ': ' + dayLabel + ' · Consultas realizadas: ' + dayCoverage + '\u00a0%';
-          const cell = node('button', '', 'day ' + day.estado); cell.type = 'button'; cell.title = text; cell.setAttribute('aria-label', text); cell.setAttribute('aria-pressed', 'false'); cell.tabIndex = -1;
+          const text = day.data.split('-').reverse().join('/') + ': ' + dayLabel + ' · Verificações previstas realizadas: ' + dayCoverage + '\u00a0%';
+          const cell = node('button', '', 'day ' + (recoveredToday ? 'recuperado' : day.estado)); cell.type = 'button'; cell.title = text; cell.setAttribute('aria-label', text); cell.setAttribute('aria-pressed', 'false'); cell.tabIndex = -1;
           cell.addEventListener('click', () => { history.querySelectorAll('button').forEach(button => { button.setAttribute('aria-pressed', 'false'); button.tabIndex = -1; }); cell.setAttribute('aria-pressed', 'true'); cell.tabIndex = 0; selection.textContent = text; });
           history.append(cell);
         }
