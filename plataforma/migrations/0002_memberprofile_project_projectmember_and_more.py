@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0001_initial'),
+        ('plataforma', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('role', models.CharField(default='Colaborador', max_length=80, verbose_name='Papel')),
                 ('joined_at', models.DateTimeField(auto_now_add=True)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to='listaEspera.project')),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to='plataforma.project')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='project_memberships', to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name='project',
-            index=models.Index(fields=['visibility', 'status', 'category'], name='listaEspera_visibil_f3b1aa_idx'),
+            index=models.Index(fields=['visibility', 'status', 'category'], name='plataforma_visibil_f3b1aa_idx'),
         ),
         migrations.AddConstraint(
             model_name='projectmember',

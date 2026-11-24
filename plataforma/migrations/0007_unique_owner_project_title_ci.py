@@ -5,7 +5,7 @@ from django.db.models.functions import Lower
 
 
 def resolve_duplicate_titles(apps, schema_editor):
-    Project = apps.get_model("listaEspera", "Project")
+    Project = apps.get_model("plataforma", "Project")
     projects = Project.objects.order_by("owner_id", "pk").only("pk", "owner_id", "title")
     used_titles = defaultdict(set)
 
@@ -35,7 +35,7 @@ def resolve_duplicate_titles(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("listaEspera", "0006_remove_project_collaboration_tags")]
+    dependencies = [("plataforma", "0006_remove_project_collaboration_tags")]
 
     operations = [
         migrations.RunPython(resolve_duplicate_titles, migrations.RunPython.noop),

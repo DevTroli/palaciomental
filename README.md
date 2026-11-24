@@ -77,7 +77,7 @@ Django atende os espaços pessoal e institucional. **PostgreSQL com RLS** manté
 
 - O script preenche segredos vazios no `.env` e preserva credenciais existentes. Não versione esse arquivo.
 - O Compose inicia PostgreSQL, Redis, Django, API, migrations e worker. E-mails vão para o console; mídia fica local. R2, Resend e Safe Browsing são integrações opcionais no desenvolvimento.
-- O boot aplica migrations. Após alterações de schema com o servidor já aberto, execute `docker compose exec django python manage.py migrate`.
+- O boot aplica migrations. Após alterações de schema com o servidor já aberto, execute `docker compose exec django python manage.py migrate`. Bancos anteriores à troca do identificador do app seguem a [transição para plataforma](docs/transicao-plataforma.md).
 - `/saude` verifica resposta do Django; `/pronto` verifica banco e migrations.
 - Com `DJANGO_DEBUG=True`, `/?tenant=slug` permite selecionar o tenant local. Remova o cookie `pm_dev_tenant` para limpar a seleção.
 - `docker compose down` preserva os volumes. A opção `-v` apaga os dados locais.

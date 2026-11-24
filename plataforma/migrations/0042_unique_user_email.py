@@ -25,7 +25,7 @@ def remove_unique_email(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("listaEspera", "0041_guardiaolinkpendente_quarentena"),
+        ("plataforma", "0041_guardiaolinkpendente_quarentena"),
         ("auth", "0012_alter_user_first_name_max_length"),
     ]
     operations = [migrations.RunPython(enforce_unique_email, remove_unique_email)]

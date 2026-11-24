@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("listaEspera", "0032_identidade_contatos_rodape"),
+        ("plataforma", "0032_identidade_contatos_rodape"),
     ]
 
     operations = [

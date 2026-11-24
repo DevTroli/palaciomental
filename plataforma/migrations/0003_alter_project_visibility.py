@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("listaEspera", "0002_memberprofile_project_projectmember_and_more"),
+        ("plataforma", "0002_memberprofile_project_projectmember_and_more"),
     ]
 
     operations = [

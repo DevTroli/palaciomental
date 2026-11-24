@@ -31,6 +31,6 @@ def backwards(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("listaEspera", "0030_criar_agenda"),
+        ("plataforma", "0030_criar_agenda"),
     ]
     operations = [migrations.RunPython(forwards, backwards)]

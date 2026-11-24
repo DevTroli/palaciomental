@@ -105,6 +105,6 @@ docker compose exec django python manage.py pm_rls_status --strict
 
 Migrations Django e Flyway são independentes. O release da API aplica Flyway antes da troca do serviço; o worker não executa migrations web. Consulte o [guia operacional da API](../status_api/README.md#operar-em-produção).
 
-`plataforma` preserva o app label histórico `listaEspera`, usado nas migrations. Não o renomeie isoladamente. A agenda usa `plataforma_eventocalendario` e não depende do antigo app CAMP.
+O app Django e suas tabelas usam `plataforma`. Bancos anteriores precisam da [transição coordenada](transicao-plataforma.md) antes do deploy. A agenda usa `plataforma_eventocalendario`.
 
 </details>

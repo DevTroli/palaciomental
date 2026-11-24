@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0026_identidade_tema_flexivel'),
+        ('plataforma', '0026_identidade_tema_flexivel'),
     ]
 
     operations = [

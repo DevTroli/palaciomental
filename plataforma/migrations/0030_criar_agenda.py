@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '__first__'),
-        ('listaEspera', '0029_merge_memberprofile_comment_indexes'),
+        ('plataforma', '0029_merge_memberprofile_comment_indexes'),
     ]
 
     operations = [
@@ -17,9 +17,9 @@ class Migration(migrations.Migration):
             name='EventoCalendario',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='eventos_agenda', to='listaEspera.organizacao', verbose_name='Organização')),
+                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='eventos_agenda', to='plataforma.organizacao', verbose_name='Organização')),
                 ('aluno', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='eventos_agenda', to=settings.AUTH_USER_MODEL, verbose_name='Aluno')),
-                ('projeto', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='eventos_agenda', to='listaEspera.project', verbose_name='Projeto')),
+                ('projeto', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='eventos_agenda', to='plataforma.project', verbose_name='Projeto')),
                 ('titulo', models.CharField(max_length=140, verbose_name='Título')),
                 ('descricao', models.TextField(blank=True, max_length=500, verbose_name='Descrição')),
                 ('tipo', models.CharField(choices=[('atividade', 'Atividade'), ('trabalho', 'Trabalho')], default='atividade', max_length=20, verbose_name='Tipo')),

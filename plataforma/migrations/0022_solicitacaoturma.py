@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0021_turma_politica_participacao'),
+        ('plataforma', '0021_turma_politica_participacao'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('criado_em', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
                 ('decidido_em', models.DateTimeField(blank=True, null=True, verbose_name='Decidido em')),
                 ('decidido_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='solicitacoes_turma_decididas', to=settings.AUTH_USER_MODEL, verbose_name='Decidido por')),
-                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='solicitacoes', to='listaEspera.turma', verbose_name='Turma')),
+                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='solicitacoes', to='plataforma.turma', verbose_name='Turma')),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='solicitacoes_turma', to=settings.AUTH_USER_MODEL, verbose_name='Usuário')),
             ],
             options={

@@ -6,7 +6,7 @@ docs/arquitetura-multi-tenant-rls.md.
 
 from django.db import migrations
 
-TABLE = '"listaEspera_project"'
+TABLE = '"plataforma_project"'
 
 POLICY_EXPR = """
     coalesce(current_setting('app.rls_mode', true), '') = 'system'
@@ -43,5 +43,5 @@ def backwards(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("listaEspera", "0024_vinculoprojetoinstitucional_orientador")]
+    dependencies = [("plataforma", "0024_vinculoprojetoinstitucional_orientador")]
     operations = [migrations.RunPython(forwards, backwards)]

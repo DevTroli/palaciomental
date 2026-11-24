@@ -1,4 +1,4 @@
-from django.core.management.commands.migrate import Command as MigrateCommand
+from .migrate import Command as MigrateCommand
 from django.db import connections
 
 

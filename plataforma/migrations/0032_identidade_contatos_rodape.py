@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0031_proteger_agenda'),
+        ('plataforma', '0031_proteger_agenda'),
     ]
 
     operations = [

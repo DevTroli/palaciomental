@@ -753,7 +753,7 @@ class EventoCalendario(models.Model):
     )
 
     organizacao = models.ForeignKey(
-        "listaEspera.Organizacao",
+        "plataforma.Organizacao",
         on_delete=models.CASCADE,
         related_name="eventos_agenda",
         verbose_name="Organização",
@@ -765,7 +765,7 @@ class EventoCalendario(models.Model):
         verbose_name="Aluno",
     )
     projeto = models.ForeignKey(
-        "listaEspera.Project",
+        "plataforma.Project",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

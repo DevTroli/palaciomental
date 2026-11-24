@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0010_nomes_administrativos'),
+        ('plataforma', '0010_nomes_administrativos'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('criado_em', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
                 ('atualizado_em', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
                 ('criado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='programas_criados', to=settings.AUTH_USER_MODEL, verbose_name='Criado por')),
-                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='programas', to='listaEspera.organizacao', verbose_name='Organização')),
+                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='programas', to='plataforma.organizacao', verbose_name='Organização')),
             ],
             options={
                 'verbose_name': 'Programa institucional',
@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                 ('atualizado_em', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
                 ('criado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='turmas_grupos_criados', to=settings.AUTH_USER_MODEL, verbose_name='Criado por')),
                 ('professor_responsavel', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='turmas_grupos_orientados', to=settings.AUTH_USER_MODEL, verbose_name='Professor responsável')),
-                ('programa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='turmas_grupos', to='listaEspera.programainstitucional', verbose_name='Programa')),
+                ('programa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='turmas_grupos', to='plataforma.programainstitucional', verbose_name='Programa')),
             ],
             options={
                 'verbose_name': 'Turma ou grupo',
@@ -58,9 +58,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('vinculado_em', models.DateTimeField(auto_now_add=True, verbose_name='Vinculado em')),
-                ('projeto', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vinculo_turma_grupo', to='listaEspera.project', verbose_name='Projeto')),
+                ('projeto', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vinculo_turma_grupo', to='plataforma.project', verbose_name='Projeto')),
                 ('vinculado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='projetos_turma_grupo_vinculados', to=settings.AUTH_USER_MODEL, verbose_name='Vinculado por')),
-                ('turma_grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projetos_vinculados', to='listaEspera.turmagrupo', verbose_name='Turma ou grupo')),
+                ('turma_grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projetos_vinculados', to='plataforma.turmagrupo', verbose_name='Turma ou grupo')),
             ],
             options={
                 'verbose_name': 'Vínculo de projeto a turma ou grupo',
@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('ativo', 'Ativo'), ('suspenso', 'Suspenso')], default='ativo', max_length=20, verbose_name='Status')),
                 ('entrou_em', models.DateTimeField(auto_now_add=True, verbose_name='Entrou em')),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros_turma_grupo', to=settings.AUTH_USER_MODEL, verbose_name='Usuário')),
-                ('turma_grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros', to='listaEspera.turmagrupo', verbose_name='Turma ou grupo')),
+                ('turma_grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros', to='plataforma.turmagrupo', verbose_name='Turma ou grupo')),
             ],
             options={
                 'verbose_name': 'Membro de turma ou grupo',

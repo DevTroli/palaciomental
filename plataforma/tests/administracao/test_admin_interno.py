@@ -55,7 +55,7 @@ class AdminInstitucionalTests(TestCase):
 
     def test_invitation_generates_technical_token_and_auditor(self):
         response = self.client.post(
-            reverse("admin:listaEspera_conviteorganizacao_add"),
+            reverse("admin:plataforma_conviteorganizacao_add"),
             {
                 "organizacao": str(self.organizacao.pk),
                 "email": "professor@example.com",

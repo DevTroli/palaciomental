@@ -4,8 +4,8 @@ from django.db import migrations, models
 
 
 def enfileirar_existentes(apps, schema_editor):
-    Link = apps.get_model('listaEspera', 'ProjectLink')
-    Pendente = apps.get_model('listaEspera', 'GuardiaoLinkPendente')
+    Link = apps.get_model('plataforma', 'ProjectLink')
+    Pendente = apps.get_model('plataforma', 'GuardiaoLinkPendente')
     alias = schema_editor.connection.alias
     links = Link.objects.using(alias).values_list('pk', flat=True).iterator(chunk_size=500)
     batch = []
@@ -21,7 +21,7 @@ def enfileirar_existentes(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0035_identidadeorganizacao_link_1_titulo_and_more'),
+        ('plataforma', '0035_identidadeorganizacao_link_1_titulo_and_more'),
     ]
 
     operations = [

@@ -6,14 +6,14 @@ from django.db.models import F
 
 
 def preservar_slogan(apps, schema_editor):
-    identidade = apps.get_model('listaEspera', 'IdentidadeOrganizacao')
+    identidade = apps.get_model('plataforma', 'IdentidadeOrganizacao')
     identidade.objects.using(schema_editor.connection.alias).filter(slogan='').exclude(slogan_rodape='').update(slogan=F('slogan_rodape'))
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0034_identidade_site_oficial'),
+        ('plataforma', '0034_identidade_site_oficial'),
     ]
 
     operations = [
