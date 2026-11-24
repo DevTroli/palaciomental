@@ -102,8 +102,13 @@ public class IncidentAlertDispatcher {
   }
 
   private String incidentMessage(Delivery delivery, String state) {
-    String journeyId = delivery.journey().startsWith("organizacao:") ? "organizacao" : delivery.journey();
-    String journey = JOURNEYS.getOrDefault(journeyId, "Serviço");
+    String journeyId = delivery.journey().startsWith("organizacao:") || delivery.journey().startsWith("sondagem:")
+        ? "organizacao" : delivery.journey();
+    String journey = delivery.journey().startsWith("sondagem:")
+        ? TenantProbeResults.JOURNEYS.stream()
+            .filter(probe -> delivery.journey().endsWith(":" + probe.key()))
+            .map(TenantProbeResults.Journey::name).findFirst().orElse("Jornada institucional")
+        : JOURNEYS.getOrDefault(journeyId, "Serviço");
     String route = switch (journeyId) {
       case "inicio" -> "/";
       case "vitrine" -> "/projetos/";

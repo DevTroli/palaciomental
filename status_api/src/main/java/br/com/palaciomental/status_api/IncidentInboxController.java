@@ -35,7 +35,7 @@ public class IncidentInboxController {
             + "JOIN guardiao.service_incidents i ON i.id = e.incident_id "
             + "WHERE d.channel = 'inbox' AND d.status = 'pending' AND e.event_type = 'severe' "
             + "AND d.next_attempt_at <= now() AND e.created_at >= now() - interval '24 hours' ORDER BY e.id LIMIT 20",
-        (rs, row) -> new Alert(rs.getLong(1), rs.getString(2).startsWith("organizacao:") ? "organizacao" : rs.getString(2), rs.getString(3), rs.getTimestamp(4).toInstant(),
+        (rs, row) -> new Alert(rs.getLong(1), institutional(rs.getString(2)) ? "organizacao" : rs.getString(2), rs.getString(3), rs.getTimestamp(4).toInstant(),
             rs.getTimestamp(5) == null ? null : rs.getTimestamp(5).toInstant(), rs.getTimestamp(6).toInstant()));
   }
 
@@ -57,7 +57,7 @@ public class IncidentInboxController {
     jdbc.update("UPDATE guardiao.incident_alert_deliveries d SET status = 'failed', last_error = 'TENANT_NOT_FOUND' "
         + "FROM guardiao.incident_alert_events e JOIN guardiao.service_incidents i ON i.id = e.incident_id "
         + "WHERE d.event_id = e.id AND d.event_id = ? AND d.channel = 'inbox' "
-        + "AND d.status = 'pending' AND (i.journey = 'organizacao' OR i.journey LIKE 'organizacao:%')", eventId);
+        + "AND d.status = 'pending' AND (i.journey = 'organizacao' OR i.journey LIKE 'organizacao:%' OR i.journey LIKE 'sondagem:%')", eventId);
     return ResponseEntity.noContent().build();
   }
 
@@ -72,5 +72,9 @@ public class IncidentInboxController {
         + "last_error = 'INBOX_DELIVERY_FAILED' WHERE event_id = ? AND channel = 'inbox' "
         + "AND status = 'pending' AND next_attempt_at <= now()", eventId);
     return ResponseEntity.noContent().build();
+  }
+
+  private static boolean institutional(String journey) {
+    return journey.startsWith("organizacao:") || journey.startsWith("sondagem:");
   }
 }

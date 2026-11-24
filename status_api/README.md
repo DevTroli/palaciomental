@@ -79,13 +79,15 @@ python manage.py verificar_jornadas_institucionais   --origem https://tenant.hom
 
 Execute uma rodada por vez. O comando retorna JSON e código de erro em falhas. Mantenha resultados no próprio ambiente.
 
-Para publicar: configure `STATUS_TENANT_PROBE_HOST` no Spring, o token compartilhado no executor e acrescente `--publicar-em https://api.exemplo.org/v1/guardiao/sondagens`. O hostname autorizado deve constar no snapshot recente. Há uma amostra por janela de cinco minutos, sem abertura automática de incidentes.
+Para publicar: configure `STATUS_TENANT_PROBE_HOST` no Spring, o token compartilhado no executor e acrescente `--publicar-em https://api.exemplo.org/v1/guardiao/sondagens`. O hostname autorizado deve constar no snapshot recente. Duas falhas consecutivas abrem um incidente; após 15 minutos ele aparece no painel. Se o login falhar, projeto e turma ficam sem nova verificação até a próxima autenticação bem-sucedida.
 
 </details>
 
 ## Operar em produção
 
 **Migrar → atualizar API e Django → iniciar worker → testar um link → ativar monitor e canais.**
+
+Quando a role de migrations é diferente da role comum do Django, conceda à role comum `SELECT`, `INSERT`, `UPDATE` e `DELETE` nas tabelas novas e configure privilégios padrão para tabelas e sequências futuras. Confira isso após cada migration antes de validar login e sondagens; uma falta de acesso à tabela `plataforma_authattemptwindow` faz o login responder 503.
 
 <details>
 <summary>Configuração essencial</summary>

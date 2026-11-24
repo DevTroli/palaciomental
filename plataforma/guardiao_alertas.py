@@ -16,7 +16,7 @@ from .models import DominioOrganizacao, MembroOrganizacao, Notification, Organiz
 logger = logging.getLogger(__name__)
 JORNADAS = {
     "inicio": "a página inicial", "vitrine": "a vitrine de projetos", "entrada": "a entrada",
-    "cadastro": "o cadastro", "organizacao": "a entrada da organização",
+    "cadastro": "o cadastro", "organizacao": "o acesso da organização",
 }
 
 

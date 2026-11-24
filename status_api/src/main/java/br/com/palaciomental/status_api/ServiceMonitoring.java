@@ -127,9 +127,17 @@ public class ServiceMonitoring {
   private record Previous(boolean successful, Instant at) {}
 
   private String tenantHost(String journey) {
-    if (!journey.startsWith("organizacao:")) return null;
+    String organizationId;
+    if (journey.startsWith("organizacao:")) {
+      organizationId = journey.substring("organizacao:".length());
+    } else if (journey.startsWith("sondagem:")) {
+      int end = journey.lastIndexOf(':');
+      organizationId = journey.substring("sondagem:".length(), end);
+    } else {
+      return null;
+    }
     var hosts = jdbc.query("SELECT hostname FROM guardiao.monitored_tenants WHERE organization_id = ?",
-        (rs, row) -> rs.getString(1), java.util.UUID.fromString(journey.substring("organizacao:".length())));
+        (rs, row) -> rs.getString(1), java.util.UUID.fromString(organizationId));
     return hosts.isEmpty() ? null : hosts.getFirst();
   }
 

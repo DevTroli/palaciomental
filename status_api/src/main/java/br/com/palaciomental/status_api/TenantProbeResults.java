@@ -1,8 +1,6 @@
 package br.com.palaciomental.status_api;
 
 import io.swagger.v3.oas.annotations.Hidden;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -52,21 +50,11 @@ public class TenantProbeResults {
         + "WHERE hostname = ? AND synced_at >= now() - interval '10 minutes'", java.util.UUID.class, hostname);
     if (ids.isEmpty()) return ResponseEntity.notFound().build();
 
-    var outcomes = List.of(result.login(), result.projetos(), result.programas_e_turmas());
-    var now = Timestamp.from(Instant.now());
-    for (int i = 0; i < JOURNEYS.size(); i++) {
-      record(JOURNEYS.get(i).id(ids.getFirst()), outcomes.get(i), now);
+    monitor.record(JOURNEYS.getFirst().id(ids.getFirst()), result.login());
+    if (result.login()) {
+      monitor.record(JOURNEYS.get(1).id(ids.getFirst()), result.projetos());
+      monitor.record(JOURNEYS.get(2).id(ids.getFirst()), result.programas_e_turmas());
     }
     return ResponseEntity.noContent().build();
-  }
-
-  private void record(String id, boolean success, Timestamp now) {
-    jdbc.queryForObject("SELECT pg_advisory_xact_lock(hashtext(?)) IS NULL", Boolean.class, id);
-    jdbc.update("INSERT INTO guardiao.service_journeys (journey, started_at) VALUES (?, ?) "
-        + "ON CONFLICT (journey) DO NOTHING", id, now);
-    jdbc.update("INSERT INTO guardiao.service_checks (journey, checked_at, successful) "
-        + "SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM guardiao.service_checks WHERE journey = ? "
-        + "AND checked_at >= date_bin(interval '5 minutes', CAST(? AS timestamptz), timestamptz '2000-01-01'))",
-        id, now, success, id, now);
   }
 }

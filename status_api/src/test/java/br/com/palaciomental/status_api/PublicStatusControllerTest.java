@@ -104,6 +104,8 @@ class PublicStatusControllerTest {
     when(monitor.enabled()).thenReturn(true);
     when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any(), any()))
         .thenReturn(List.of());
+    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any()))
+        .thenReturn(List.of());
 
     var body = new PublicStatusController(jdbc, monitor).status().getBody();
     assertThat(body).isNotNull();
@@ -127,6 +129,14 @@ class PublicStatusControllerTest {
     when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(), any(), any()))
         .thenAnswer(invocation -> {
           if (((String) invocation.getArgument(0)).contains("service_incidents")) return List.of();
+          RowMapper<?> mapper = invocation.getArgument(1);
+          var row = mock(ResultSet.class);
+          when(row.getTimestamp(1)).thenReturn(Timestamp.from(Instant.now().minusSeconds(3600)));
+          when(row.getBoolean(2)).thenReturn(false);
+          return List.of(mapper.mapRow(row, 0));
+        });
+    when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any()))
+        .thenAnswer(invocation -> {
           RowMapper<?> mapper = invocation.getArgument(1);
           var row = mock(ResultSet.class);
           when(row.getTimestamp(1)).thenReturn(Timestamp.from(Instant.now().minusSeconds(3600)));

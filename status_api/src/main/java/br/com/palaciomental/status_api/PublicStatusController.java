@@ -44,14 +44,14 @@ public class PublicStatusController {
                 + "GROUP BY date_bin(interval '15 minutes', checked_at, timestamptz '2000-01-01') ORDER BY max(checked_at) DESC",
             (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), id, id, java.sql.Timestamp.from(start));
         var days = history(checks, firstMonitoringStart(id, checks), now);
-        Check latest = checks.isEmpty() ? null : checks.getFirst();
+        Check latest = id.equals("organizacao") ? (checks.isEmpty() ? null : checks.getFirst()) : latestCheck(id);
         String state = currentState(id, latest, now);
         journeys.add(Map.of("nome", NAMES.get(id), "estado", state, "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", days));
       }
       var incidents = jdbc.query("SELECT i.journey, i.started_at, i.recovered_at FROM guardiao.service_incidents i "
               + "WHERE i.retired_at IS NULL AND EXISTS (SELECT 1 FROM guardiao.incident_alert_events e WHERE e.incident_id = i.id AND e.event_type = 'public') "
               + "AND (i.started_at >= ? OR i.recovered_at IS NULL OR i.recovered_at >= ?) ORDER BY i.started_at DESC LIMIT 100",
-          (rs, row) -> Map.of("jornada", NAMES.getOrDefault(rs.getString(1).startsWith("organizacao:") ? "organizacao" : rs.getString(1), "Serviço"), "inicio", rs.getTimestamp(2).toInstant().toString(),
+          (rs, row) -> Map.of("jornada", journeyName(rs.getString(1)), "inicio", rs.getTimestamp(2).toInstant().toString(),
               "fim", rs.getTimestamp(3) == null ? "" : rs.getTimestamp(3).toInstant().toString()), java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
       return response(Map.of("disponivel", true, "jornadas", journeys, "incidentes", incidents));
     } catch (DataAccessException e) {
@@ -81,15 +81,15 @@ public class PublicStatusController {
         var journey = tenantJourney(probe.id(organization.id()), probe.name(), start, now, false);
         if (journey != null) journeys.add(journey);
       }
-      var incidents = jdbc.query("SELECT i.started_at, i.recovered_at FROM guardiao.service_incidents i "
-              + "WHERE i.journey = ? AND i.retired_at IS NULL "
+      var incidents = jdbc.query("SELECT i.journey, i.started_at, i.recovered_at FROM guardiao.service_incidents i "
+              + "WHERE (i.journey = ? OR i.journey LIKE ?) AND i.retired_at IS NULL "
               + "AND EXISTS (SELECT 1 FROM guardiao.incident_alert_events e "
               + "WHERE e.incident_id = i.id AND e.event_type = 'public') "
               + "AND (i.started_at >= ? OR i.recovered_at IS NULL OR i.recovered_at >= ?) "
               + "ORDER BY i.started_at DESC LIMIT 100",
-          (rs, row) -> Map.of("jornada", "Página de entrada", "inicio", rs.getTimestamp(1).toInstant().toString(),
-              "fim", rs.getTimestamp(2) == null ? "" : rs.getTimestamp(2).toInstant().toString()),
-          journeyId, java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
+          (rs, row) -> Map.of("jornada", journeyName(rs.getString(1)), "inicio", rs.getTimestamp(2).toInstant().toString(),
+              "fim", rs.getTimestamp(3) == null ? "" : rs.getTimestamp(3).toInstant().toString()),
+          journeyId, "sondagem:" + organization.id() + ":%", java.sql.Timestamp.from(start), java.sql.Timestamp.from(start));
       return response(Map.of("disponivel", true, "organizacao", organization.name(), "slug", slug,
           "jornadas", journeys, "incidentes", incidents,
           "cores", Map.of("principal", colorOrEmpty(organization.primary()), "destaque", colorOrEmpty(organization.accent()))));
@@ -102,7 +102,7 @@ public class PublicStatusController {
     var checks = checks(id, start);
     Instant first = firstMonitoringStart(id, checks);
     if (!required && first == null) return null;
-    Check latest = checks.isEmpty() ? null : checks.getFirst();
+    Check latest = latestCheck(id);
     return Map.of("nome", name, "estado", currentState(id, latest, now),
         "ultima_verificacao", latest == null ? "" : latest.at().toString(), "dias", history(checks, first, now));
   }
@@ -116,7 +116,25 @@ public class PublicStatusController {
         java.sql.Timestamp.from(start));
   }
 
+  private Check latestCheck(String journey) {
+    var checks = jdbc.query("SELECT checked_at, successful FROM guardiao.service_checks "
+            + "WHERE journey = ? ORDER BY checked_at DESC LIMIT 1",
+        (rs, row) -> new Check(rs.getTimestamp(1).toInstant(), rs.getBoolean(2)), journey);
+    return checks.isEmpty() ? null : checks.getFirst();
+  }
+
   private static String colorOrEmpty(String value) { return value == null ? "" : value; }
+
+  private static String journeyName(String id) {
+    if (id.startsWith("organizacao:")) return NAMES.get("organizacao");
+    if (id.startsWith("sondagem:")) {
+      int separator = id.lastIndexOf(':');
+      String key = id.substring(separator + 1);
+      return TenantProbeResults.JOURNEYS.stream().filter(journey -> journey.key().equals(key))
+          .map(TenantProbeResults.Journey::name).findFirst().orElse("Jornada institucional");
+    }
+    return NAMES.getOrDefault(id, "Serviço");
+  }
 
   private record Organization(java.util.UUID id, String name, String primary, String accent) {}
 
