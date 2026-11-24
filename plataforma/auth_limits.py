@@ -4,6 +4,7 @@ import math
 from datetime import timedelta
 from functools import wraps
 from ipaddress import ip_address, ip_network
+from unicodedata import normalize
 
 from django.conf import settings
 from django.db import DatabaseError, transaction
@@ -36,7 +37,7 @@ def consume_attempt(scope, account, address):
     now = timezone.now()
     identities = [("origin", address, 60)]
     if account:
-        identities.append(("account", account.strip().casefold(), 10))
+        identities.append(("account", normalize("NFKC", account).strip().casefold(), 10))
     keys = [(salted_hmac("pm-auth-limit", f"{scope}:{kind}:{value}").hexdigest(), limit)
             for kind, value, limit in identities]
     with transaction.atomic():
@@ -45,8 +46,9 @@ def consume_attempt(scope, account, address):
         AuthAttemptWindow.objects.filter(pk__in=expired, expires_at__lte=now).delete()
         windows = []
         for key, limit in keys:
-            row, _ = AuthAttemptWindow.objects.get_or_create(key=key, defaults={"expires_at": now + WINDOW})
-            row = AuthAttemptWindow.objects.select_for_update().get(pk=row.pk)
+            row, _ = AuthAttemptWindow.objects.select_for_update().get_or_create(
+                key=key, defaults={"expires_at": now + WINDOW}
+            )
             if row.expires_at <= now:
                 row.attempts, row.expires_at = 0, now + WINDOW
             if row.attempts >= limit:

@@ -25,6 +25,11 @@ class AuthLimitTests(TestCase):
         with patch("plataforma.auth_limits.timezone.now", return_value=now + timedelta(minutes=15)):
             self.assertEqual(consume_attempt("login", "person", "192.0.2.2"), 0)
 
+    def test_unicode_compatibility_names_share_account_limit(self):
+        for _ in range(10):
+            self.assertEqual(consume_attempt("login", "person", "192.0.2.1"), 0)
+        self.assertGreater(consume_attempt("login", "ｐｅｒｓｏｎ", "192.0.2.2"), 0)
+
     def test_origin_limit_applies_across_account_names(self):
         for number in range(60):
             self.assertEqual(consume_attempt("register", str(number), "192.0.2.1"), 0)
@@ -66,6 +71,23 @@ class AuthLimitHttpTests(PortalInstitucionalBase):
 
 @skipUnless(connection.vendor == "postgresql", "Concorrência exige PostgreSQL")
 class ConcurrentAuthLimitTests(TransactionTestCase):
+    def test_parallel_expiry_cleanup_does_not_break_login(self):
+        for number in range(2):
+            consume_attempt("login", f"expired-{number}", f"192.0.2.{number + 1}")
+        AuthAttemptWindow.objects.update(expires_at=timezone.now() - timedelta(seconds=1))
+        barrier = Barrier(2)
+
+        def attempt(number):
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                return consume_attempt("login", f"new-{number}", f"192.0.2.{number + 1}")
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            self.assertEqual(list(executor.map(attempt, range(2))), [0, 0])
+
     def test_parallel_requests_cannot_exceed_account_limit(self):
         for _ in range(9):
             consume_attempt("login", "person", "192.0.2.1")
