@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0037_projectlink_ameaca_estado_and_more'),
+        ('plataforma', '0037_projectlink_ameaca_estado_and_more'),
     ]
 
     operations = [
@@ -19,12 +19,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='projectlink',
             name='turma',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='referencias', to='listaEspera.turma'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='referencias', to='plataforma.turma'),
         ),
         migrations.AlterField(
             model_name='projectlink',
             name='project',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='links', to='listaEspera.project'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='links', to='plataforma.project'),
         ),
         migrations.AddConstraint(
             model_name='projectlink',

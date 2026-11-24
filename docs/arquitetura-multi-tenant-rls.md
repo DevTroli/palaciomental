@@ -83,7 +83,7 @@ docker compose exec django python manage.py pm_rls_status --strict
 <details>
 <summary>Falhas, arquivos e tarefas de apoio</summary>
 
-- **Redis:** rankings são revalidados no SQL; sessões têm suporte no banco quando o cache falha. Rebuilds respeitam o escopo global ou institucional.
+- **Redis:** o ranking exibido é ordenado diretamente pelo PostgreSQL; sessões têm suporte no banco quando o cache falha. Rebuilds respeitam o escopo global ou institucional.
 - **Guardião:** falhas mantêm alterações na fila para retentativa. Ler um projeto não depende de uma nova verificação bem-sucedida. Sem avaliação de ameaça, o resultado é “não verificado”.
 - **Mídia:** logo e capa são públicas, normalizadas e recebem novas chaves por upload. Não envie conteúdo privado ao bucket público de identidade.
 - **Monitoramento:** Spring consulta páginas e registra incidentes. A sondagem autenticada é um executor opcional, com conta dedicada; seus resultados só entram no painel quando a publicação é configurada.
@@ -105,6 +105,6 @@ docker compose exec django python manage.py pm_rls_status --strict
 
 Migrations Django e Flyway são independentes. O release da API aplica Flyway antes da troca do serviço; o worker não executa migrations web. Consulte o [guia operacional da API](../status_api/README.md#operar-em-produção).
 
-`plataforma` preserva o app label histórico `listaEspera`, usado nas migrations. Não o renomeie isoladamente. A agenda usa `plataforma_eventocalendario` e não depende do antigo app CAMP.
+O app Django e suas tabelas usam `plataforma`. Bancos anteriores precisam da [transição coordenada](transicao-plataforma.md) antes do deploy. A agenda usa `plataforma_eventocalendario`.
 
 </details>

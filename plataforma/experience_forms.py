@@ -1,4 +1,5 @@
 from django import forms
+from .account_identity import email_users
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.validators import FileExtensionValidator
@@ -65,7 +66,7 @@ class PerfilInstitucionalForm(forms.ModelForm):
         email = (self.cleaned_data.get("email") or "").strip().lower()
         if not email:
             return email
-        duplicados = get_user_model().objects.filter(email__iexact=email)
+        duplicados = email_users(email)
         if self.instance.pk:
             duplicados = duplicados.exclude(pk=self.instance.pk)
         if duplicados.exists():

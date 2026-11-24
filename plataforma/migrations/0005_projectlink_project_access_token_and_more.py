@@ -3,7 +3,7 @@ import django.db.models.deletion
 import uuid
 
 class Migration(migrations.Migration):
-    dependencies = [("listaEspera", "0004_project_collaboration_description_and_more")]
+    dependencies = [("plataforma", "0004_project_collaboration_description_and_more")]
     operations = [
         migrations.AddField(model_name="project", name="access_token", field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
         migrations.AddField(model_name="projectmember", name="can_manage_milestones", field=models.BooleanField(default=True, verbose_name="Pode gerenciar marcos")),
@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
             ("label", models.CharField(max_length=80, verbose_name="Nome do link")),
             ("url", models.URLField(max_length=500, verbose_name="URL")),
             ("created_at", models.DateTimeField(auto_now_add=True)),
-            ("project", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="links", to="listaEspera.project")),
+            ("project", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="links", to="plataforma.project")),
         ], options={"ordering": ["created_at"]}),
     ]

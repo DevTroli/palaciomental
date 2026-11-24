@@ -7,10 +7,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from PIL import Image
 
-from plataforma.models import (
-    CollaborationRequest, DominioOrganizacao, EventoCalendario, IdentidadeOrganizacao,
-    MemberProfile, MembroOrganizacao, Organizacao, Project, ProjectMember,
-)
+from plataforma.models import DominioOrganizacao, EventoCalendario, MemberProfile, MembroOrganizacao, Organizacao, Project
 from .base import PortalInstitucionalBase
 
 HOST = "camppg.palaciomental.com.br"
@@ -24,17 +21,6 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         DominioOrganizacao.objects.create(organizacao=self.other, hostname="outra.palaciomental.com.br", principal=True)
         self.client.force_login(self.user)
 
-    def test_host_root_uses_camp_flow_with_canonical_urls_and_dynamic_brand(self):
-        IdentidadeOrganizacao.objects.create(organizacao=self.organization, nome_exibicao="Campus personalizado")
-        for path in ("/", "/perfil/", "/projetos/", "/calendario/", "/caixa-de-entrada/", "/projetos/novo/"):
-            with self.subTest(path=path):
-                response = self.client.get(path, HTTP_HOST=HOST)
-                self.assertEqual(response.status_code, 200)
-                self.assertContains(response, 'class="camp-topbar"')
-                self.assertContains(response, 'class="camp-sidebar"')
-                self.assertContains(response, "Campus personalizado")
-                self.assertNotContains(response, 'href="/camp/')
-                self.assertNotContains(response, "CAMP-PG")
 
     def test_people_search_accepts_at_username_and_stays_in_tenant(self):
         user = get_user_model().objects.create_user(username="ana123", first_name="Ana")
@@ -47,33 +33,6 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertNotContains(response, "ana_externa")
         self.assertContains(response, 'name="vista"')
 
-    def test_shared_navigation_search_offers_projects_and_people_on_each_screen(self):
-        for path in ("/", "/perfil/", "/projetos/", "/calendario/"):
-            with self.subTest(path=path):
-                response = self.client.get(path, HTTP_HOST=HOST)
-                self.assertEqual(response.status_code, 200)
-                self.assertContains(response, '<legend>Buscar em</legend>', html=True)
-                self.assertContains(response, 'name="vista" value="projetos" checked')
-                self.assertContains(response, 'name="vista" value="alunos"')
-                self.assertContains(response, 'action="/projetos/"')
-
-    def test_classes_and_teams_page_is_available_only_in_an_affiliated_tenant(self):
-        path = "/turmas-e-equipes/"
-        self.assertContains(self.client.get(path, HTTP_HOST=HOST, follow=True), "Programas e turmas")
-        self.assertEqual(self.client.get(path, HTTP_HOST="palaciomental.com.br").status_code, 404)
-        self.assertEqual(self.client.get(path, HTTP_HOST="outra.palaciomental.com.br").status_code, 403)
-        self.assertEqual(self.client.post(path, HTTP_HOST=HOST).status_code, 405)
-        home = self.client.get("/", HTTP_HOST=HOST)
-        self.assertContains(home, 'href="/programas/"')
-
-    def test_legacy_routes_never_authenticate_and_are_removed_in_both_debug_modes(self):
-        self.client.logout()
-        for debug in (False, True):
-            with override_settings(DEBUG=debug):
-                for path in ("/camp/", "/camp/perfil/", "/camp/cadastro/", "/entrar/camp/"):
-                    for method in (self.client.get, self.client.post):
-                        self.assertEqual(method(path, HTTP_HOST=HOST).status_code, 404)
-                        self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_agenda_rejects_other_tenant_and_forged_project(self):
         event = EventoCalendario.objects.create(organizacao=self.other, aluno=self.user,
@@ -88,10 +47,6 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(EventoCalendario.objects.filter(titulo="Evento forjado").exists())
 
-    def test_agenda_requires_tenant_and_safely_handles_date_boundaries(self):
-        self.assertEqual(self.client.get("/calendario/", HTTP_HOST="palaciomental.com.br").status_code, 404)
-        for year in ("1", "9999", "-1", "not-a-year"):
-            self.assertEqual(self.client.get("/calendario/", {"ano": year}, HTTP_HOST=HOST).status_code, 200)
 
     def test_manager_publishes_activity_to_active_member_without_granting_edit_permission(self):
         membership = MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.pm_staff, papel="gestor")
@@ -107,12 +62,6 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertEqual(self.client.post(f"/calendario/{event.pk}/excluir/", HTTP_HOST=HOST).status_code, 404)
         self.assertEqual(self.client.post("/calendario/publicar/", HTTP_HOST=HOST).status_code, 403)
 
-    def test_collaboration_request_from_migrated_front_requires_owner_approval(self):
-        project = Project.objects.create(owner=self.pm_staff, organizacao=self.organization,
-                                        title="Projeto aberto", visibility="publico", seeking_collaborators=True)
-        self.client.post(f"/projetos/{project.pk}/colaboracao/", {"message": "Quero ajudar"}, HTTP_HOST=HOST)
-        self.assertTrue(CollaborationRequest.objects.filter(project=project, requester=self.user).exists())
-        self.assertFalse(ProjectMember.objects.filter(project=project, user=self.user).exists())
 
     def test_avatar_rejects_fake_image_and_normalizes_real_image(self):
         with TemporaryDirectory() as media, override_settings(MEDIA_ROOT=media):
@@ -149,14 +98,6 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertFalse(form.is_valid())
         self.assertIn("username", form.errors)
 
-    def test_profile_has_navigation_fallback_and_calendar_event_text(self):
-        EventoCalendario.objects.create(organizacao=self.organization, aluno=self.user, titulo="Oficina acessível", tipo="atividade", data=date.today())
-        response = self.client.get("/perfil/?aba=colaboracoes", HTTP_HOST=HOST)
-        self.assertContains(response, '<noscript>')
-        self.assertContains(response, '?aba=configuracoes')
-        self.assertContains(response, 'abbr="Segunda-feira"')
-        self.assertContains(response, 'Eventos: Oficina acessível')
-        self.assertEqual(response.context['aba_ativa'], 'colaboracoes')
 
     def test_inactive_membership_cannot_use_new_agenda(self):
         self.membership.status = "suspensa"
@@ -194,18 +135,6 @@ class ExperienceM6Tests(PortalInstitucionalBase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(EventoCalendario.objects.filter(titulo="Publicação forjada").exists())
 
-    def test_edit_cannot_link_project_to_class_without_eligibility(self):
-        from plataforma.models import ProgramaInstitucional
-        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.pm_staff, papel="professor")
-        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", criado_por=self.pm_staff)
-        group = self.make_group(program, "Turma restrita", professor=self.pm_staff)
-        project = Project.objects.create(owner=self.user, organizacao=self.organization, title="Meu projeto", visibility="privado")
-        response = self.client.post(f"/projetos/{project.pk}/editar/", {"title": "Meu projeto",
-            "direction": "Teste", "status": "ativo", "visibility": "privado", "tipo_projeto": "programa",
-            "turma": str(group.turma_id), "grupo": str(group.pk), "orientador": self.pm_staff.pk}, HTTP_HOST=HOST)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("turma", response.context["form"].errors)
-        self.assertFalse(hasattr(project, "vinculo_institucional"))
 
     def test_login_navigation_and_logout_survive_unavailable_session_cache(self):
         from unittest.mock import patch

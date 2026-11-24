@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Case, Count, Exists, OuterRef, Q, When
+from django.db.models import Count, Exists, OuterRef, Q
 from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -23,6 +23,8 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
+from .auth_limits import limit_authentication
+from .account_identity import register_account
 from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm, TurmaReferenciaForm
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, Organizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
@@ -32,7 +34,7 @@ from .invitations import invitation_accept, invitation_login_target
 from .invitation_delivery import deliver_invitation
 from .management_metrics import management_distributions
 from .branding import invitation_branding
-from core.rankings import complete_ranking_ids
+from core.rankings import ranked_projects
 
 
 def _tenant_identity_context(organizacao):
@@ -43,6 +45,7 @@ def _tenant_identity_context(organizacao):
     }
 
 
+@limit_authentication("register")
 def register(request):
     if getattr(request, "organizacao", None) is not None:
         context = _tenant_identity_context(request.organizacao)
@@ -57,8 +60,9 @@ def register(request):
         return redirect("plataforma:profile", username=request.user.username)
     form = MemberCreationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
-        MemberProfile.objects.create(user=user)
+        user = register_account(form)
+        if user is None:
+            return render(request, "auth/register.html", {"form": form})
         login(request, user)
         messages.success(request, "Conta criada. Agora você pode dar forma ao seu primeiro projeto.")
         return redirect("plataforma:profile", username=user.username)
@@ -78,6 +82,7 @@ def _safe_local_next(request, value):
     return value
 
 
+@limit_authentication("login")
 def login_view(request):
     from django.contrib.auth.forms import AuthenticationForm
     form = AuthenticationForm(request, data=request.POST or None)
@@ -173,15 +178,7 @@ def projects(request):
         queryset = queryset.filter(tags__icontains=tag)
     if ordering == "relevance":
         tenant_id = getattr(getattr(request, "organizacao", None), "pk", None)
-        ranking_ids = complete_ranking_ids(tenant_id=tenant_id)
-        if ranking_ids:
-            ranking_order = Case(
-                *[When(pk=project_id, then=position) for position, project_id in enumerate(ranking_ids)],
-                default=len(ranking_ids),
-            )
-            queryset = queryset.order_by(ranking_order, "-relevance", "-updated_at", "-pk")
-        else:
-            queryset = queryset.order_by("-relevance", "-updated_at", "-pk")
+        queryset = ranked_projects(queryset, tenant_id=tenant_id)
     categories = _project_scope(request).filter(visibility=Project.VISIBILITY_PUBLIC).values_list("category", flat=True).distinct().order_by("category")
     organizacao = getattr(request, "organizacao", None)
     context = {

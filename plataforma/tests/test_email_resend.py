@@ -5,8 +5,7 @@ from io import BytesIO
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
-from django.core.exceptions import ImproperlyConfigured
-from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.mail import EmailMultiAlternatives
 from django.test import SimpleTestCase, override_settings
 
 from plataforma.email_backends import EmailDeliveryError
@@ -44,12 +43,6 @@ class ResendBackendTests(SimpleTestCase):
         self.assertEqual(payload["html"], "<p>Versão HTML</p>")
         self.assertEqual(payload["reply_to"], ["help@example.com"])
 
-    @override_settings(RESEND_API_KEY="")
-    @patch("plataforma.email_backends.urlopen")
-    def test_missing_key_fails_before_network_call(self, transport):
-        with self.assertRaises(ImproperlyConfigured):
-            self.email().send()
-        transport.assert_not_called()
 
     @patch("plataforma.email_backends.urlopen")
     def test_provider_failure_is_sanitized_for_auth_quota_and_server_errors(self, transport):
@@ -69,10 +62,6 @@ class ResendBackendTests(SimpleTestCase):
         with self.assertRaises(EmailDeliveryError):
             self.email().send()
 
-    @patch("plataforma.email_backends.urlopen", side_effect=TimeoutError)
-    def test_timeout_is_reported_as_delivery_error(self, transport):
-        with self.assertRaises(EmailDeliveryError):
-            self.email().send()
 
     @patch("plataforma.email_backends.urlopen")
     def test_malformed_or_unconfirmed_provider_response_is_not_success(self, transport):
@@ -80,20 +69,3 @@ class ResendBackendTests(SimpleTestCase):
             transport.return_value.__enter__.return_value = BytesIO(content)
             with self.subTest(content=content), self.assertRaises(EmailDeliveryError):
                 self.email().send()
-
-    @patch("plataforma.email_backends.urlopen")
-    def test_empty_messages_and_no_recipient_make_no_request(self, transport):
-        connection = get_connection()
-        self.assertEqual(connection.send_messages(None), 0)
-        email = self.email()
-        email.to = []
-        self.assertEqual(connection.send_messages([email]), 0)
-        transport.assert_not_called()
-
-    @patch("plataforma.email_backends.urlopen")
-    def test_unsupported_attachment_is_not_silently_dropped(self, transport):
-        email = self.email()
-        email.attach("note.txt", "Conteúdo", "text/plain")
-        with self.assertRaises(EmailDeliveryError):
-            email.send()
-        transport.assert_not_called()

@@ -753,7 +753,7 @@ class EventoCalendario(models.Model):
     )
 
     organizacao = models.ForeignKey(
-        "listaEspera.Organizacao",
+        "plataforma.Organizacao",
         on_delete=models.CASCADE,
         related_name="eventos_agenda",
         verbose_name="Organização",
@@ -765,7 +765,7 @@ class EventoCalendario(models.Model):
         verbose_name="Aluno",
     )
     projeto = models.ForeignKey(
-        "listaEspera.Project",
+        "plataforma.Project",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -807,3 +807,10 @@ class EventoCalendario(models.Model):
 
     def __str__(self):
         return f"{self.titulo} · {self.data:%d/%m/%Y}"
+
+
+class AuthAttemptWindow(models.Model):
+    """Contadores temporários; chaves HMAC não contêm usuário ou IP em texto."""
+    key = models.CharField(max_length=64, primary_key=True)
+    attempts = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)

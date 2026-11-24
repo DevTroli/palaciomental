@@ -1,0 +1,16 @@
+{% extends layout_template|default:"base.html" %}
+{% block title %}Tente novamente em instantes | Palácio Mental{% endblock %}
+{% block content %}
+<section class="auth-section mvp-container">
+  <div class="form-card">
+    {% if unavailable %}
+      <h1>Acesso temporariamente indisponível</h1>
+      <p>Não foi possível processar seu acesso. Tente novamente em um minuto.</p>
+    {% else %}
+      <h1>Aguarde antes de tentar novamente</h1>
+      <p>O limite de tentativas foi atingido. Tente novamente em até {{ minutes }} minuto{{ minutes|pluralize }}.</p>
+    {% endif %}
+    <a class="button" href="">Reabrir formulário</a>
+  </div>
+</section>
+{% endblock %}

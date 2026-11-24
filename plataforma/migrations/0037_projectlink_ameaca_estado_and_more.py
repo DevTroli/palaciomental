@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0036_guardiaolinkpendente'),
+        ('plataforma', '0036_guardiaolinkpendente'),
     ]
 
     operations = [

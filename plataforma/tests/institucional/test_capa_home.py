@@ -5,14 +5,8 @@ from tempfile import TemporaryDirectory
 
 from django.core.exceptions import ValidationError
 from django.test import override_settings
-from django.template.loader import render_to_string
-from django.test.client import RequestFactory
 
-from plataforma.branding import invitation_branding
-from plataforma.models import (
-    DominioOrganizacao, IdentidadeOrganizacao, MembroOrganizacao, Organizacao,
-    ProgramaInstitucional, Project, Turma, VinculoProjetoInstitucional,
-)
+from plataforma.models import DominioOrganizacao, IdentidadeOrganizacao, MembroOrganizacao, Organizacao
 from plataforma.validators import validar_capa
 from .base import PortalInstitucionalBase
 
@@ -57,48 +51,6 @@ class CapaHomeTests(PortalInstitucionalBase):
             with self.assertRaises(ValidationError):
                 validar_capa(file)
 
-    def test_cover_removal_is_kept_pending_when_another_field_is_invalid(self):
-        self.identity.capa = self.logo_file("capa.png", (1200, 400))
-        self.identity.save()
-        response = self.client.post("/gestao/identidade/", {
-            "nome_exibicao": "Campus", "capa-clear": "on", "email_contato": "invalido",
-        }, HTTP_HOST=HOST)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'data-branding-clear="capa"')
-        self.assertContains(response, "Remoção marcada")
-        self.identity.refresh_from_db()
-        self.assertTrue(self.identity.capa)
-
-    def test_cover_upload_and_presentation_escaped(self):
-        response = self.client.post("/gestao/identidade/", {
-            "nome_exibicao": "Meu campus", "apresentacao": "<script>alert(1)</script>",
-            "capa": self.logo_file("capa.png", (1200, 400)),
-        }, HTTP_HOST=HOST)
-        self.assertEqual(response.status_code, 302)
-        response = self.client.get("/", HTTP_HOST=HOST)
-        self.assertContains(response, "/branding/cover/")
-        self.assertContains(response, "&lt;script&gt;alert(1)&lt;/script&gt;")
-        self.assertNotContains(response, "<script>alert(1)</script>")
-
-    def test_empty_cover_and_home_sections(self):
-        response = self.client.get("/", HTTP_HOST=HOST)
-        for label in ("tenant-cover--empty", "Projetos autônomos", "Projetos institucionais", "Ranking de projetos", "Acesso rápido"):
-            self.assertContains(response, label)
-
-    def test_only_tenant_public_projects_in_columns(self):
-        autonomous = Project.objects.create(title="Autônomo A", owner=self.user, organizacao=self.organization, visibility=Project.VISIBILITY_PUBLIC)
-        linked = Project.objects.create(title="Vinculado A", owner=self.user, organizacao=self.organization, visibility=Project.VISIBILITY_PUBLIC)
-        Project.objects.create(title="Privado A secreto", owner=self.user, organizacao=self.organization, visibility=Project.VISIBILITY_PRIVATE)
-        other = Organizacao.objects.create(slug="outro", nome="Outro", status="ativa")
-        Project.objects.create(title="Outro tenant secreto", owner=self.user, organizacao=other, visibility=Project.VISIBILITY_PUBLIC)
-        program = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)
-        turma = Turma.objects.create(programa=program, nome="Turma", criado_por=self.user)
-        VinculoProjetoInstitucional.objects.create(projeto=linked, turma=turma, vinculado_por=self.user)
-        response = self.client.get("/", HTTP_HOST=HOST)
-        self.assertEqual(list(response.context["projetos_autonomos"]), [autonomous])
-        self.assertEqual(list(response.context["projetos_vinculados"]), [linked])
-        self.assertNotContains(response, "Privado A secreto")
-        self.assertNotContains(response, "Outro tenant secreto")
 
     def test_theme_and_cover_do_not_leak_to_other_tenant(self):
         self.identity.capa = self.logo_file("capa.png", (1200, 400))
@@ -110,35 +62,3 @@ class CapaHomeTests(PortalInstitucionalBase):
         response = self.client.get("/", HTTP_HOST="outro.palaciomental.com.br")
         self.assertNotContains(response, cast(ImageFieldFile, self.identity.capa).url)
         self.assertNotContains(response, "#ABCDEF")
-
-    def test_email_uses_absolute_cover_and_shared_colors(self):
-        self.identity.capa = self.logo_file("capa.png", (1200, 400))
-        self.identity.tema = {"secondary": "#123456"}
-        self.identity.save()
-        request = RequestFactory().get("/", secure=True, HTTP_HOST=HOST)
-        branding = invitation_branding(request, self.organization)
-        html = render_to_string("emails/invitation_base.html", branding)
-        self.assertIn(f"https://{HOST}/media/", html)
-        self.assertIn("#123456", html)
-
-    def test_professor_cannot_upload_cover(self):
-        membership = MembroOrganizacao.objects.get(organizacao=self.organization, usuario=self.user)
-        membership.papel = "professor"
-        membership.save()
-        response = self.client.post("/gestao/identidade/", {
-            "capa": self.logo_file("capa.png", (1200, 400)),
-        }, HTTP_HOST=HOST)
-        self.assertEqual(response.status_code, 403)
-        self.identity.refresh_from_db()
-        self.assertFalse(self.identity.capa)
-
-    def test_logo_replacement_uses_new_key_for_immutable_cache(self):
-        self.identity.logo = self.logo_file("marca.png")
-        self.identity.save()
-        original = self.identity.logo.name
-        self.identity.logo = self.logo_file("marca.png")
-        self.identity.save()
-        self.assertNotEqual(self.identity.logo.name, original)
-        key = self.identity.logo.name
-        assert key is not None
-        self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", key)

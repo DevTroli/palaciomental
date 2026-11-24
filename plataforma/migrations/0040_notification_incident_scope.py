@@ -3,14 +3,14 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-    dependencies = [("listaEspera", "0039_turma_grupo_limites_texto")]
+    dependencies = [("plataforma", "0039_turma_grupo_limites_texto")]
 
     operations = [
         migrations.AddField(
             model_name="notification",
             name="scope_organization",
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
-                                    related_name="notifications", to="listaEspera.organizacao"),
+                                    related_name="notifications", to="plataforma.organizacao"),
         ),
         migrations.AddField(
             model_name="notification",

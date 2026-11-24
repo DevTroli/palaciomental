@@ -3,8 +3,8 @@ from django.db.models.functions import Length
 
 
 def validar_limites_existentes(apps, schema_editor):
-    Turma = apps.get_model("listaEspera", "Turma")
-    Grupo = apps.get_model("listaEspera", "Grupo")
+    Turma = apps.get_model("plataforma", "Turma")
+    Grupo = apps.get_model("plataforma", "Grupo")
     using = schema_editor.connection.alias
     excedentes = (
         Turma.objects.using(using).annotate(tamanho=Length("nome")).filter(tamanho__gt=80).exists()
@@ -17,7 +17,7 @@ def validar_limites_existentes(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("listaEspera", "0038_projectlink_descricao_projectlink_turma_and_more"),
+        ("plataforma", "0038_projectlink_descricao_projectlink_turma_and_more"),
     ]
 
     operations = [

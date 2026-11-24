@@ -50,6 +50,16 @@ Use **dois membros distintos** na colaboração. O aluno deve participar da turm
 
 </details>
 
+## API Spring Boot
+
+Importe [coleção](palacio-mental-api.postman_collection.json) e [environment](palacio-mental-api.postman_environment.json). Selecione **P.M · API Spring Boot** e preencha `service_token` localmente.
+
+**Enviar referência → verificar disponibilidade → rejeitar URL inválida → excluir → confirmar remoção.**
+
+Execute a coleção inteira no destino autorizado, com uma iteração e atraso de **1.000 ms**. A consulta aguarda até 30 tentativas pelo resultado. `test_link_url` e `expected_status` permitem conferir outros estados, como `REQUER_LOGIN` e `QUEBRADO`, usando destinos controlados.
+
+O environment aponta para `https://api.palaciomental.com.br`, com escrita autorizada somente nesse hostname. A rodada cria uma referência temporária na API de produção. Para desenvolvimento, use `http://localhost:8080`. A rodada gera um ID alto aleatório e remove a referência ao terminar. Se interromper, confira `pm_test_link_id` e conclua a exclusão antes de limpar essa variável.
+
 ## Executar pelo GitHub
 
 Em **Actions → Postman · Jornadas do MVP → Run workflow**, selecione `main` e autorize os dados de teste. A execução manual roda as três coleções da web e publica resultados no Postman.

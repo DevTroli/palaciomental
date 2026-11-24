@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [("listaEspera", "0033_identidade_slogan_institucional")]
+    dependencies = [("plataforma", "0033_identidade_slogan_institucional")]
 
     operations = [
         migrations.AddField(

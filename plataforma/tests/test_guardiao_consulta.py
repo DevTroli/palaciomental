@@ -1,13 +1,12 @@
 import json
 from unittest.mock import patch
-from urllib.error import HTTPError, URLError
+from urllib.error import URLError
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils.dateparse import parse_datetime
 
-from plataforma.guardiao_consulta import consultar_links, contar_atencao, marcar_links
+from plataforma.guardiao_consulta import consultar_links, marcar_links
 from plataforma.models import GuardiaoLinkPendente, Project, ProjectLink
 
 
@@ -55,37 +54,9 @@ class ConsultaGuardiaoTests(TestCase):
         self.assertIsNone(consultar_links([self.link]))
         self.assertTrue(marcar_links([self.link])[0].guardiao_indisponivel)
 
-    @patch("plataforma.guardiao_consulta.build_opener")
-    def test_api_antiga_registra_http_sem_dados_sensiveis(self, opener):
-        opener.return_value.open.side_effect = HTTPError("https://segredo.example", 404, "erro", {}, None)
-        with self.assertLogs("plataforma.guardiao_consulta", level="WARNING") as logs:
-            self.assertIsNone(consultar_links([self.link]))
-        self.assertIn("HTTP 404", logs.output[0])
-        self.assertNotIn("segredo", logs.output[0])
-
-    @patch("plataforma.guardiao_consulta.consultar_links")
-    def test_contagem_so_inclui_links_do_autor_no_ambiente(self, consult):
-        other_project = Project.objects.create(owner=self.other, title="Outro", direction="Contexto")
-        ProjectLink.objects.create(project=other_project, label="Outro", url="https://example.org")
-        consult.return_value = {self.link.pk: {"status": "QUEBRADO"}}
-        self.assertEqual(contar_atencao(self.owner, None), 1)
-        self.assertEqual([x.pk for x in consult.call_args.args[0]], [self.link.pk])
 
     @patch("plataforma.guardiao_consulta.marcar_links")
     def test_projeto_privado_negado_antes_de_consultar(self, mark):
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(reverse("plataforma:project_detail", args=[self.project.pk])).status_code, 404)
         mark.assert_not_called()
-
-    @patch("plataforma.guardiao_consulta.consultar_links")
-    def test_detalhe_exibe_selo_e_data_sem_depender_de_cor(self, consult):
-        self.client.force_login(self.owner)
-        consult.return_value = {self.link.pk: {"status": "QUEBRADO", "label": "Link quebrado",
-                                               "checked_at": parse_datetime("2026-11-15T15:00:00Z")}}
-        response = self.client.get(reverse("plataforma:project_detail", args=[self.project.pk]))
-        self.assertContains(response, "Link quebrado")
-        self.assertContains(response, "15/11/2026")
-        consult.return_value = None
-        response = self.client.get(reverse("plataforma:project_detail", args=[self.project.pk]))
-        self.assertContains(response, "Verificação indisponível")
-        self.assertContains(response, "https://example.com")

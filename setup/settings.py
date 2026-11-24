@@ -282,3 +282,6 @@ else:
 # A suíte cria dados de teste fora de requisições; o runner usa escopo system
 # e cada requisição do client aplica tenant/global pelo middleware.
 TEST_RUNNER = "setup.test_runner.PalacioTestRunner"
+
+# Somente redes de proxies identificados e protegidos contra acesso direto.
+AUTH_TRUSTED_PROXY_NETWORKS = [value.strip() for value in config("AUTH_TRUSTED_PROXY_NETWORKS", default="").split(",") if value.strip()]

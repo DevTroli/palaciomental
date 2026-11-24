@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0020_remove_membroturmagrupo_turma_grupo_and_more'),
+        ('plataforma', '0020_remove_membroturmagrupo_turma_grupo_and_more'),
     ]
 
     operations = [

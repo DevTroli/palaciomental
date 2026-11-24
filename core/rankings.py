@@ -11,7 +11,7 @@ from typing import Iterable, Optional
 import redis
 from django.conf import settings
 from django.utils import timezone
-from django.db.models import Case, Count, Q, When
+from django.db.models import Count, Q
 
 from plataforma.models import Project, ProjectVote
 
@@ -194,43 +194,6 @@ def public_ranking_ids(period: str = "all", tenant_id: Optional[int | str] = Non
     return [int(value) for value in (result or []) if str(value).isdigit()]
 
 
-def complete_ranking_ids(period: str = "all", tenant_id: Optional[int | str] = None) -> list[int]:
-    """Usa a projeção somente quando ela coincide com a fonte SQL oficial."""
-    if period not in PERIODS:
-        raise ValueError("Período inválido")
-    votes = ProjectVote.objects.all()
-    cutoff = PERIODS[period]
-    if cutoff is not None:
-        votes = votes.filter(created_at__gte=timezone.now() - cutoff)
-    expected = {
-        str(row["pk"]): (row["relevance"], row["updated_at"])
-        for row in Project.objects.filter(
-            organizacao_id=tenant_id,
-            visibility=Project.VISIBILITY_PUBLIC,
-        ).annotate(
-            relevance=Count("votes", distinct=True, filter=Q(votes__in=votes)),
-        ).values("pk", "relevance", "updated_at")
-    }
-    cached = _safe(
-        lambda client: client.zrevrange(
-            ranking_key(period, tenant_id), 0, -1, withscores=True
-        )
-    )
-    if cached is None:
-        return []
-    actual = {str(member): float(score) for member, score in cached if str(member).isdigit()}
-    if set(actual) != set(expected):
-        return []
-    if any(actual[project_id] != float(score) for project_id, (score, _updated_at) in expected.items()):
-        return []
-    # Redis desempata pelo texto do ID; mantenha a mesma ordem do SQL no empate.
-    return [int(project_id) for project_id in sorted(
-        expected,
-        key=lambda project_id: (expected[project_id][0], expected[project_id][1], int(project_id)),
-        reverse=True,
-    )]
-
-
 def ranked_projects(queryset, *, tenant_id=None, period="all"):
     """Revalida escopo e visibilidade no SQL antes de usar qualquer ID do Redis."""
     queryset = queryset.filter(organizacao_id=tenant_id, visibility=Project.VISIBILITY_PUBLIC)
@@ -243,8 +206,4 @@ def ranked_projects(queryset, *, tenant_id=None, period="all"):
             filter=Q(votes__created_at__gte=timezone.now()-cutoff))).order_by("-period_score", "-updated_at", "-pk")
     if "relevance" not in queryset.query.annotations:
         queryset = queryset.annotate(relevance=Count("votes", distinct=True))
-    ids = complete_ranking_ids(tenant_id=tenant_id)
-    if ids:
-        ordering = Case(*[When(pk=pk, then=index) for index, pk in enumerate(ids)], default=len(ids))
-        return queryset.order_by(ordering, "-relevance", "-updated_at", "-pk")
     return queryset.order_by("-relevance", "-updated_at", "-pk")

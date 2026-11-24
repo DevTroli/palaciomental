@@ -2,7 +2,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [("listaEspera", "0040_notification_incident_scope")]
+    dependencies = [("plataforma", "0040_notification_incident_scope")]
 
     operations = [
         migrations.AddField(

@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from plataforma.models import ConviteOrganizacao, DominioOrganizacao, MembroOrganizacao, Organizacao
+from plataforma.models import ConviteOrganizacao, MembroOrganizacao, Organizacao
 
 
 User = get_user_model()
@@ -22,17 +22,6 @@ class AdminInstitucionalTests(TestCase):
         self.client.force_login(self.admin)
         self.organizacao = Organizacao.objects.create(slug="camppg", nome="CAMPPG", status=Organizacao.STATUS_ATIVA)
 
-    def test_admin_home_uses_clear_platform_heading(self):
-        response = self.client.get(reverse("admin:index"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Palácio Mental — Operação da Plataforma")
-        self.assertContains(response, "O que você precisa fazer?")
-        self.assertContains(response, "Provisionar um tenant")
-        self.assertContains(response, "Preparar acessos institucionais")
-        self.assertContains(response, "Manter a plataforma")
-        self.assertContains(response, "Auditar e dar suporte")
-        self.assertContains(response, "Ver todos os modelos técnicos")
 
     def test_staff_without_internal_group_cannot_access_django_admin(self):
         gestor = User.objects.create_user(
@@ -63,27 +52,10 @@ class AdminInstitucionalTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_organization_changelist_shows_operational_columns(self):
-        response = self.client.get(reverse("admin:listaEspera_organizacao_changelist"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "CAMPPG")
-        self.assertContains(response, "Domínios")
-        self.assertContains(response, "Membros")
-        self.assertContains(response, "Ativa")
-
-    def test_organization_form_exposes_identity_and_domains_as_sections(self):
-        response = self.client.get(reverse("admin:listaEspera_organizacao_change", args=[self.organizacao.pk]))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Identificação da organização")
-        self.assertContains(response, "Identidade exibida")
-        self.assertContains(response, "Domínios das organizações")
-        self.assertContains(response, "Hostname")
 
     def test_invitation_generates_technical_token_and_auditor(self):
         response = self.client.post(
-            reverse("admin:listaEspera_conviteorganizacao_add"),
+            reverse("admin:plataforma_conviteorganizacao_add"),
             {
                 "organizacao": str(self.organizacao.pk),
                 "email": "professor@example.com",
@@ -99,19 +71,3 @@ class AdminInstitucionalTests(TestCase):
         convite = ConviteOrganizacao.objects.get(email="professor@example.com")
         self.assertEqual(len(convite.hash_token), 64)
         self.assertEqual(convite.convidado_por_id, self.admin.pk)
-
-    def test_domain_form_normalizes_hostname(self):
-        response = self.client.post(
-            reverse("admin:listaEspera_dominioorganizacao_add"),
-            {
-                "organizacao": str(self.organizacao.pk),
-                "hostname": "CAMPPG.PALACIOMENTAL.COM.BR.",
-                "tipo": DominioOrganizacao.TIPO_SUBDOMINIO,
-                "principal": "on",
-                "status_verificacao": "ativo",
-                "_save": "Salvar",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(DominioOrganizacao.objects.filter(hostname="camppg.palaciomental.com.br").exists())

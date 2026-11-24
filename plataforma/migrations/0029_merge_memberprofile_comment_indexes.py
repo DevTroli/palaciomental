@@ -6,8 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0027_memberprofile_avatar'),
-        ('listaEspera', '0028_comment_indexes'),
+        ('plataforma', '0027_memberprofile_avatar'),
+        ('plataforma', '0028_comment_indexes'),
     ]
 
     operations = [

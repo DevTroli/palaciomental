@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0007_unique_owner_project_title_ci'),
+        ('plataforma', '0007_unique_owner_project_title_ci'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -140,13 +140,13 @@ class Migration(migrations.Migration):
                 ('cor_primaria', models.CharField(blank=True, max_length=20, verbose_name='Cor primária')),
                 ('cor_destaque', models.CharField(blank=True, max_length=20, verbose_name='Cor de destaque')),
                 ('cor_fundo', models.CharField(blank=True, max_length=20, verbose_name='Cor de fundo')),
-                ('organizacao', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='identidade', to='listaEspera.organizacao', verbose_name='Organização')),
+                ('organizacao', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='identidade', to='plataforma.organizacao', verbose_name='Organização')),
             ],
         ),
         migrations.AddField(
             model_name='project',
             name='organizacao',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='projetos', to='listaEspera.organizacao', verbose_name='Organização'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='projetos', to='plataforma.organizacao', verbose_name='Organização'),
         ),
         migrations.CreateModel(
             name='MembroOrganizacao',
@@ -156,12 +156,12 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('ativa', 'Ativa'), ('pendente', 'Pendente'), ('suspensa', 'Suspensa')], default='ativa', max_length=20, verbose_name='Status')),
                 ('entrou_em', models.DateTimeField(auto_now_add=True, verbose_name='Entrou em')),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='afiliacoes_organizacionais', to=settings.AUTH_USER_MODEL, verbose_name='Usuário')),
-                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='afiliacoes', to='listaEspera.organizacao', verbose_name='Organização')),
+                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='afiliacoes', to='plataforma.organizacao', verbose_name='Organização')),
             ],
             options={
                 'verbose_name': 'Afiliação organizacional',
                 'verbose_name_plural': 'Afiliações organizacionais',
-                'indexes': [models.Index(fields=['organizacao', 'status'], name='listaEspera_organiz_7ee62f_idx')],
+                'indexes': [models.Index(fields=['organizacao', 'status'], name='plataforma_organiz_7ee62f_idx')],
                 'constraints': [models.UniqueConstraint(fields=('organizacao', 'usuario'), name='unique_organization_user_affiliation')],
             },
         ),
@@ -174,7 +174,7 @@ class Migration(migrations.Migration):
                 ('principal', models.BooleanField(default=False, verbose_name='Domínio principal')),
                 ('status_verificacao', models.CharField(default='ativo', max_length=30, verbose_name='Status da verificação')),
                 ('verificado_em', models.DateTimeField(blank=True, null=True, verbose_name='Verificado em')),
-                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='dominios', to='listaEspera.organizacao', verbose_name='Organização')),
+                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='dominios', to='plataforma.organizacao', verbose_name='Organização')),
             ],
             options={
                 'verbose_name': 'Domínio da organização',
@@ -194,12 +194,12 @@ class Migration(migrations.Migration):
                 ('aceito_em', models.DateTimeField(blank=True, null=True, verbose_name='Aceito em')),
                 ('criado_em', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
                 ('convidado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='convites_emitidos', to=settings.AUTH_USER_MODEL, verbose_name='Convidado por')),
-                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='convites', to='listaEspera.organizacao', verbose_name='Organização')),
+                ('organizacao', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='convites', to='plataforma.organizacao', verbose_name='Organização')),
             ],
             options={
                 'verbose_name': 'Convite da organização',
                 'verbose_name_plural': 'Convites das organizações',
-                'indexes': [models.Index(fields=['organizacao', 'status'], name='listaEspera_organiz_214b86_idx'), models.Index(fields=['email', 'status'], name='listaEspera_email_49d5a3_idx')],
+                'indexes': [models.Index(fields=['organizacao', 'status'], name='plataforma_organiz_214b86_idx'), models.Index(fields=['email', 'status'], name='plataforma_email_49d5a3_idx')],
             },
         ),
     ]

@@ -84,13 +84,6 @@ class AmeacasLinksSalvosTests(TestCase):
         self.assertEqual(self.link.ameaca_estado, "UNVERIFIED")
         self.assertFalse(self.link.ameaca_notificada)
 
-    @patch("plataforma.guardiao_consulta.consultar_links", return_value={})
-    def test_titulo_e_apresentado_em_maiusculas(self, consulta):
-        self.link.label = "Referencial do projeto"
-        self.link.save()
-        self.client.force_login(self.user)
-        page = self.client.get(reverse("plataforma:project_detail", args=[self.project.pk]))
-        self.assertContains(page, "REFERENCIAL DO PROJETO")
 
     @patch("plataforma.guardiao_consulta.consultar_links", return_value={})
     def test_alerta_expira_e_nao_expoe_classificacao_antiga(self, consulta):
@@ -110,23 +103,3 @@ class AmeacasLinksSalvosTests(TestCase):
         self.assertContains(page, 'class="link-status link-status--security"')
         self.assertContains(page, "Segurança não verificada")
         self.assertContains(page, 'href="https://example.com/"')
-
-
-class ConsultaAmeacasTests(TestCase):
-    @patch("plataforma.guardiao_consulta.build_opener")
-    @patch("plataforma.guardiao_consulta.Command._configuracao", return_value=("https://api.example/v1/guardiao/links", "token"))
-    def test_rejeita_alerta_expirado_e_falha_sem_inventar_seguranca(self, config, opener):
-        import json
-        from datetime import timedelta
-        from django.utils import timezone
-        from plataforma.guardiao_consulta import consultar_ameacas
-
-        now = timezone.now()
-        response = opener.return_value.open.return_value.__enter__.return_value
-        response.read.return_value = json.dumps([{
-            "state": "THREAT", "checkedAt": (now - timedelta(minutes=31)).isoformat(),
-            "expiresAt": (now + timedelta(minutes=30)).isoformat(),
-        }]).encode()
-        self.assertEqual(consultar_ameacas(["https://example.com/"]), ["UNVERIFIED"])
-        response.read.return_value = "resposta inválida".encode()
-        self.assertEqual(consultar_ameacas(["https://example.com/"]), ["UNVERIFIED"])

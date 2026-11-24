@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("listaEspera", "0019_migrar_turma_grupo_legado"),
+        ("plataforma", "0019_migrar_turma_grupo_legado"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -27,10 +27,10 @@ class Migration(migrations.Migration):
                 ("aceito_em", models.DateTimeField(blank=True, null=True, verbose_name="Aceito em")),
                 ("criado_em", models.DateTimeField(auto_now_add=True, verbose_name="Criado em")),
                 ("convidado_por", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="convites_grupo_emitidos", to=settings.AUTH_USER_MODEL, verbose_name="Convidado por")),
-                ("grupo", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="convites", to="listaEspera.grupo", verbose_name="Grupo")),
+                ("grupo", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="convites", to="plataforma.grupo", verbose_name="Grupo")),
             ],
             options={"verbose_name": "Convite de grupo", "verbose_name_plural": "Convites de grupos"},
         ),
-        migrations.AddIndex(model_name="convitegrupo", index=models.Index(fields=["grupo", "status"], name="listaEspera_grupo_i_8c5a8d_idx")),
-        migrations.AddIndex(model_name="convitegrupo", index=models.Index(fields=["email", "status"], name="listaEspera_email_4f448c_idx")),
+        migrations.AddIndex(model_name="convitegrupo", index=models.Index(fields=["grupo", "status"], name="plataforma_grupo_i_8c5a8d_idx")),
+        migrations.AddIndex(model_name="convitegrupo", index=models.Index(fields=["email", "status"], name="plataforma_email_4f448c_idx")),
     ]

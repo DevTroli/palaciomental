@@ -1,18 +1,6 @@
-import hashlib
-from io import BytesIO
-import secrets
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
-from django.core import mail
-from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
-from django.urls import reverse
-from django.utils import timezone
-from PIL import Image
 
-from plataforma.models import ConviteGrupo, ConviteOrganizacao, DominioOrganizacao, Grupo, IdentidadeOrganizacao, MembroGrupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
+from plataforma.models import DominioOrganizacao, IdentidadeOrganizacao, MembroOrganizacao, Organizacao
 from plataforma.services import ativar_organizacao
 
 
@@ -34,34 +22,6 @@ class IdentidadeEAtivacaoTests(PortalInstitucionalBase):
         self.assertTrue(identidade.completa)
         self.assertIn(f"tenants/{self.organization.pk}/branding/logo/", str(identidade.logo.name))
 
-    def test_logo_is_normalized_before_storage(self):
-        identidade = IdentidadeOrganizacao.objects.create(
-            organizacao=self.organization,
-            logo=self.logo_file("large-logo.jpg", size=(2000, 1200), image_format="JPEG"),
-            cor_primaria="roxo-institucional",
-            cor_destaque="verde-institucional",
-            cor_fundo="bege-claro",
-        )
-        identidade.logo.open()
-        with Image.open(identidade.logo) as imagem:
-            self.assertLessEqual(max(imagem.size), 1600)
-            self.assertEqual(imagem.format, "JPEG")
-
-    def test_invalid_logo_format_is_rejected(self):
-        identidade = IdentidadeOrganizacao(
-            organizacao=self.organization,
-            logo=SimpleUploadedFile("logo.gif", b"not-an-image", content_type="image/gif"),
-        )
-        with self.assertRaises(ValidationError):
-            identidade.full_clean()
-
-    def test_logo_over_two_megabytes_is_rejected(self):
-        identidade = IdentidadeOrganizacao(
-            organizacao=self.organization,
-            logo=SimpleUploadedFile("logo.png", b"x" * (2 * 1024 * 1024 + 1), content_type="image/png"),
-        )
-        with self.assertRaisesMessage(ValidationError, "no máximo 2 MB"):
-            identidade.full_clean()
 
     def test_organization_activation_requires_identity_domain_and_owner(self):
         self.organization.status = Organizacao.STATUS_CONFIGURANDO

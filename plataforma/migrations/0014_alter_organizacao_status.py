@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0013_alter_identidadeorganizacao_cor_destaque_and_more'),
+        ('plataforma', '0013_alter_identidadeorganizacao_cor_destaque_and_more'),
     ]
 
     operations = [

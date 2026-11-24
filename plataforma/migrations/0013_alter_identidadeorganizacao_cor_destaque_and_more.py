@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0012_conviteturmagrupo'),
+        ('plataforma', '0012_conviteturmagrupo'),
     ]
 
     operations = [

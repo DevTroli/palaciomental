@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0011_programas_turmas_grupos'),
+        ('plataforma', '0011_programas_turmas_grupos'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -26,12 +26,12 @@ class Migration(migrations.Migration):
                 ('aceito_em', models.DateTimeField(blank=True, null=True, verbose_name='Aceito em')),
                 ('criado_em', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
                 ('convidado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='convites_turma_grupo_emitidos', to=settings.AUTH_USER_MODEL, verbose_name='Convidado por')),
-                ('turma_grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='convites', to='listaEspera.turmagrupo', verbose_name='Turma ou grupo')),
+                ('turma_grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='convites', to='plataforma.turmagrupo', verbose_name='Turma ou grupo')),
             ],
             options={
                 'verbose_name': 'Convite de turma ou grupo',
                 'verbose_name_plural': 'Convites de turmas e grupos',
-                'indexes': [models.Index(fields=['turma_grupo', 'status'], name='listaEspera_turma_g_4cd72c_idx'), models.Index(fields=['email', 'status'], name='listaEspera_email_6ee589_idx')],
+                'indexes': [models.Index(fields=['turma_grupo', 'status'], name='plataforma_turma_g_4cd72c_idx'), models.Index(fields=['email', 'status'], name='plataforma_email_6ee589_idx')],
             },
         ),
     ]

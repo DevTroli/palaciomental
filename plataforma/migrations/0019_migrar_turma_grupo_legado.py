@@ -14,14 +14,14 @@ def nome_disponivel(queryset, nome, campo="nome"):
 
 
 def migrar_legado(apps, schema_editor):
-    TurmaGrupo = apps.get_model("listaEspera", "TurmaGrupo")
-    Turma = apps.get_model("listaEspera", "Turma")
-    Grupo = apps.get_model("listaEspera", "Grupo")
-    MembroTurmaGrupo = apps.get_model("listaEspera", "MembroTurmaGrupo")
-    MembroTurma = apps.get_model("listaEspera", "MembroTurma")
-    MembroGrupo = apps.get_model("listaEspera", "MembroGrupo")
-    ProjetoTurmaGrupo = apps.get_model("listaEspera", "ProjetoTurmaGrupo")
-    Vinculo = apps.get_model("listaEspera", "VinculoProjetoInstitucional")
+    TurmaGrupo = apps.get_model("plataforma", "TurmaGrupo")
+    Turma = apps.get_model("plataforma", "Turma")
+    Grupo = apps.get_model("plataforma", "Grupo")
+    MembroTurmaGrupo = apps.get_model("plataforma", "MembroTurmaGrupo")
+    MembroTurma = apps.get_model("plataforma", "MembroTurma")
+    MembroGrupo = apps.get_model("plataforma", "MembroGrupo")
+    ProjetoTurmaGrupo = apps.get_model("plataforma", "ProjetoTurmaGrupo")
+    Vinculo = apps.get_model("plataforma", "VinculoProjetoInstitucional")
 
     agora = timezone.now()
     turmas_por_legado = {}
@@ -115,11 +115,11 @@ def migrar_legado(apps, schema_editor):
 
 
 def reverter_legado(apps, schema_editor):
-    Vinculo = apps.get_model("listaEspera", "VinculoProjetoInstitucional")
-    MembroGrupo = apps.get_model("listaEspera", "MembroGrupo")
-    MembroTurma = apps.get_model("listaEspera", "MembroTurma")
-    Grupo = apps.get_model("listaEspera", "Grupo")
-    Turma = apps.get_model("listaEspera", "Turma")
+    Vinculo = apps.get_model("plataforma", "VinculoProjetoInstitucional")
+    MembroGrupo = apps.get_model("plataforma", "MembroGrupo")
+    MembroTurma = apps.get_model("plataforma", "MembroTurma")
+    Grupo = apps.get_model("plataforma", "Grupo")
+    Turma = apps.get_model("plataforma", "Turma")
 
     Vinculo.objects.filter(legado_id__isnull=False).delete()
     MembroGrupo.objects.filter(grupo__legado_id__isnull=False).delete()
@@ -130,7 +130,7 @@ def reverter_legado(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("listaEspera", "0018_vinculoprojetoinstitucional_legado_id"),
+        ("plataforma", "0018_vinculoprojetoinstitucional_legado_id"),
     ]
 
     operations = [migrations.RunPython(migrar_legado, reverter_legado)]

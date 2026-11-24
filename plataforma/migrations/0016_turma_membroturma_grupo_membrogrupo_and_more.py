@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0015_alter_identidadeorganizacao_cor_destaque_and_more'),
+        ('plataforma', '0015_alter_identidadeorganizacao_cor_destaque_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('atualizado_em', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
                 ('criado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='turmas_criadas', to=settings.AUTH_USER_MODEL, verbose_name='Criado por')),
                 ('professor_responsavel', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='turmas_orientadas', to=settings.AUTH_USER_MODEL, verbose_name='Professor responsável')),
-                ('programa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='turmas', to='listaEspera.programainstitucional', verbose_name='Programa')),
+                ('programa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='turmas', to='plataforma.programainstitucional', verbose_name='Programa')),
             ],
             options={
                 'verbose_name': 'Turma',
@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('ativo', 'Ativo'), ('suspenso', 'Suspenso')], default='ativo', max_length=20, verbose_name='Status')),
                 ('entrou_em', models.DateTimeField(auto_now_add=True)),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros_turma', to=settings.AUTH_USER_MODEL, verbose_name='Usuário')),
-                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros', to='listaEspera.turma', verbose_name='Turma')),
+                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros', to='plataforma.turma', verbose_name='Turma')),
             ],
             options={
                 'verbose_name': 'Membro de turma',
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 ('criado_em', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
                 ('atualizado_em', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
                 ('criado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='grupos_criados', to=settings.AUTH_USER_MODEL, verbose_name='Criado por')),
-                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='grupos', to='listaEspera.turma', verbose_name='Turma')),
+                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='grupos', to='plataforma.turma', verbose_name='Turma')),
             ],
             options={
                 'verbose_name': 'Grupo',
@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
                 ('representante', models.BooleanField(default=False, verbose_name='Representante')),
                 ('status', models.CharField(choices=[('ativo', 'Ativo'), ('suspenso', 'Suspenso')], default='ativo', max_length=20, verbose_name='Status')),
                 ('entrou_em', models.DateTimeField(auto_now_add=True)),
-                ('grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros', to='listaEspera.grupo', verbose_name='Grupo')),
+                ('grupo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros', to='plataforma.grupo', verbose_name='Grupo')),
                 ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='membros_grupo', to=settings.AUTH_USER_MODEL, verbose_name='Usuário')),
             ],
             options={

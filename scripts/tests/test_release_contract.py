@@ -17,7 +17,7 @@ class BootContractTests(unittest.TestCase):
         self.work = Path(self.temp.name)
         self.trace = self.work / "trace"
         stub = self.work / "python"
-        stub.write_text('#!/bin/sh\nprintf "%s|%s\n" "$*" "$DATABASE_URL" >> "$TRACE"\ncase "$2" in migrate) exit "${FAIL_MIGRATE:-0}";; pm_rls_status) exit "${FAIL_RLS:-0}";; collectstatic) exit "${FAIL_STATIC:-0}";; esac\n')
+        stub.write_text('#!/bin/sh\nprintf "%s|%s\n" "$*" "$DATABASE_URL" >> "$TRACE"\ncase "$2" in migrar_com_bloqueio) exit "${FAIL_MIGRATE:-0}";; pm_rls_status) exit "${FAIL_RLS:-0}";; collectstatic) exit "${FAIL_STATIC:-0}";; esac\n')
         stub.chmod(0o700)
         gunicorn = self.work / "gunicorn"
         gunicorn.write_text('#!/bin/sh\nprintf "gunicorn %s|%s\n" "$*" "$DATABASE_URL" >> "$TRACE"\nexit "${APP_EXIT:-0}"\n')
@@ -32,7 +32,7 @@ class BootContractTests(unittest.TestCase):
     def test_boot_order_and_roles(self):
         result, lines = self.boot({"PM_RLS_STRICT": "true"})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(lines, ["manage.py migrate --noinput|migration", "manage.py pm_rls_status --strict|runtime", "manage.py collectstatic --noinput|runtime", "gunicorn setup.wsgi:application|runtime"])
+        self.assertEqual(lines, ["manage.py migrar_com_bloqueio --noinput|migration", "manage.py pm_rls_status --strict|runtime", "manage.py collectstatic --noinput|runtime", "gunicorn setup.wsgi:application|runtime"])
 
     def test_migration_url_fallback(self):
         result, lines = self.boot({"DATABASE_MIGRATION_URL": ""})
@@ -58,7 +58,7 @@ class BootContractTests(unittest.TestCase):
         for _ in range(2):
             result, lines = self.boot()
             self.assertEqual(result.returncode, 0)
-            self.assertEqual(lines[0], "manage.py migrate --noinput|migration")
+            self.assertEqual(lines[0], "manage.py migrar_com_bloqueio --noinput|migration")
 
     def test_docker_and_compose_contract(self):
         dockerfile = (ROOT / "Dockerfile").read_text()

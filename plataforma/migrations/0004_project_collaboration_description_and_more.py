@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0003_alter_project_visibility'),
+        ('plataforma', '0003_alter_project_visibility'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -51,8 +51,8 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='project_comments', to=settings.AUTH_USER_MODEL)),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='replies', to='listaEspera.projectcomment')),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='listaEspera.project')),
+                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='replies', to='plataforma.projectcomment')),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='plataforma.project')),
             ],
             options={
                 'ordering': ['created_at'],
@@ -68,7 +68,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='project_milestones', to=settings.AUTH_USER_MODEL)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='milestones', to='listaEspera.project')),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='milestones', to='plataforma.project')),
             ],
             options={
                 'ordering': ['-created_at'],
@@ -82,7 +82,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('pendente', 'Pendente'), ('aceita', 'Aceita'), ('recusada', 'Recusada')], default='pendente', max_length=20, verbose_name='Status')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('decided_at', models.DateTimeField(blank=True, null=True)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='collaboration_requests', to='listaEspera.project')),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='collaboration_requests', to='plataforma.project')),
                 ('requester', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='collaboration_requests', to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -95,7 +95,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='votes', to='listaEspera.project')),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='votes', to='plataforma.project')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='project_votes', to=settings.AUTH_USER_MODEL)),
             ],
             options={

@@ -2,7 +2,7 @@
 set -e
 
 # Migrações podem usar uma role própria (dona do schema); o runtime usa DATABASE_URL.
-DATABASE_URL="${DATABASE_MIGRATION_URL:-$DATABASE_URL}" python manage.py migrate --noinput
+DATABASE_URL="${DATABASE_MIGRATION_URL:-$DATABASE_URL}" python manage.py migrar_com_bloqueio --noinput
 
 # Avisa (ou bloqueia, com PM_RLS_STRICT=true) se a role do runtime ignorar a RLS.
 if [ "${PM_RLS_STRICT:-false}" = "true" ]; then

@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listaEspera', '0016_turma_membroturma_grupo_membrogrupo_and_more'),
+        ('plataforma', '0016_turma_membroturma_grupo_membrogrupo_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -19,9 +19,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('vinculado_em', models.DateTimeField(auto_now_add=True, verbose_name='Vinculado em')),
-                ('grupo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='projetos_institucionais', to='listaEspera.grupo', verbose_name='Grupo')),
-                ('projeto', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vinculo_institucional', to='listaEspera.project', verbose_name='Projeto')),
-                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projetos_institucionais', to='listaEspera.turma', verbose_name='Turma')),
+                ('grupo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='projetos_institucionais', to='plataforma.grupo', verbose_name='Grupo')),
+                ('projeto', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vinculo_institucional', to='plataforma.project', verbose_name='Projeto')),
+                ('turma', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projetos_institucionais', to='plataforma.turma', verbose_name='Turma')),
                 ('vinculado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='projetos_institucionais_vinculados', to=settings.AUTH_USER_MODEL, verbose_name='Vinculado por')),
             ],
             options={
