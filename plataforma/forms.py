@@ -164,7 +164,7 @@ class MilestoneForm(forms.ModelForm):
     class Meta:
         model = ProjectMilestone
         fields = ("title", "description", "milestone_type")
-        labels = {"title": "Título do marco", "description": "O que mudou?", "milestone_type": "Tipo de avanço"}
+        labels = {"title": "Título do registro", "description": "O que mudou?", "milestone_type": "Tipo de registro"}
         widgets = {"description": forms.Textarea(attrs={"rows": 3, "maxlength": 1000})}
 
 
@@ -180,10 +180,10 @@ class ProjectBasicsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.project_owner = owner or getattr(self.instance, "owner", None)
         if organizacao is not None:
-            self.fields["tipo_projeto"] = forms.ChoiceField(label="Tipo de projeto", choices=(("autonomo", "Projeto autônomo"), ("programa", "Projeto vinculado a programa")), help_text="Projeto autônomo não exige turma. Projeto de programa exige turma e professor orientador.")
-            self.fields["turma"] = forms.ModelChoiceField(label="Turma", required=False, queryset=Turma.objects.none())
-            self.fields["grupo"] = forms.ModelChoiceField(label="Grupo (opcional)", required=False, queryset=Grupo.objects.none())
-            self.fields["orientador"] = forms.ModelChoiceField(label="Professor orientador", required=False, queryset=User.objects.none())
+            self.fields["tipo_projeto"] = forms.ChoiceField(label="Vínculo com programa", choices=(("autonomo", "Sem vínculo"), ("programa", "Vinculado a programa")), help_text="Opcional. Se vincular, escolha uma turma e seu professor responsável.")
+            self.fields["turma"] = forms.ModelChoiceField(label="Turma do programa", required=False, queryset=Turma.objects.none(), help_text="Necessária apenas para projetos vinculados.")
+            self.fields["grupo"] = forms.ModelChoiceField(label="Grupo da turma", required=False, queryset=Grupo.objects.none(), help_text="Opcional, mesmo quando o projeto está vinculado à turma.")
+            self.fields["orientador"] = forms.ModelChoiceField(label="Professor responsável", required=False, queryset=User.objects.none(), help_text="Necessário apenas para projetos vinculados.")
             afiliacao = MembroOrganizacao.objects.filter(organizacao=organizacao, usuario=owner).first() if owner else None
             turmas = Turma.objects.filter(programa__organizacao=organizacao, status=Turma.STATUS_ATIVO)
             if afiliacao and afiliacao.papel not in {MembroOrganizacao.PAPEL_PROPRIETARIO, MembroOrganizacao.PAPEL_GESTOR}:
@@ -242,6 +242,14 @@ class ProjectBasicsForm(forms.ModelForm):
         with system_context():
             return Project.objects.filter(owner=self.project_owner, title__iexact=title).exclude(pk=self.instance.pk).exists()
 
+class ProjectDirectionForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ("direction",)
+        labels = {"direction": "Ponto de partida"}
+        widgets = {"direction": forms.Textarea(attrs={"rows": 4, "maxlength": 1000})}
+
+
 class ProjectContextForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -249,22 +257,12 @@ class ProjectContextForm(forms.ModelForm):
 
     class Meta:
         model = Project
-        fields = ("category", "tags", "seeking_collaborators", "collaboration_description", "visibility")
+        fields = ("category", "seeking_collaborators", "collaboration_description", "visibility")
         widgets = {
             "category": forms.TextInput(attrs={"placeholder": "Ex.: Educação, pesquisa ou produto"}),
-            "tags": forms.TextInput(attrs={"placeholder": "até 8 tags, separadas por vírgula"}),
             "collaboration_description": forms.Textarea(attrs={"rows": 3, "placeholder": "Ex.: buscamos alguém para pesquisa e prototipação"}),
             "seeking_collaborators": forms.CheckboxInput(attrs={"class": "collaboration-check"}),
         }
-    def _clean_tags(self, value, label):
-        tags = [tag.strip() for tag in (value or "").split(",") if tag.strip()]
-        if len(tags) > 8:
-            raise forms.ValidationError(f"Use no máximo 8 {label}.")
-        if any(len(tag) > 24 for tag in tags):
-            raise forms.ValidationError(f"Cada {label[:-1]} deve ter no máximo 24 caracteres.")
-        return ", ".join(tags)
-    def clean_tags(self):
-        return self._clean_tags(self.cleaned_data.get("tags"), "tags")
     def clean_visibility(self):
         return self.cleaned_data.get("visibility") or Project.VISIBILITY_PRIVATE
     def clean_category(self):

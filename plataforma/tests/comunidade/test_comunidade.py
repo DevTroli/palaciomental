@@ -54,6 +54,26 @@ class CommunityM2Tests(TestCase):
         previous = ProjectComment.objects.create(project=self.project, author=self.owner, content="Comentário anterior")
         self.assertEqual(self.client.post(reverse("plataforma:edit_comment", args=[previous.pk]), {"content": "Edição"}).status_code, 403)
 
+    def test_author_can_reply_to_another_person_but_not_start_a_thread(self):
+        comment = ProjectComment.objects.create(project=self.project, author=self.member, content="Sugestão")
+        self.client.force_login(self.owner)
+        page = self.client.get(reverse("plataforma:project_detail", args=[self.project.pk]))
+        self.assertContains(page, f'name="parent" value="{comment.pk}"')
+        self.assertNotContains(page, 'class="comment-form"')
+        response = self.client.post(reverse("plataforma:add_comment", args=[self.project.pk]),
+                                    {"content": "Obrigado pela sugestão", "parent": comment.pk})
+        self.assertEqual(response.status_code, 302)
+        reply = ProjectComment.objects.get(parent=comment)
+        self.assertEqual(reply.author, self.owner)
+        self.assertEqual(self.client.post(reverse("plataforma:edit_comment", args=[reply.pk]),
+                                          {"content": "Obrigado!"}).status_code, 302)
+        self.assertEqual(self.client.post(reverse("plataforma:add_comment", args=[self.project.pk]),
+                                          {"content": "Comentário próprio"}).status_code, 403)
+        self.assertEqual(self.client.post(reverse("plataforma:toggle_vote", args=[self.project.pk])).status_code, 403)
+        other_project = Project.objects.create(owner=self.owner, title="Outro projeto", direction="Outro")
+        self.assertEqual(self.client.post(reverse("plataforma:add_comment", args=[other_project.pk]),
+                                          {"content": "Resposta cruzada", "parent": comment.pk}).status_code, 404)
+
     def test_milestone_requires_owner_or_collaborator(self):
         self.client.force_login(self.member)
         url = reverse("plataforma:add_milestone", args=[self.project.pk])

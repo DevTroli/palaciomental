@@ -25,7 +25,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .auth_limits import limit_authentication
 from .account_identity import register_account
-from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm, TurmaReferenciaForm
+from .forms import CollaborationRequestForm, CommentForm, ConviteGrupoForm, ConviteOrganizacaoForm, GrupoForm, IdentidadeOrganizacaoForm, MemberCreationForm, MilestoneForm, ProfileForm, ProgramaInstitucionalForm, ProjectBasicsForm, ProjectContextForm, ProjectDirectionForm, ProjectForm, ProjectLinkFormSet, SolicitacaoGrupoForm, SolicitacaoTurmaForm, TurmaForm, TurmaReferenciaForm
 from .models import CollaborationRequest, ConviteGrupo, ConviteOrganizacao, Grupo, IdentidadeOrganizacao, MemberProfile, MembroOrganizacao, MembroGrupo, MembroTurma, Notification, Organizacao, ProgramaInstitucional, Project, ProjectComment, ProjectLink, ProjectMember, ProjectMilestone, ProjectVote, SolicitacaoGrupo, SolicitacaoTurma, Turma, VinculoProjetoInstitucional
 from .services import emitir_convite_organizacao, papeis_convidaveis
 from .validators import CORES_SEMANTICAS
@@ -998,12 +998,13 @@ def institutional_group_members(request, group_id):
                 return redirect("plataforma:institutional_group_members", group_id=grupo.pk)
     membros = grupo.membros.select_related("usuario").filter(status=MembroGrupo.STATUS_ATIVO)
     convites = grupo.convites.filter(status=ConviteGrupo.STATUS_PENDENTE, expira_em__gt=timezone.now()).select_related("convidado_por")
-    projeto_vinculado = grupo.projetos_institucionais.select_related("projeto", "orientador").first()
+    projetos_vinculados = [vinculo for vinculo in grupo.projetos_institucionais.select_related("projeto")
+                           if _project_accessible(vinculo.projeto, request.user)]
     pode_decidir = _can_decide_group(request, grupo)
     solicitacoes = grupo.solicitacoes_entrada.filter(status=SolicitacaoGrupo.STATUS_PENDENTE).select_related("usuario") if pode_decidir else []
     pode_editar = _is_active_group_representative(request, grupo)
     pode_excluir = grupo.criado_por_id == request.user.pk
-    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros if eh_membro or pode_decidir else [], "convites": convites, "solicitacoes": solicitacoes, "form": form, "pode_gerenciar": pode_gerenciar, "pode_decidir": pode_decidir, "pode_editar": pode_editar, "pode_excluir": pode_excluir, "eh_membro": eh_membro, "projeto_vinculado": projeto_vinculado, "nav_ativo": "turmas_e_equipes"})
+    return render(request, "institutional/group_members.html", {"organizacao": organizacao, "grupo": grupo, "membros": membros if eh_membro or pode_decidir else [], "convites": convites, "solicitacoes": solicitacoes, "form": form, "pode_gerenciar": pode_gerenciar, "pode_decidir": pode_decidir, "pode_editar": pode_editar, "pode_excluir": pode_excluir, "eh_membro": eh_membro, "projetos_vinculados": projetos_vinculados, "nav_ativo": "turmas_e_equipes"})
 
 
 @login_required
@@ -1173,7 +1174,7 @@ def _save_institutional_project_link(project, form, actor):
         vinculo.save(update_fields=["turma", "grupo", "orientador", "vinculado_por"])
 
 
-def project_detail(request, pk):
+def project_detail(request, pk, direction_form=None):
     project = get_object_or_404(_project_scope(request).select_related("owner", "vinculo_institucional__turma__programa__organizacao", "vinculo_institucional__grupo", "vinculo_institucional__orientador"), pk=pk)
     access_token = request.GET.get("access", "")
     if not _project_accessible(project, request.user, access_token):
@@ -1190,7 +1191,7 @@ def project_detail(request, pk):
         ranking_posicao = next((index for index, item in enumerate(ranked[:5], 1) if item.pk == project.pk), None)
     from .guardiao_consulta import marcar_links
     links = marcar_links(list(project.links.all()))
-    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": links, "comments": comments, "comment_form": CommentForm(), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(request.path) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
+    return render(request, "projects/detail.html", {"project": project, "is_project_member": is_project_member, "ranking_posicao": ranking_posicao, "organizacao": getattr(request, "organizacao", None), "members": project.memberships.select_related("user"), "links": links, "comments": comments, "comment_form": CommentForm(), "direction_form": direction_form if direction_form is not None else ProjectDirectionForm(instance=project), "milestone_form": MilestoneForm(), "collaboration_form": CollaborationRequestForm(), "vote_count": project.votes.count(), "user_voted": voted, "can_manage": can_manage, "collaboration_request": collaboration_request, "milestones": project.milestones.select_related("author"), "requests": project.collaboration_requests.filter(status=CollaborationRequest.PENDING).select_related("requester") if request.user == project.owner else [], "access_token": access_token, "share_url": request.build_absolute_uri(reverse("plataforma:project_detail", args=[project.pk])) + (f"?access={project.access_token}" if project.visibility == Project.VISIBILITY_RESTRICTED else ""), "shareable": project.visibility != Project.VISIBILITY_PRIVATE, "link_formset": ProjectLinkFormSet(instance=project, prefix="links")})
 @login_required
 def project_create(request):
     organizacao = getattr(request, "organizacao", None)
@@ -1218,6 +1219,8 @@ def project_delete(request, pk):
 @login_required
 def project_context(request, pk):
     project = _project_for_request(request, pk=pk, owner=request.user)
+    if request.method == "POST" and request.POST.get("skip") == "1":
+        return redirect("plataforma:project_detail", pk=project.pk)
     form = ProjectContextForm(request.POST or None, instance=project)
     formset = ProjectLinkFormSet(request.POST or None, instance=project, prefix="links")
     if request.method == "POST" and form.is_valid() and formset.is_valid():
@@ -1245,6 +1248,13 @@ def project_context(request, pk):
 @login_required
 def project_edit(request, pk):
     project = _project_for_request(request, pk=pk, owner=request.user)
+    if request.method == "POST" and request.POST.get("edit_section") == "direction":
+        direction_form = ProjectDirectionForm(request.POST, instance=project)
+        if direction_form.is_valid():
+            direction_form.save()
+            messages.success(request, "Ponto de partida atualizado.")
+            return redirect("plataforma:project_detail", pk=project.pk)
+        return project_detail(request, pk, direction_form=direction_form)
     organizacao = getattr(request, "organizacao", None)
     form = ProjectBasicsForm(request.POST or None, instance=project, owner=request.user, organizacao=organizacao)
     if request.method == "POST" and form.is_valid():
@@ -1266,15 +1276,17 @@ def add_comment(request, pk):
     project = _project_for_request(request, pk=pk)
     if not _project_accessible(project, request.user, request.POST.get("access") or request.GET.get("access")):
         raise Http404
-    if project.owner_id == request.user.pk:
+    parent_id = request.POST.get("parent")
+    if project.owner_id == request.user.pk and not parent_id:
         return HttpResponseForbidden("O autor não pode comentar no próprio projeto.")
     form = CommentForm(request.POST)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.project, comment.author = project, request.user
-        parent_id = request.POST.get("parent")
         if parent_id:
             parent = get_object_or_404(ProjectComment, pk=parent_id, project=project)
+            if project.owner_id == request.user.pk and parent.author_id == request.user.pk:
+                return HttpResponseForbidden("O autor não pode responder ao próprio comentário.")
             if parent.parent_id:
                 messages.error(request, "As respostas têm apenas um nível neste MVP.")
                 access = request.POST.get("access", "")
@@ -1294,7 +1306,7 @@ def edit_comment(request, comment_id):
         author=request.user,
         project__in=_project_scope(request),
     )
-    if comment.project.owner_id == request.user.pk:
+    if comment.project.owner_id == request.user.pk and (not comment.parent_id or comment.parent.author_id == request.user.pk):
         return HttpResponseForbidden("O autor não pode comentar no próprio projeto.")
     form = CommentForm(request.POST, instance=comment)
     if form.is_valid():
