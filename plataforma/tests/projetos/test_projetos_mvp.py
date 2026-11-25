@@ -62,3 +62,43 @@ class MvpProjectTests(TestCase):
         self.assertEqual(self.client.get(reverse("plataforma:project_detail", kwargs={"pk": self.project.pk})).status_code, 404)
         ProjectMember.objects.create(project=self.project, user=self.collaborator)
         self.assertEqual(self.client.get(reverse("plataforma:project_detail", kwargs={"pk": self.project.pk})).status_code, 404)
+
+    def test_skip_context_does_not_erase_existing_values(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("plataforma:project_context", args=[self.project.pk]), {"skip": "1"})
+        self.assertRedirects(response, reverse("plataforma:project_detail", args=[self.project.pk]))
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.category, "Educação")
+        self.assertEqual(self.project.tags, "pesquisa, educação")
+
+    def test_context_save_preserves_legacy_tags(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse("plataforma:project_context", args=[self.project.pk]), {
+            "category": "Pesquisa", "visibility": "publico",
+            "links-TOTAL_FORMS": "0", "links-INITIAL_FORMS": "0",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.category, "Pesquisa")
+        self.assertEqual(self.project.tags, "pesquisa, educação")
+
+    def test_owner_edits_direction_in_place_without_changing_other_fields(self):
+        url = reverse("plataforma:project_edit", args=[self.project.pk])
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get(reverse("plataforma:project_detail", args=[self.project.pk])),
+                            "Editar ponto de partida")
+        response = self.client.post(url, {"edit_section": "direction", "direction": "Novo propósito"})
+        self.assertRedirects(response, reverse("plataforma:project_detail", args=[self.project.pk]))
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.direction, "Novo propósito")
+        self.assertEqual(self.project.title, "Projeto Aurora")
+        self.assertEqual(self.project.tags, "pesquisa, educação")
+        response = self.client.post(url, {"edit_section": "direction", "direction": ""})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Este campo é obrigatório")
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.direction, "Novo propósito")
+        self.client.force_login(self.collaborator)
+        self.assertNotContains(self.client.get(reverse("plataforma:project_detail", args=[self.project.pk])),
+                               "Editar ponto de partida")
+        self.assertEqual(self.client.post(url, {"edit_section": "direction", "direction": "Inválido"}).status_code, 404)

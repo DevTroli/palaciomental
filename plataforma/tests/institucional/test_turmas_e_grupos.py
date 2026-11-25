@@ -13,6 +13,31 @@ from .base import PortalInstitucionalBase
 
 
 class TurmasEGruposTests(PortalInstitucionalBase):
+    def test_group_lists_accessible_projects_and_explains_its_origin(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa Aurora",
+                                                        slug="programa-aurora", status=ProgramaInstitucional.STATUS_PUBLICADO,
+                                                        criado_por=self.user)
+        turma = Turma.objects.create(programa=programa, nome="Turma Azul", criado_por=self.user)
+        grupo = Grupo.objects.create(turma=turma, nome="Equipe Norte", criado_por=self.user)
+        MembroTurma.objects.create(turma=turma, usuario=self.user)
+        another = User.objects.create_user(username="outro-autor")
+        visible = Project.objects.create(owner=another, organizacao=self.organization,
+                                         title="Projeto aberto", direction="Pesquisa", visibility=Project.VISIBILITY_PUBLIC)
+        private = Project.objects.create(owner=another, organizacao=self.organization,
+                                         title="Projeto reservado", direction="Segredo", visibility=Project.VISIBILITY_PRIVATE)
+        for project in (visible, private):
+            VinculoProjetoInstitucional.objects.create(projeto=project, turma=turma, grupo=grupo,
+                                                       vinculado_por=another)
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("plataforma:institutional_group_members", args=[grupo.pk]),
+                                   HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertEqual(response.status_code, 200)
+        for name in (programa.nome, turma.nome, grupo.nome, visible.title):
+            self.assertContains(response, name)
+        self.assertNotContains(response, private.title)
+        self.assertContains(response, reverse("plataforma:project_detail", args=[visible.pk]))
+
     def test_member_sees_published_programs_and_cannot_open_draft(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
         publicado = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Programa público", slug="publico", status=ProgramaInstitucional.STATUS_PUBLICADO, criado_por=self.user)

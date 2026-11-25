@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from plataforma.models import MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, Turma, VinculoProjetoInstitucional
+from plataforma.models import Grupo, MembroOrganizacao, MembroTurma, Organizacao, ProgramaInstitucional, Project, Turma, VinculoProjetoInstitucional
 
 
 User = get_user_model()
@@ -11,6 +11,27 @@ from .base import PortalInstitucionalBase
 
 
 class ProjetosInstitucionaisTests(PortalInstitucionalBase):
+
+    def test_detail_explains_autonomous_and_program_origin(self):
+        MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)
+        project = Project.objects.create(owner=self.user, organizacao=self.organization,
+                                         title="Projeto da turma", direction="Aprender", visibility="publico")
+        self.client.force_login(self.user)
+        url = reverse("plataforma:project_detail", args=[project.pk])
+        autonomous = self.client.get(url, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertContains(autonomous, "Projeto autônomo")
+        self.assertContains(autonomous, "Organização")
+        self.assertContains(autonomous, self.organization.nome)
+        programa = ProgramaInstitucional.objects.create(organizacao=self.organization, nome="Jovens em ação",
+                                                        slug="jovens-em-acao", criado_por=self.user)
+        turma = Turma.objects.create(programa=programa, nome="Turma A", criado_por=self.user)
+        grupo = Grupo.objects.create(turma=turma, nome="Equipe Aurora", criado_por=self.user)
+        VinculoProjetoInstitucional.objects.create(projeto=project, turma=turma, grupo=grupo,
+                                                    vinculado_por=self.user)
+        linked = self.client.get(url, HTTP_HOST="camppg.palaciomental.com.br")
+        self.assertContains(linked, "Projeto de programa")
+        for name in (programa.nome, turma.nome, grupo.nome):
+            self.assertContains(linked, name)
 
     def test_program_project_requires_an_eligible_orienting_professor(self):
         MembroOrganizacao.objects.create(organizacao=self.organization, usuario=self.user, papel=MembroOrganizacao.PAPEL_MEMBRO)

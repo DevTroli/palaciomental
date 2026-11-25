@@ -200,13 +200,6 @@
                     <span>{{ projeto.total_membros }} aluno{{ projeto.total_membros|pluralize }}</span>
                   </div>
 
-                  <div class="camp-own-progress">
-                    <span class="camp-progress-label">{{ projeto.progresso }}%</span>
-                    <span class="camp-progress-track" aria-hidden="true">
-                      <span class="camp-progress-fill fill--{{ projeto.status }}" style="width: {{ projeto.progresso }}%"></span>
-                    </span>
-                  </div>
-
                   <div class="camp-profile-project-foot">
                     <span class="camp-profile-project-date">Atualizado em {{ projeto.updated_at|date:"d/m/Y" }}</span>
                     <div class="camp-profile-project-actions">
